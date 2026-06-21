@@ -1,0 +1,468 @@
+{
+  "info": {
+    "_postman_id": "a1b2c3d4-e5f6-7890-abcd-pm-event-list-demo",
+    "name": "PM CE · testnet · event/list",
+    "description": "prediction-market `GET /ce/pm/v1/api/event/list` 较完整用例（`EventController` + `MarketListReq`）。\n\n覆盖：分页与默认值、`eventStatus` / `sortBy`、热门、locale、多选 `categoryIds`；匿名可访问。\n\n变量：`baseUrl`、`categoryId`（默认 30101，可按环境改）。",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "https://api2-testnet.zoomex.com" },
+    { "key": "categoryId", "value": "30101", "description": "测试用分类；无数据时可改为 `/categories` 返回的叶子 id。" }
+  ],
+  "item": [
+    {
+      "name": "01 基础与分页",
+      "description": "`MarketListReq`：`page`/`pageSize` 规整（`effectivePage`、`effectivePageSize`，最大 50）。",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "const body = pm.response.json();",
+              "pm.test('ret_code 为 0', () => pm.expect(body.ret_code).to.eql(0));",
+              "pm.test('result 含分页字段', () => {",
+              "  const r = body.result;",
+              "  pm.expect(r).to.have.keys('page', 'pageSize', 'total', 'list');",
+              "  pm.expect(r.list).to.be.an('array');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "item": [
+        {
+          "name": "最小参数（不限分类）",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const r = pm.response.json().result;",
+                  "pm.test('默认每页条数不超过 50', () => pm.expect(r.pageSize).to.be.at.most(50));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "lang", "value": "zh-Hant" }],
+            "url": "{{baseUrl}}/ce/pm/v1/api/event/list?page=1"
+          }
+        },
+        {
+          "name": "指定分类 + 小分页",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const r = pm.response.json().result;",
+                  "pm.test('pageSize 与请求一致', () => pm.expect(r.pageSize).to.eql(5));",
+                  "pm.test('page 为 1', () => pm.expect(r.page).to.eql(1));",
+                  "pm.test('列表项结构（有数据时）', () => {",
+                  "  if (r.list.length === 0) return;",
+                  "  const e = r.list[0];",
+                  "  pm.expect(e).to.have.property('id');",
+                  "  pm.expect(e.id).to.be.a('string');",
+                  "  pm.expect(e).to.have.property('title');",
+                  "  pm.expect(e).to.have.property('markets');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "lang", "value": "zh-Hant" }],
+            "url": {
+              "raw": "{{baseUrl}}/ce/pm/v1/api/event/list?categoryId={{categoryId}}&page=1&pageSize=5",
+              "host": ["{{baseUrl}}"],
+              "path": ["ce", "pm", "v1", "api", "event", "list"],
+              "query": [
+                { "key": "categoryId", "value": "{{categoryId}}" },
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "5" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "pageSize 超过上限应截断为 50",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const r = pm.response.json().result;",
+                  "pm.test('pageSize 不超过 MAX(50)', () => pm.expect(r.pageSize).to.eql(50));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "lang", "value": "zh-Hant" }],
+            "url": {
+              "raw": "{{baseUrl}}/ce/pm/v1/api/event/list?categoryId={{categoryId}}&page=1&pageSize=200",
+              "host": ["{{baseUrl}}"],
+              "path": ["ce", "pm", "v1", "api", "event", "list"],
+              "query": [
+                { "key": "categoryId", "value": "{{categoryId}}" },
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "200" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "page 小于 1 时回退为第 1 页",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const r = pm.response.json().result;",
+                  "pm.test('effectivePage 为 1', () => pm.expect(r.page).to.eql(1));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "lang", "value": "zh-Hant" }],
+            "url": {
+              "raw": "{{baseUrl}}/ce/pm/v1/api/event/list?categoryId={{categoryId}}&page=0&pageSize=5",
+              "host": ["{{baseUrl}}"],
+              "path": ["ce", "pm", "v1", "api", "event", "list"],
+              "query": [
+                { "key": "categoryId", "value": "{{categoryId}}" },
+                { "key": "page", "value": "0" },
+                { "key": "pageSize", "value": "5" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "pageSize 非法时回退默认 20",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const r = pm.response.json().result;",
+                  "pm.test('effectivePageSize 为默认 20', () => pm.expect(r.pageSize).to.eql(20));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "lang", "value": "zh-Hant" }],
+            "url": {
+              "raw": "{{baseUrl}}/ce/pm/v1/api/event/list?categoryId={{categoryId}}&page=1&pageSize=0",
+              "host": ["{{baseUrl}}"],
+              "path": ["ce", "pm", "v1", "api", "event", "list"],
+              "query": [
+                { "key": "categoryId", "value": "{{categoryId}}" },
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "0" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 事件状态与排序",
+      "description": "`eventStatus`、`sortBy` 合法枚举与非法值回退（仍 200 + ret_code 0）。",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "const body = pm.response.json();",
+              "pm.test('ret_code 为 0', () => pm.expect(body.ret_code).to.eql(0));",
+              "pm.test('分页结构', () => {",
+              "  const r = body.result;",
+              "  pm.expect(r.list).to.be.an('array');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "item": [
+        {
+          "name": "eventStatus=ALL",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "lang", "value": "zh-Hant" }],
+            "url": {
+              "raw": "{{baseUrl}}/ce/pm/v1/api/event/list?categoryId={{categoryId}}&page=1&pageSize=5&eventStatus=ALL",
+              "host": ["{{baseUrl}}"],
+              "path": ["ce", "pm", "v1", "api", "event", "list"],
+              "query": [
+                { "key": "categoryId", "value": "{{categoryId}}" },
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "5" },
+                { "key": "eventStatus", "value": "ALL" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "eventStatus=TRADABLE（显式）",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "lang", "value": "zh-Hant" }],
+            "url": {
+              "raw": "{{baseUrl}}/ce/pm/v1/api/event/list?categoryId={{categoryId}}&page=1&pageSize=5&eventStatus=TRADABLE",
+              "host": ["{{baseUrl}}"],
+              "path": ["ce", "pm", "v1", "api", "event", "list"],
+              "query": [
+                { "key": "categoryId", "value": "{{categoryId}}" },
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "5" },
+                { "key": "eventStatus", "value": "TRADABLE" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "eventStatus=SETTLED",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "lang", "value": "zh-Hant" }],
+            "url": {
+              "raw": "{{baseUrl}}/ce/pm/v1/api/event/list?categoryId={{categoryId}}&page=1&pageSize=5&eventStatus=SETTLED",
+              "host": ["{{baseUrl}}"],
+              "path": ["ce", "pm", "v1", "api", "event", "list"],
+              "query": [
+                { "key": "categoryId", "value": "{{categoryId}}" },
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "5" },
+                { "key": "eventStatus", "value": "SETTLED" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "eventStatus 非法值仍成功（回退默认）",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "lang", "value": "zh-Hant" }],
+            "url": {
+              "raw": "{{baseUrl}}/ce/pm/v1/api/event/list?categoryId={{categoryId}}&page=1&pageSize=5&eventStatus=NOT_A_REAL_STATUS",
+              "host": ["{{baseUrl}}"],
+              "path": ["ce", "pm", "v1", "api", "event", "list"],
+              "query": [
+                { "key": "categoryId", "value": "{{categoryId}}" },
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "5" },
+                { "key": "eventStatus", "value": "NOT_A_REAL_STATUS" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "sortBy=VOLUME_24H_DESC",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "lang", "value": "zh-Hant" }],
+            "url": {
+              "raw": "{{baseUrl}}/ce/pm/v1/api/event/list?categoryId={{categoryId}}&page=1&pageSize=5&sortBy=VOLUME_24H_DESC",
+              "host": ["{{baseUrl}}"],
+              "path": ["ce", "pm", "v1", "api", "event", "list"],
+              "query": [
+                { "key": "categoryId", "value": "{{categoryId}}" },
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "5" },
+                { "key": "sortBy", "value": "VOLUME_24H_DESC" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "sortBy=CREATED_DESC",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "lang", "value": "zh-Hant" }],
+            "url": {
+              "raw": "{{baseUrl}}/ce/pm/v1/api/event/list?categoryId={{categoryId}}&page=1&pageSize=5&sortBy=CREATED_DESC",
+              "host": ["{{baseUrl}}"],
+              "path": ["ce", "pm", "v1", "api", "event", "list"],
+              "query": [
+                { "key": "categoryId", "value": "{{categoryId}}" },
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "5" },
+                { "key": "sortBy", "value": "CREATED_DESC" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "sortBy 非法值仍成功（回退默认）",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "lang", "value": "zh-Hant" }],
+            "url": {
+              "raw": "{{baseUrl}}/ce/pm/v1/api/event/list?categoryId={{categoryId}}&page=1&pageSize=5&sortBy=BAD_SORT",
+              "host": ["{{baseUrl}}"],
+              "path": ["ce", "pm", "v1", "api", "event", "list"],
+              "query": [
+                { "key": "categoryId", "value": "{{categoryId}}" },
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "5" },
+                { "key": "sortBy", "value": "BAD_SORT" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 分类、热门与语言",
+      "description": "`isHot`、`locale` / `lang`、`categoryIds` 多选。",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('ret_code 为 0', () => pm.expect(pm.response.json().ret_code).to.eql(0));",
+              "pm.test('list 为数组', () => pm.expect(pm.response.json().result.list).to.be.an('array'));"
+            ]
+          }
+        }
+      ],
+      "item": [
+        {
+          "name": "isHot=true",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "lang", "value": "zh-Hant" }],
+            "url": {
+              "raw": "{{baseUrl}}/ce/pm/v1/api/event/list?categoryId={{categoryId}}&page=1&pageSize=5&isHot=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["ce", "pm", "v1", "api", "event", "list"],
+              "query": [
+                { "key": "categoryId", "value": "{{categoryId}}" },
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "5" },
+                { "key": "isHot", "value": "true" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "query locale=ja（与 header lang 二选一逻辑）",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "lang", "value": "zh-Hant" }],
+            "url": {
+              "raw": "{{baseUrl}}/ce/pm/v1/api/event/list?categoryId={{categoryId}}&page=1&pageSize=5&locale=ja",
+              "host": ["{{baseUrl}}"],
+              "path": ["ce", "pm", "v1", "api", "event", "list"],
+              "query": [
+                { "key": "categoryId", "value": "{{categoryId}}" },
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "5" },
+                { "key": "locale", "value": "ja" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "categoryIds 多选（同 id 重复应去重）",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "lang", "value": "zh-Hant" }],
+            "url": {
+              "raw": "{{baseUrl}}/ce/pm/v1/api/event/list?categoryIds={{categoryId}}&categoryIds={{categoryId}}&page=1&pageSize=5",
+              "host": ["{{baseUrl}}"],
+              "path": ["ce", "pm", "v1", "api", "event", "list"],
+              "query": [
+                { "key": "categoryIds", "value": "{{categoryId}}" },
+                { "key": "categoryIds", "value": "{{categoryId}}" },
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "5" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "categoryId=0 表示不限分类",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "lang", "value": "zh-Hant" }],
+            "url": {
+              "raw": "{{baseUrl}}/ce/pm/v1/api/event/list?categoryId=0&page=1&pageSize=3",
+              "host": ["{{baseUrl}}"],
+              "path": ["ce", "pm", "v1", "api", "event", "list"],
+              "query": [
+                { "key": "categoryId", "value": "0" },
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "3" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 响应契约",
+      "description": "校验 `Content-Type` 与顶层 JSON 字段命名（`ret_code` snake_case）。",
+      "item": [
+        {
+          "name": "JSON 字段与 Content-Type",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Content-Type 含 json', () =>",
+                  "  pm.expect(pm.response.headers.get('Content-Type') || '').to.match(/json/i));",
+                  "const body = pm.response.json();",
+                  "pm.test('Responses 壳字段（含 ext_code）', () => {",
+                  "  pm.expect(body).to.include.keys('ret_code', 'ret_msg', 'result', 'time_now', 'ext_code');",
+                  "});",
+                  "pm.test('ret_code 为 0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "const r = body.result;",
+                  "pm.test('total 为非负整数', () => {",
+                  "  pm.expect(r.total).to.be.a('number');",
+                  "  pm.expect(r.total).to.be.at.least(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "lang", "value": "zh-Hant" }],
+            "url": {
+              "raw": "{{baseUrl}}/ce/pm/v1/api/event/list?categoryId={{categoryId}}&page=1&pageSize=5",
+              "host": ["{{baseUrl}}"],
+              "path": ["ce", "pm", "v1", "api", "event", "list"],
+              "query": [
+                { "key": "categoryId", "value": "{{categoryId}}" },
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "5" }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
