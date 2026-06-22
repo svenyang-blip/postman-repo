@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{{browserTitle}}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --allure-bg: #f2f2f2;
+      --allure-surface: #fff;
+      --allure-border: #e5e5e5;
+      --allure-text: #333;
+      --allure-muted: #999;
+      --allure-header: #343434;
+      --allure-passed: #97cc64;
+      --allure-failed: #fd5a3e;
+      --allure-broken: #ffd050;
+      --allure-skipped: #aaa;
+      --allure-unknown: #d35ebe;
+      --allure-accent: #4a90e2;
+      --shadow: 0 1px 3px rgba(0,0,0,.08);
+      --radius: 4px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--allure-bg);
+      color: var(--allure-text);
+      line-height: 1.5;
+      font-size: 14px;
+    }
+    a { color: var(--allure-accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .topbar {
+      background: var(--allure-header);
+      color: #fff;
+      padding: 18px clamp(16px, 4vw, 40px);
+      box-shadow: 0 2px 8px rgba(0,0,0,.15);
+    }
+    .topbar h1 { margin: 0 0 6px; font-size: 1.35rem; font-weight: 600; letter-spacing: -.01em; }
+    .topbar .sub { color: rgba(255,255,255,.72); font-size: .85rem; }
+    .topbar .sub code { background: rgba(255,255,255,.12); padding: 1px 6px; border-radius: 3px; font-size: .8rem; }
+
+    .page { padding: 24px clamp(16px, 4vw, 40px) 48px; max-width: 1280px; margin: 0 auto; }
+
+    .overview {
+      display: grid;
+      grid-template-columns: 1fr minmax(220px, 280px);
+      gap: 20px;
+      margin-bottom: 28px;
+      align-items: start;
+    }
+    @media (max-width: 860px) { .overview { grid-template-columns: 1fr; } }
+
+    .widgets {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 14px;
+    }
+    .widget {
+      background: var(--allure-surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 14px 16px;
+      border-left: 4px solid var(--allure-unknown);
+      min-height: 76px;
+    }
+    .widget h3 {
+      margin: 0 0 8px;
+      font-size: .72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      color: var(--allure-muted);
+    }
+    .widget .val { font-size: 1.65rem; font-weight: 700; line-height: 1.1; }
+    .widget.passed { border-left-color: var(--allure-passed); }
+    .widget.passed .val { color: var(--allure-passed); }
+    .widget.failed { border-left-color: var(--allure-failed); }
+    .widget.failed .val { color: var(--allure-failed); }
+    .widget.neutral { border-left-color: var(--allure-accent); }
+    .widget.neutral .val { color: var(--allure-text); }
+
+    .chart-card {
+      background: var(--allure-surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .chart-card h3 {
+      margin: 0 0 8px;
+      font-size: .78rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      color: var(--allure-muted);
+      align-self: flex-start;
+    }
+    .chart-wrap { width: 180px; height: 180px; position: relative; }
+
+    .status-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 24px; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      border-radius: 3px;
+      font-size: .8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .03em;
+    }
+    .badge-pass { background: var(--allure-passed); color: #fff; }
+    .badge-fail { background: var(--allure-failed); color: #fff; }
+    .collection-name { color: var(--allure-muted); font-size: .9rem; }
+
+    .section-title {
+      font-size: .95rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      color: var(--allure-muted);
+      margin: 0 0 14px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--allure-border);
+    }
+
+    details.folder, details.req {
+      background: var(--allure-surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      margin-bottom: 10px;
+      overflow: hidden;
+      border: 1px solid var(--allure-border);
+    }
+    details.folder > summary, details.req > summary {
+      cursor: pointer;
+      list-style: none;
+      padding: 12px 16px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      user-select: none;
+      background: #fafafa;
+      border-bottom: 1px solid transparent;
+      transition: background .15s;
+    }
+    details.folder[open] > summary,
+    details.req[open] > summary { border-bottom-color: var(--allure-border); background: #f5f5f5; }
+    details.folder > summary:hover,
+    details.req > summary:hover { background: #f0f0f0; }
+    details.folder > summary::-webkit-details-marker,
+    details.req > summary::-webkit-details-marker { display: none; }
+    .chevron {
+      color: var(--allure-muted);
+      font-size: .75rem;
+      transition: transform .15s ease;
+      flex-shrink: 0;
+    }
+    details[open] > summary .chevron { transform: rotate(90deg); }
+    details.folder .inner { padding: 8px 12px 12px 16px; }
+    details.req { margin: 8px 0 8px 12px; }
+    details.req > summary { font-size: .9rem; font-weight: 500; }
+    .req-meta { color: var(--allure-muted); font-weight: 400; font-size: .8rem; white-space: nowrap; }
+    .req-body { padding: 14px 16px 16px; font-size: .88rem; background: #fff; }
+
+    .status-dot {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 8px;
+      flex-shrink: 0;
+      vertical-align: middle;
+    }
+    .status-dot.passed { background: var(--allure-passed); }
+    .status-dot.failed { background: var(--allure-failed); }
+    .status-dot.skipped { background: var(--allure-skipped); }
+
+    .method {
+      display: inline-block;
+      min-width: 3rem;
+      padding: 2px 7px;
+      border-radius: 3px;
+      font-size: .68rem;
+      font-weight: 700;
+      letter-spacing: .04em;
+      background: #eef3f8;
+      color: var(--allure-accent);
+      margin-right: 8px;
+      border: 1px solid #d8e6f5;
+    }
+    .method-get { color: #2e7d32; background: #e8f5e9; border-color: #c8e6c9; }
+    .method-post { color: #1565c0; background: #e3f2fd; border-color: #bbdefb; }
+
+    table.assert {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .82rem;
+      margin: 12px 0;
+      border: 1px solid var(--allure-border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    table.assert th, table.assert td {
+      padding: 9px 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--allure-border);
+    }
+    table.assert th { background: #fafafa; color: var(--allure-muted); font-weight: 600; font-size: .75rem; text-transform: uppercase; }
+    table.assert tr:last-child td { border-bottom: none; }
+    table.assert td.num { text-align: center; width: 4rem; font-weight: 600; }
+    .cell-pass { color: var(--allure-passed); background: rgba(151,204,100,.12); }
+    .cell-fail { color: var(--allure-failed); background: rgba(253,90,62,.1); }
+    .cell-skip { color: var(--allure-skipped); background: rgba(170,170,170,.12); }
+
+    pre {
+      margin: 10px 0 0;
+      padding: 12px 14px;
+      background: #f8f8f8;
+      border: 1px solid var(--allure-border);
+      border-radius: var(--radius);
+      overflow: auto;
+      max-height: 320px;
+      font-size: .78rem;
+      line-height: 1.45;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      color: #444;
+    }
+    .fail-block {
+      background: #fff5f3;
+      border: 1px solid rgba(253,90,62,.35);
+      border-left: 4px solid var(--allure-failed);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      margin-bottom: 12px;
+      box-shadow: var(--shadow);
+    }
+    .fail-block h4 { margin: 0 0 8px; font-size: .92rem; color: var(--allure-failed); font-weight: 600; }
+    footer {
+      margin-top: 36px;
+      padding-top: 16px;
+      border-top: 1px solid var(--allure-border);
+      color: var(--allure-muted);
+      font-size: .78rem;
+    }
+    .url-line { margin-top: 4px; word-break: break-all; color: #555; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .82rem; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <h1>{{title}}</h1>
+    <div class="sub">{{timestamp}} · Newman {{version}} · Allure 风格模板 · <code>htmlextra-inline-dashboard.hbs</code></div>
+  </div>
+
+  <div class="page">
+    {{#with summary}}
+    <div class="overview">
+      <div class="widgets">
+        <div class="widget neutral">
+          <h3>迭代</h3>
+          <div class="val">{{stats.iterations.total}}</div>
+        </div>
+        <div class="widget neutral">
+          <h3>请求</h3>
+          <div class="val">{{stats.requests.total}}</div>
+        </div>
+        <div class="widget neutral">
+          <h3>断言（总）</h3>
+          <div class="val">{{#if skippedTests}}{{totalTests stats.assertions.total skippedTests.length}}{{else}}{{stats.assertions.total}}{{/if}}</div>
+        </div>
+        <div class="widget {{#if stats.assertions.failed}}failed{{else}}passed{{/if}}">
+          <h3>断言失败</h3>
+          <div class="val">{{stats.assertions.failed}}</div>
+        </div>
+        <div class="widget neutral">
+          <h3>平均响应</h3>
+          <div class="val" style="font-size:1.15rem">{{responseAverage}}</div>
+        </div>
+        <div class="widget neutral">
+          <h3>总耗时</h3>
+          <div class="val" style="font-size:1.15rem">{{duration}}</div>
+        </div>
+      </div>
+      <div class="chart-card">
+        <h3>断言分布</h3>
+        <div class="chart-wrap"><canvas id="assertChart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="status-row">
+      {{#if stats.assertions.failed}}
+        <span class="badge badge-fail">Failed</span>
+      {{else}}
+        <span class="badge badge-pass">Passed</span>
+      {{/if}}
+      <span class="collection-name">集合：<strong>{{collection.name}}</strong></span>
+    </div>
+
+    <script>
+      window.__ALLURE_CHART__ = {
+        passed: Math.max(0, {{stats.assertions.total}} - {{stats.assertions.failed}}),
+        failed: {{stats.assertions.failed}}
+      };
+    </script>
+    {{/with}}
+
+    <h2 class="section-title">Suites · 执行明细</h2>
+
+    {{#each aggregations}}
+    {{#isNotIn parent.name @root.skipFolders}}
+    <details class="folder" {{#if parent.name}}{{else}}open{{/if}}>
+      <summary>
+        <span><span class="status-dot passed"></span>{{#if parent.name}}{{parent.name}}{{else}}（根目录请求）{{/if}}</span>
+        <span class="req-meta">{{executions.length}} 条 <span class="chevron">▸</span></span>
+      </summary>
+      <div class="inner">
+        {{#each executions}}
+        {{#isNotIn item.name @root.skipRequests}}
+        <details class="req" {{#if cumulativeTests.failed}}open{{/if}}>
+          <summary>
+            <span>
+              <span class="status-dot {{#if cumulativeTests.failed}}failed{{else}}passed{{/if}}"></span>
+              <span class="method {{#eq request.method "GET"}}method-get{{/eq}}{{#eq request.method "POST"}}method-post{{/eq}}">{{request.method}}</span>
+              {{item.name}}
+            </span>
+            <span class="req-meta">
+              HTTP {{response.code}} · {{mean.time}} · {{mean.size}}
+              {{#if cumulativeTests.failed}}· <strong style="color:var(--allure-failed)">{{cumulativeTests.failed}} 失败</strong>{{/if}}
+              <span class="chevron">▸</span>
+            </span>
+          </summary>
+          <div class="req-body">
+            <div><strong>URL</strong></div>
+            <div class="url-line">
+              {{#if request.url.raw}}{{request.url.raw}}{{else}}{{#if request.url}}{{#if request.url.href}}{{request.url.href}}{{else}}{{object request.url}}{{/if}}{{else}}—{{/if}}{{/if}}
+            </div>
+
+            {{#if assertions.length}}
+            <table class="assert">
+              <thead>
+                <tr><th>断言</th><th class="num">通过</th><th class="num">失败</th><th class="num">跳过</th></tr>
+              </thead>
+              <tbody>
+                {{#each assertions}}
+                <tr>
+                  <td>{{name}}</td>
+                  <td class="num {{#if passed}}cell-pass{{/if}}">{{passed}}</td>
+                  <td class="num {{#if failed}}cell-fail{{/if}}">{{failed}}</td>
+                  <td class="num {{#if skipped}}cell-skip{{/if}}">{{skipped}}</td>
+                </tr>
+                {{/each}}
+              </tbody>
+            </table>
+            {{/if}}
+
+            {{#unless @root.omitResponseBodies}}
+            {{#unless @root.skipSensitiveData}}
+            {{#isNotIn item.name @root.hideResponseBody}}
+            {{#if response.body}}
+            <div><strong>响应体</strong></div>
+            <pre>{{response.body}}</pre>
+            {{/if}}
+            {{/isNotIn}}
+            {{/unless}}
+            {{/unless}}
+          </div>
+        </details>
+        {{/isNotIn}}
+        {{/each}}
+      </div>
+    </details>
+    {{/isNotIn}}
+    {{/each}}
+
+    {{#with summary}}
+    {{#if failures.length}}
+    <h2 class="section-title" style="color:var(--allure-failed);border-color:rgba(253,90,62,.4)">Failures · 失败详情</h2>
+    {{#each failures}}
+    <div class="fail-block">
+      <h4>{{source.name}}</h4>
+      <pre style="margin:0;border:none;background:transparent;padding:0">{{error.message}}</pre>
+    </div>
+    {{/each}}
+    {{/if}}
+    {{/with}}
+
+    <footer>
+      由 <a href="https://www.npmjs.com/package/newman-reporter-htmlextra" rel="noreferrer">newman-reporter-htmlextra</a> + 本仓库 Allure 风格模板生成；
+      字体与图表来自 <a href="https://fonts.google.com" rel="noreferrer">Google Fonts</a>、<a href="https://www.chartjs.org" rel="noreferrer">Chart.js</a> CDN。
+    </footer>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <script>
+    (function () {
+      var d = window.__ALLURE_CHART__;
+      if (!d || typeof Chart === "undefined") return;
+      var el = document.getElementById("assertChart");
+      if (!el) return;
+      var passed = d.passed || 0;
+      var failed = d.failed || 0;
+      if (passed === 0 && failed === 0) passed = 1;
+      new Chart(el, {
+        type: "doughnut",
+        data: {
+          labels: ["通过", "失败"],
+          datasets: [{
+            data: [passed, failed],
+            backgroundColor: ["#97cc64", "#fd5a3e"],
+            borderWidth: 0,
+            hoverOffset: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          cutout: "62%",
+          plugins: {
+            legend: { position: "bottom", labels: { boxWidth: 12, padding: 10, font: { size: 11 } } }
+          }
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

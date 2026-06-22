@@ -38,11 +38,11 @@ npm run pm:event-list
 
 失败时结合 **`reports/newman-event-list.json`** 里 `run.failures` 定位请求名与断言信息。
 
-## 5. 中文 HTML：双接口合并为一份报告
+## 5. 中文 HTML：单份报告、多接口汇总
 
 `reports/newman-summary-zh.html` 由**单次** `npm run pm:event-list` 产生的 `newman-event-list.json` 生成，在同一页内包含：
 
-- **双接口汇总**表（`GET /categories` 与 `GET /event/list` 各自的用例数、断言数、失败数）；  
+- **接口汇总**表（`GET /categories` 与 `GET /event/list` 各自的用例数、断言数、失败数）；  
 - **一、categories** / **二、event/list** 两节明细（原 Postman 文件夹折叠结构保留）；  
 - 若有无法按 URL 归类的请求，会出现在 **「其它请求」**。
 

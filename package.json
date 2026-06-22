@@ -3,8 +3,7 @@
   "private": true,
   "description": "Postman / Newman 集合：PM testnet event list demo",
   "scripts": {
-    "pm:event-list": "newman run postman/collections/pm-ce-testnet-event-list.postman_collection.json --reporters cli,json,junit --reporter-json-export reports/newman-event-list.json --reporter-junit-export reports/newman-event-list.xml && node scripts/newman-json-to-zh-html.mjs reports/newman-event-list.json reports/newman-summary-zh.html",
-    "pm:event-list:html": "newman run postman/collections/pm-ce-testnet-event-list.postman_collection.json --reporters cli,htmlextra,json --reporter-json-export reports/newman-event-list.json --reporter-htmlextra-export reports/newman-event-list.html && node scripts/newman-json-to-zh-html.mjs reports/newman-event-list.json reports/newman-summary-zh.html",
+    "pm:event-list": "newman run postman/collections/pm-ce-testnet-event-list.postman_collection.json --reporters cli,json,junit,htmlextra --reporter-json-export reports/newman-event-list.json --reporter-junit-export reports/newman-event-list.xml --reporter-htmlextra-export reports/newman-dashboard.html --reporter-htmlextra-template postman/templates/htmlextra-inline-dashboard.hbs --reporter-htmlextra-browserTitle \"PM CE Newman\" --reporter-htmlextra-title \"PM CE · testnet\" --reporter-htmlextra-noSyntaxHighlighting --reporter-htmlextra-timezone \"Asia/Shanghai\" && node scripts/newman-json-to-zh-html.mjs reports/newman-event-list.json reports/newman-summary-zh.html",
     "pm:report:zh": "node scripts/newman-json-to-zh-html.mjs reports/newman-event-list.json reports/newman-summary-zh.html"
   },
   "devDependencies": {

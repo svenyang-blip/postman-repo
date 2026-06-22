@@ -150,8 +150,9 @@ function buildFolderSectionsHtml(folders) {
         .map((r) => {
           const openReq = r.assertFail > 0 ? " open" : "";
           const failBadge = r.assertFail ? ` · <span class="bad">${r.assertFail} 失败</span>` : "";
+          const dotClass = r.assertFail ? "failed" : "passed";
           return `<details class="details-req"${openReq}>
-      <summary><span class="sum-title">${esc(r.name)}</span><span class="sum-meta">HTTP ${esc(r.code)} · ${fmtResponseMs(
+      <summary><span class="sum-title"><span class="status-dot ${dotClass}"></span>${esc(r.name)}</span><span class="sum-meta">HTTP ${esc(r.code)} · ${fmtResponseMs(
             r.rt
           )} · 断言 ${r.assertions.length} 条${failBadge}</span></summary>
       <div class="details-body">
@@ -273,108 +274,166 @@ const failBlocks = failures.map((f, i) => {
   return { name, msg };
 });
 
+const assertTotal = stats.assertions?.total ?? 0;
+const assertFailed = stats.assertions?.failed ?? 0;
+const assertPassed = Math.max(0, assertTotal - assertFailed);
+
 const html = `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Newman 合并报告 · ${esc(collectionName)}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
-    :root { --bg:#0f1419; --card:#1a2332; --text:#e6edf3; --muted:#8b9cb3; --ok:#3fb950; --bad:#f85149; --line:#30363d; }
+    :root {
+      --allure-bg: #f2f2f2; --allure-surface: #fff; --allure-border: #e5e5e5;
+      --allure-text: #333; --allure-muted: #999; --allure-header: #343434;
+      --allure-passed: #97cc64; --allure-failed: #fd5a3e; --allure-skipped: #aaa;
+      --allure-accent: #4a90e2; --shadow: 0 1px 3px rgba(0,0,0,.08); --radius: 4px;
+    }
     * { box-sizing: border-box; }
-    body { margin:0; font-family: ui-sans-serif, system-ui, "PingFang SC", "Microsoft YaHei", sans-serif; background:var(--bg); color:var(--text); line-height:1.5; padding:24px; }
-    h1 { font-size:1.35rem; margin:0 0 8px; font-weight:600; }
-    .sub { color:var(--muted); font-size:.9rem; margin-bottom:24px; }
-    .badge { display:inline-block; padding:4px 10px; border-radius:999px; font-size:.8rem; font-weight:600; }
-    .badge.ok { background:#1f3d2a; color:var(--ok); }
-    .badge.bad { background:#3d1f1f; color:var(--bad); }
-    .grid { display:grid; gap:16px; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); margin-bottom:24px; }
-    .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px; }
-    .card h3 { margin:0 0 8px; font-size:.75rem; text-transform:none; color:var(--muted); font-weight:500; letter-spacing:.02em; }
-    .card .val { font-size:1.4rem; font-weight:700; }
+    body { margin:0; font-family:"Inter",ui-sans-serif,system-ui,"PingFang SC","Microsoft YaHei",sans-serif; background:var(--allure-bg); color:var(--allure-text); line-height:1.5; font-size:14px; }
+    .topbar { background:var(--allure-header); color:#fff; padding:18px clamp(16px,4vw,40px); box-shadow:0 2px 8px rgba(0,0,0,.15); }
+    .topbar h1 { margin:0 0 6px; font-size:1.35rem; font-weight:600; }
+    .topbar .sub { color:rgba(255,255,255,.72); font-size:.85rem; }
+    .topbar .sub code { background:rgba(255,255,255,.12); padding:1px 6px; border-radius:3px; font-size:.8rem; }
+    .page { padding:24px clamp(16px,4vw,40px) 48px; max-width:1280px; margin:0 auto; }
+    .overview { display:grid; grid-template-columns:1fr minmax(220px,280px); gap:20px; margin-bottom:28px; align-items:start; }
+    @media (max-width:860px) { .overview { grid-template-columns:1fr; } }
+    .widgets { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:14px; }
+    .widget { background:var(--allure-surface); border-radius:var(--radius); box-shadow:var(--shadow); padding:14px 16px; border-left:4px solid var(--allure-accent); min-height:76px; }
+    .widget h3 { margin:0 0 8px; font-size:.72rem; font-weight:600; text-transform:uppercase; letter-spacing:.05em; color:var(--allure-muted); }
+    .widget .val { font-size:1.65rem; font-weight:700; line-height:1.1; color:var(--allure-text); }
+    .widget.passed { border-left-color:var(--allure-passed); } .widget.passed .val { color:var(--allure-passed); }
+    .widget.failed { border-left-color:var(--allure-failed); } .widget.failed .val { color:var(--allure-failed); }
+    .chart-card { background:var(--allure-surface); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px; display:flex; flex-direction:column; align-items:center; }
+    .chart-card h3 { margin:0 0 8px; font-size:.78rem; font-weight:600; text-transform:uppercase; letter-spacing:.05em; color:var(--allure-muted); align-self:flex-start; }
+    .chart-wrap { width:180px; height:180px; }
+    .status-row { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:24px; }
+    .badge { display:inline-flex; padding:5px 12px; border-radius:3px; font-size:.8rem; font-weight:600; text-transform:uppercase; letter-spacing:.03em; color:#fff; }
+    .badge.ok { background:var(--allure-passed); } .badge.bad { background:var(--allure-failed); }
     section { margin-top:28px; }
-    section h2 { font-size:1.05rem; border-bottom:1px solid var(--line); padding-bottom:8px; margin-bottom:12px; }
-    .summary-api { width:100%; border-collapse:collapse; font-size:.9rem; margin-bottom:8px; background:var(--card); border:1px solid var(--line); border-radius:10px; overflow:hidden; }
-    .summary-api th, .summary-api td { padding:12px 14px; border-bottom:1px solid var(--line); }
-    .summary-api th { color:var(--muted); font-weight:500; text-align:left; background:#161b22; }
-    .summary-api tr:last-child td, .summary-api tr:last-child th { border-bottom:none; }
-    .summary-api code { font-size:.85rem; }
-    .hint { color:var(--muted); font-size:.82rem; margin:-8px 0 16px; }
-    details.details-folder { border:1px solid var(--line); border-radius:10px; margin-bottom:12px; background:var(--card); }
-    details.details-folder > summary {
-      list-style: none; cursor: pointer; padding:12px 16px; font-weight:600; display:flex; flex-wrap:wrap; align-items:center; gap:8px 16px;
-      user-select: none;
-    }
-    details.details-folder > summary::-webkit-details-marker { display: none; }
-    details.details-folder > summary::before { content: "▸"; display:inline-block; width:1em; color:var(--muted); transition: transform .15s; }
-    details.details-folder[open] > summary::before { transform: rotate(90deg); }
-    .folder-title { font-size:1rem; }
-    .folder-meta { font-size:.85rem; color:var(--muted); font-weight:400; }
-    .folder-inner { padding:0 12px 12px 12px; border-top:1px solid var(--line); }
-    details.details-req { border:1px solid var(--line); border-radius:8px; margin-bottom:8px; background:#0d1117; }
-    details.details-req > summary {
-      list-style: none; cursor: pointer; padding:10px 14px; display:flex; flex-wrap:wrap; align-items:center; gap:6px 12px; font-size:.92rem;
-      user-select: none;
-    }
-    details.details-req > summary::-webkit-details-marker { display: none; }
-    details.details-req > summary::before { content: "▸"; color:var(--muted); width:1em; display:inline-block; transition: transform .15s; }
-    details.details-req[open] > summary::before { transform: rotate(90deg); }
+    section h2 { font-size:.95rem; font-weight:600; text-transform:uppercase; letter-spacing:.04em; color:var(--allure-muted); margin:0 0 14px; padding-bottom:8px; border-bottom:2px solid var(--allure-border); }
+    .hint { color:var(--allure-muted); font-size:.82rem; margin:-8px 0 16px; }
+    .summary-api { width:100%; border-collapse:collapse; font-size:.88rem; margin-bottom:8px; background:var(--allure-surface); border:1px solid var(--allure-border); border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow); }
+    .summary-api th, .summary-api td { padding:11px 14px; border-bottom:1px solid var(--allure-border); }
+    .summary-api th { color:var(--allure-muted); font-weight:600; text-align:left; background:#fafafa; font-size:.75rem; text-transform:uppercase; }
+    .summary-api tr:last-child td { border-bottom:none; }
+    .summary-api code { font-size:.82rem; }
+    details.details-folder { border:1px solid var(--allure-border); border-radius:var(--radius); margin-bottom:10px; background:var(--allure-surface); box-shadow:var(--shadow); overflow:hidden; }
+    details.details-folder > summary { list-style:none; cursor:pointer; padding:12px 16px; font-weight:500; display:flex; flex-wrap:wrap; align-items:center; gap:8px 16px; user-select:none; background:#fafafa; }
+    details.details-folder[open] > summary { border-bottom:1px solid var(--allure-border); background:#f5f5f5; }
+    details.details-folder > summary::-webkit-details-marker { display:none; }
+    details.details-folder > summary::before { content:"▸"; display:inline-block; width:1em; color:var(--allure-muted); transition:transform .15s; margin-right:4px; }
+    details.details-folder[open] > summary::before { transform:rotate(90deg); }
+    .folder-title { font-size:.95rem; }
+    .folder-meta { font-size:.82rem; color:var(--allure-muted); font-weight:400; }
+    .folder-inner { padding:8px 12px 12px 16px; }
+    details.details-req { border:1px solid var(--allure-border); border-radius:var(--radius); margin:8px 0 8px 12px; background:#fff; }
+    details.details-req > summary { list-style:none; cursor:pointer; padding:10px 14px; display:flex; flex-wrap:wrap; align-items:center; gap:6px 12px; font-size:.9rem; user-select:none; background:#fafafa; }
+    details.details-req[open] > summary { border-bottom:1px solid var(--allure-border); }
+    details.details-req > summary::-webkit-details-marker { display:none; }
+    details.details-req > summary::before { content:"▸"; color:var(--allure-muted); width:1em; display:inline-block; transition:transform .15s; margin-right:4px; }
+    details.details-req[open] > summary::before { transform:rotate(90deg); }
+    .status-dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:6px; vertical-align:middle; }
+    .status-dot.passed { background:var(--allure-passed); } .status-dot.failed { background:var(--allure-failed); }
     .sum-title { font-weight:600; }
-    .sum-meta { color:var(--muted); font-size:.82rem; font-weight:400; }
-    .details-body { padding:0 14px 14px; border-top:1px solid var(--line); }
-    .req { border:1px solid var(--line); border-radius:10px; margin-bottom:16px; overflow:hidden; }
-    .req-h { background:var(--card); padding:12px 16px; border-bottom:1px solid var(--line); }
-    .req-h strong { font-size:1rem; }
-    .meta { color:var(--muted); font-size:.85rem; margin-top:6px; word-break:break-all; }
-    table { width:100%; border-collapse:collapse; font-size:.9rem; }
-    th, td { text-align:left; padding:10px 16px; border-bottom:1px solid var(--line); }
-    th { color:var(--muted); font-weight:500; width:28%; }
+    .sum-meta { color:var(--allure-muted); font-size:.8rem; font-weight:400; }
+    .details-body { padding:12px 14px 14px; }
+    .fail-card { border:1px solid rgba(253,90,62,.35); border-left:4px solid var(--allure-failed); border-radius:var(--radius); margin-bottom:12px; overflow:hidden; background:#fff5f3; box-shadow:var(--shadow); }
+    .fail-card-h { padding:12px 16px; font-weight:600; color:var(--allure-failed); }
+    .meta { color:var(--allure-muted); font-size:.82rem; margin-top:6px; word-break:break-all; }
+    table { width:100%; border-collapse:collapse; font-size:.88rem; border:1px solid var(--allure-border); border-radius:var(--radius); overflow:hidden; }
+    th, td { text-align:left; padding:9px 12px; border-bottom:1px solid var(--allure-border); }
+    th { color:var(--allure-muted); font-weight:600; width:28%; background:#fafafa; font-size:.75rem; text-transform:uppercase; }
     tr:last-child td, tr:last-child th { border-bottom:none; }
-    .assert-ok { color:var(--ok); }
-    .assert-bad { color:var(--bad); }
-    .ok-inline { color:var(--ok); font-weight:500; }
-    pre { background:#010409; border:1px solid var(--line); border-radius:8px; padding:12px; overflow:auto; font-size:.8rem; color:var(--muted); }
-    footer { margin-top:32px; color:var(--muted); font-size:.8rem; }
+    .assert-ok { color:var(--allure-passed); font-weight:600; }
+    .assert-bad { color:var(--allure-failed); font-weight:600; }
+    .ok-inline { color:var(--allure-passed); font-weight:500; }
+    .bad { color:var(--allure-failed); font-weight:600; }
+    pre { background:#f8f8f8; border:1px solid var(--allure-border); border-radius:var(--radius); padding:12px; overflow:auto; font-size:.8rem; color:#444; margin:0; font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; white-space:pre-wrap; word-break:break-word; }
+    footer { margin-top:32px; padding-top:16px; border-top:1px solid var(--allure-border); color:var(--allure-muted); font-size:.78rem; }
+    footer a { color:var(--allure-accent); text-decoration:none; } footer a:hover { text-decoration:underline; }
   </style>
 </head>
 <body>
-  <h1>Newman 合并报告（多接口）</h1>
-  <div class="sub">集合：${esc(collectionName)} · Newman 结束时间（北京时间）：${esc(
-    fmtTs(timings.completed)
-  )} · 本页生成：${esc(generatedAt)}<br/>同一次运行内，凡在 <code>scripts/newman-json-to-zh-html.mjs</code> 的 <code>API_REPORT_GROUPS</code> 中配置的路径，均汇总于本页；原始数据见 <code>reports/newman-event-list.json</code>。</div>
-  <p><span class="badge ${pass ? "ok" : "bad"}">${pass ? "全部通过" : "存在失败"}</span></p>
+  <div class="topbar">
+    <h1>Newman 合并报告（多接口）</h1>
+    <div class="sub">集合：${esc(collectionName)} · Newman 结束：${esc(fmtTs(timings.completed))} · 生成：${esc(generatedAt)}</div>
+  </div>
+  <div class="page">
+    <div class="overview">
+      <div class="widgets">
+        <div class="widget"><h3>迭代</h3><div class="val">${stats.iterations?.total ?? 0}</div></div>
+        <div class="widget"><h3>请求总数</h3><div class="val">${stats.requests?.total ?? 0}</div></div>
+        <div class="widget ${(stats.requests?.failed ?? 0) > 0 ? "failed" : "passed"}"><h3>失败请求</h3><div class="val">${stats.requests?.failed ?? 0}</div></div>
+        <div class="widget"><h3>断言总数</h3><div class="val">${assertTotal}</div></div>
+        <div class="widget ${assertFailed > 0 ? "failed" : "passed"}"><h3>失败断言</h3><div class="val">${assertFailed}</div></div>
+        <div class="widget"><h3>平均响应</h3><div class="val" style="font-size:1.15rem">${fmtResponseMs(timings.responseAverage)}</div></div>
+      </div>
+      <div class="chart-card">
+        <h3>断言分布</h3>
+        <div class="chart-wrap"><canvas id="assertChart"></canvas></div>
+      </div>
+    </div>
 
-  <div class="grid">
-    <div class="card"><h3>迭代</h3><div class="val">${stats.iterations?.total ?? 0}</div></div>
-    <div class="card"><h3>请求总数</h3><div class="val">${stats.requests?.total ?? 0}</div></div>
-    <div class="card"><h3>失败请求</h3><div class="val">${stats.requests?.failed ?? 0}</div></div>
-    <div class="card"><h3>断言总数</h3><div class="val">${stats.assertions?.total ?? 0}</div></div>
-    <div class="card"><h3>失败断言</h3><div class="val">${stats.assertions?.failed ?? 0}</div></div>
-    <div class="card"><h3>平均响应时间</h3><div class="val">${fmtResponseMs(timings.responseAverage)}</div></div>
+    <div class="status-row">
+      <span class="badge ${pass ? "ok" : "bad"}">${pass ? "Passed · 全部通过" : "Failed · 存在失败"}</span>
+    </div>
+
+    <section>
+      <h2>接口汇总</h2>
+      <p class="hint">按 <code>API_REPORT_GROUPS</code> 归类；下方为各接口分节明细（单文件 HTML）。</p>
+      ${summaryTableHtml}
+    </section>
+
+    ${
+      failBlocks.length
+        ? `<section><h2 style="color:var(--allure-failed);border-color:rgba(253,90,62,.4)">失败详情</h2>${failBlocks
+            .map(
+              (f) =>
+                `<div class="fail-card"><div class="fail-card-h">${esc(f.name)}</div><pre style="border:none;border-radius:0;background:transparent">${esc(f.msg)}</pre></div>`
+            )
+            .join("")}</section>`
+        : ""
+    }
+
+    ${detailSectionsHtml}
+
+    <footer>
+      由 <code>scripts/newman-json-to-zh-html.mjs</code> 生成；字体与图表引用
+      <a href="https://fonts.google.com" rel="noreferrer">Google Fonts</a>、
+      <a href="https://www.chartjs.org" rel="noreferrer">Chart.js</a> CDN。
+    </footer>
   </div>
 
-  <section>
-    <h2>接口汇总</h2>
-    <p class="hint">按请求 URL 与配置表 <code>API_REPORT_GROUPS</code> 归类；下方为各接口分节明细，仍为<strong>一份</strong> HTML。</p>
-    ${summaryTableHtml}
-  </section>
-
-  ${
-    failBlocks.length
-      ? `<section><h2>失败详情</h2>${failBlocks
-          .map(
-            (f) =>
-              `<div class="req"><div class="req-h"><strong>${esc(f.name)}</strong></div><pre>${esc(f.msg)}</pre></div>`
-          )
-          .join("")}</section>`
-      : ""
-  }
-
-  ${detailSectionsHtml}
-
-  <footer>
-    由 postman-repo <code>scripts/newman-json-to-zh-html.mjs</code> 根据单次 Newman JSON 导出生成<strong>合并</strong>报告；不依赖外网 CDN。
-  </footer>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <script>
+    (function () {
+      if (typeof Chart === "undefined") return;
+      var el = document.getElementById("assertChart");
+      if (!el) return;
+      var passed = ${assertPassed};
+      var failed = ${assertFailed};
+      if (passed === 0 && failed === 0) passed = 1;
+      new Chart(el, {
+        type: "doughnut",
+        data: {
+          labels: ["通过", "失败"],
+          datasets: [{ data: [passed, failed], backgroundColor: ["#97cc64", "#fd5a3e"], borderWidth: 0, hoverOffset: 4 }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          cutout: "62%",
+          plugins: { legend: { position: "bottom", labels: { boxWidth: 12, padding: 10, font: { size: 11 } } } }
+        }
+      });
+    })();
+  </script>
 </body>
 </html>`;
 

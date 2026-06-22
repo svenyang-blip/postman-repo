@@ -26,12 +26,6 @@ npm install -g newman
 newman --version
 ```
 
-若要用 HTML 报告，再装 reporter（本仓库脚本已用 `htmlextra`）：
-
-```bash
-npm install -g newman-reporter-htmlextra
-```
-
 ### 方式 C：不安装，每次用 npx
 
 不写入 `node_modules`，适合临时跑：
@@ -49,13 +43,11 @@ npx --yes newman@6 --version
 已用方式 A 安装依赖时：
 
 ```bash
-npm run pm:event-list          # CLI + JSON + JUnit + 自包含中文 HTML（见下）
-npm run pm:event-list:html     # CLI + htmlextra 英文界面 HTML + JSON + 中文 HTML
+npm run pm:event-list          # CLI + JSON + JUnit + 唯一中文 HTML（见下）
 npm run pm:report:zh           # 仅根据已有 JSON 重新生成中文 HTML（需先跑过 pm:event-list）
 ```
 
-- **`reports/newman-summary-zh.html`**：单次运行内 **`/categories` + `/event/list`** 合并为**一页**中文报告（含汇总表与两节明细）。
-- **`reports/newman-event-list.html`**：`newman-reporter-htmlextra` 生成，界面为英文且依赖外链脚本；若打开转圈，见 `reports/README.md`。
+- **`reports/newman-summary-zh.html`**：单次运行内 **`/categories` + `/event/list`** 合并为**一页**中文报告（含汇总表与分节明细）。详见 `reports/README.md`。
 
 全局安装（方式 B）时，等价命令示例：
 
