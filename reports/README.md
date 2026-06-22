@@ -7,7 +7,7 @@
 | `newman-event-list.json` | Newman 完整运行导出（含请求/响应体，体积较大） |
 | `newman-event-list.xml` | JUnit XML，适合 Jenkins / GitLab CI |
 | `newman-event-list.html` | `newman-reporter-htmlextra`（英文界面，依赖外网 CDN） |
-| `newman-summary-zh.html` | **中文摘要**（从 JSON 生成，无 CDN）；按 Postman **文件夹**与**单条用例**两级 `<details>` 可折叠查看 |
+| `newman-summary-zh.html` | **一份合并中文报告**：页首「双接口汇总」表 +「一、categories」「二、event/list」分节明细（仍来自单次 `newman` JSON） |
 
 运行 `npm run pm:event-list` 或 `npm run pm:event-list:html` 后会在 **`reports/newman-summary-zh.html`** 写出中文页；双击或用 `open reports/newman-summary-zh.html` 打开即可，无需外网。
 

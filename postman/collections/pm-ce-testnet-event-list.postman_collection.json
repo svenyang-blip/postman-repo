@@ -1,15 +1,83 @@
 {
   "info": {
     "_postman_id": "a1b2c3d4-e5f6-7890-abcd-pm-event-list-demo",
-    "name": "PM CE · testnet · event/list",
-    "description": "prediction-market `GET /ce/pm/v1/api/event/list` 较完整用例（`EventController` + `MarketListReq`）。\n\n覆盖：分页与默认值、`eventStatus` / `sortBy`、热门、locale、多选 `categoryIds`；匿名可访问。\n\n变量：`baseUrl`、`categoryId`（默认 30101，可按环境改）。",
+    "name": "PM CE · testnet · Wiki 技术方案接口",
+    "description": "对齐飞书 Wiki《【预测市场】体育频道列表页全品类接入-技术方案》：`GET /ce/pm/v1/api/categories`、`GET /ce/pm/v1/api/event/list`。\n\nWiki: https://skyrocket.sg.larksuite.com/wiki/TEZgwnuyOiJ315kIRn1lypTZgce\n\n覆盖：正常路径、分页/状态/排序边界、多余 query、`categoryIds` 逗号写法（文档示例）、非法 `categoryId` 字符串等（不覆盖「GET 接口误用 POST」等非约定调用）。\n\n变量：`baseUrl`、`categoryId`。",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
     { "key": "baseUrl", "value": "https://api2-testnet.zoomex.com" },
-    { "key": "categoryId", "value": "30101", "description": "测试用分类；无数据时可改为 `/categories` 返回的叶子 id。" }
+    { "key": "categoryId", "value": "30101", "description": "测试用分类 id；可与 Wiki 示例 303/304/30501 等替换。" },
+    { "key": "wikiDoc", "value": "https://skyrocket.sg.larksuite.com/wiki/TEZgwnuyOiJ315kIRn1lypTZgce", "description": "关联技术方案 Wiki 链接（只读说明）。" }
   ],
   "item": [
+    {
+      "name": "00 GET /categories（Wiki）",
+      "description": "`CategoryController#listCategories`：无参；`marketCount` 为可交易事件数语义。",
+      "item": [
+        {
+          "name": "正常：无 query",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code 为 0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "pm.test('result 含 tree 数组', () => {",
+                  "  pm.expect(body.result).to.have.property('tree');",
+                  "  pm.expect(body.result.tree).to.be.an('array');",
+                  "});",
+                  "function walk(nodes, fn) { (nodes || []).forEach(n => { fn(n); walk(n.children, fn); }); }",
+                  "const tree = body.result.tree;",
+                  "pm.test('节点含 id / name（有数据时）', () => {",
+                  "  if (!tree.length) return;",
+                  "  walk(tree, (n) => { pm.expect(n).to.have.property('id'); pm.expect(n).to.have.property('name'); });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "lang", "value": "zh-Hant" }],
+            "url": "{{baseUrl}}/ce/pm/v1/api/categories"
+          }
+        },
+        {
+          "name": "边界：多余 query 仍成功",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code 为 0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "pm.test('result.tree 为数组', () => pm.expect(body.result.tree).to.be.an('array'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "lang", "value": "zh-Hant" }],
+            "url": {
+              "raw": "{{baseUrl}}/ce/pm/v1/api/categories?junk=1&foo=bar",
+              "host": ["{{baseUrl}}"],
+              "path": ["ce", "pm", "v1", "api", "categories"],
+              "query": [
+                { "key": "junk", "value": "1" },
+                { "key": "foo", "value": "bar" }
+              ]
+            }
+          }
+        }
+      ]
+    },
     {
       "name": "01 基础与分页",
       "description": "`MarketListReq`：`page`/`pageSize` 规整（`effectivePage`、`effectivePageSize`，最大 50）。",
@@ -255,6 +323,60 @@
           }
         },
         {
+          "name": "eventStatus=UPCOMING",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "lang", "value": "zh-Hant" }],
+            "url": {
+              "raw": "{{baseUrl}}/ce/pm/v1/api/event/list?categoryId={{categoryId}}&page=1&pageSize=5&eventStatus=UPCOMING",
+              "host": ["{{baseUrl}}"],
+              "path": ["ce", "pm", "v1", "api", "event", "list"],
+              "query": [
+                { "key": "categoryId", "value": "{{categoryId}}" },
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "5" },
+                { "key": "eventStatus", "value": "UPCOMING" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "eventStatus=LIVE",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "lang", "value": "zh-Hant" }],
+            "url": {
+              "raw": "{{baseUrl}}/ce/pm/v1/api/event/list?categoryId={{categoryId}}&page=1&pageSize=5&eventStatus=LIVE",
+              "host": ["{{baseUrl}}"],
+              "path": ["ce", "pm", "v1", "api", "event", "list"],
+              "query": [
+                { "key": "categoryId", "value": "{{categoryId}}" },
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "5" },
+                { "key": "eventStatus", "value": "LIVE" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "eventStatus=LOCKED",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "lang", "value": "zh-Hant" }],
+            "url": {
+              "raw": "{{baseUrl}}/ce/pm/v1/api/event/list?categoryId={{categoryId}}&page=1&pageSize=5&eventStatus=LOCKED",
+              "host": ["{{baseUrl}}"],
+              "path": ["ce", "pm", "v1", "api", "event", "list"],
+              "query": [
+                { "key": "categoryId", "value": "{{categoryId}}" },
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "5" },
+                { "key": "eventStatus", "value": "LOCKED" }
+              ]
+            }
+          }
+        },
+        {
           "name": "eventStatus 非法值仍成功（回退默认）",
           "request": {
             "method": "GET",
@@ -412,6 +534,192 @@
                 { "key": "categoryId", "value": "0" },
                 { "key": "page", "value": "1" },
                 { "key": "pageSize", "value": "3" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 Wiki · event/list 边界与异常",
+      "description": "技术方案 §4：多选、文档示例 `categoryIds` 逗号、非法 `categoryId` 字符串、极大 page、未支持 locale。",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const n = pm.info.requestName || '';",
+              "if (n.indexOf('绑定失败') !== -1 || n.indexOf('10001') !== -1) return;",
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "const body = pm.response.json();",
+              "pm.test('ret_code 为 0', () => pm.expect(body.ret_code).to.eql(0));",
+              "pm.test('分页结构', () => pm.expect(body.result.list).to.be.an('array'));"
+            ]
+          }
+        }
+      ],
+      "item": [
+        {
+          "name": "文档示例：categoryIds 逗号分隔单参数",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const r = pm.response.json().result;",
+                  "pm.test('逗号多选仍返回合法分页', () => {",
+                  "  pm.expect(r.page).to.eql(1);",
+                  "  pm.expect(r.list.length).to.be.at.most(5);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "lang", "value": "zh-Hant" }],
+            "url": {
+              "raw": "{{baseUrl}}/ce/pm/v1/api/event/list?categoryIds={{categoryId}},303&page=1&pageSize=5&eventStatus=TRADABLE&sortBy=START_TIME_ASC",
+              "host": ["{{baseUrl}}"],
+              "path": ["ce", "pm", "v1", "api", "event", "list"],
+              "query": [
+                { "key": "categoryIds", "value": "{{categoryId}},303" },
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "5" },
+                { "key": "eventStatus", "value": "TRADABLE" },
+                { "key": "sortBy", "value": "START_TIME_ASC" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "categoryId 与 categoryIds 同传（Ids 优先）",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const r = pm.response.json().result;",
+                  "pm.test('仍为成功分页', () => pm.expect(r.list).to.be.an('array'));",
+                  "pm.test('pageSize 生效', () => pm.expect(r.pageSize).to.eql(3));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "lang", "value": "zh-Hant" }],
+            "url": {
+              "raw": "{{baseUrl}}/ce/pm/v1/api/event/list?categoryId={{categoryId}}&categoryIds=303&categoryIds=304&page=1&pageSize=3",
+              "host": ["{{baseUrl}}"],
+              "path": ["ce", "pm", "v1", "api", "event", "list"],
+              "query": [
+                { "key": "categoryId", "value": "{{categoryId}}" },
+                { "key": "categoryIds", "value": "303" },
+                { "key": "categoryIds", "value": "304" },
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "3" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "非法 categoryId 字符串（绑定失败 → 10001）",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('参数错误 ret_code 10001', () => pm.expect(body.ret_code).to.eql(10001));",
+                  "pm.test('result 为 null', () => pm.expect(body.result).to.eql(null));",
+                  "pm.test('错误信息提及 categoryId', () => pm.expect(body.ret_msg).to.match(/categoryId|convert|Long/i));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "lang", "value": "zh-Hant" }],
+            "url": {
+              "raw": "{{baseUrl}}/ce/pm/v1/api/event/list?categoryId=abc&page=1&pageSize=2",
+              "host": ["{{baseUrl}}"],
+              "path": ["ce", "pm", "v1", "api", "event", "list"],
+              "query": [
+                { "key": "categoryId", "value": "abc" },
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "2" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "极大 page（空列表或末页）",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "lang", "value": "zh-Hant" }],
+            "url": {
+              "raw": "{{baseUrl}}/ce/pm/v1/api/event/list?categoryId={{categoryId}}&page=999999&pageSize=5",
+              "host": ["{{baseUrl}}"],
+              "path": ["ce", "pm", "v1", "api", "event", "list"],
+              "query": [
+                { "key": "categoryId", "value": "{{categoryId}}" },
+                { "key": "page", "value": "999999" },
+                { "key": "pageSize", "value": "5" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "locale 不在白名单（回退英文仍成功）",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "lang", "value": "zh-Hant" }],
+            "url": {
+              "raw": "{{baseUrl}}/ce/pm/v1/api/event/list?categoryId={{categoryId}}&page=1&pageSize=2&locale=xx-Klingon",
+              "host": ["{{baseUrl}}"],
+              "path": ["ce", "pm", "v1", "api", "event", "list"],
+              "query": [
+                { "key": "categoryId", "value": "{{categoryId}}" },
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "2" },
+                { "key": "locale", "value": "xx-Klingon" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "eventStatus 小写（应规整为 TRADABLE）",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const r = pm.response.json().result;",
+                  "pm.test('小写 tradable 仍成功', () => pm.expect(pm.response.json().ret_code).to.eql(0));",
+                  "pm.test('list 为数组', () => pm.expect(r.list).to.be.an('array'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "lang", "value": "zh-Hant" }],
+            "url": {
+              "raw": "{{baseUrl}}/ce/pm/v1/api/event/list?categoryId={{categoryId}}&page=1&pageSize=3&eventStatus=tradable",
+              "host": ["{{baseUrl}}"],
+              "path": ["ce", "pm", "v1", "api", "event", "list"],
+              "query": [
+                { "key": "categoryId", "value": "{{categoryId}}" },
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "3" },
+                { "key": "eventStatus", "value": "tradable" }
               ]
             }
           }

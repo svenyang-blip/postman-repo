@@ -3,6 +3,9 @@
  * 从 Newman --reporter-json-export 的产物生成自包含中文 HTML（无外链 CDN）。
  * 用法：node scripts/newman-json-to-zh-html.mjs [输入.json] [输出.html]
  * 默认：reports/newman-event-list.json → reports/newman-summary-zh.html
+ *
+ * **后续新接口**：在下方 `API_REPORT_GROUPS` 追加一项（`pathIncludes` 为 URL 子串，按顺序首个匹配），
+ * 即可自动进入「汇总表 + 分节明细」；仍是一份 HTML、一次 Newman JSON。
  */
 import fs from "fs";
 import path from "path";
@@ -56,6 +59,26 @@ const failures = run.failures || [];
 
 const generatedAt = new Date().toLocaleString("zh-CN", { timeZone: "Asia/Shanghai" });
 
+/**
+ * 报告分组：自上而下首个 `pathIncludes` 命中即归入该组；未命中归入 `other`（须保持最后一项 id 为 other）。
+ * 新增接口：复制一行改 `id` / `pathIncludes` / `summaryLabel` 即可。
+ */
+const API_REPORT_GROUPS = [
+  {
+    id: "categories",
+    pathIncludes: "/ce/pm/v1/api/categories",
+    summaryLabel: "GET /ce/pm/v1/api/categories",
+  },
+  {
+    id: "eventList",
+    pathIncludes: "/ce/pm/v1/api/event/list",
+    summaryLabel: "GET /ce/pm/v1/api/event/list",
+  },
+  // 示例：后续接口并入同报告时在此追加，例如：
+  // { id: "config", pathIncludes: "/ce/pm/v1/api/config", summaryLabel: "GET /ce/pm/v1/api/config" },
+  { id: "other", pathIncludes: null, summaryLabel: "其它" },
+];
+
 const pass =
   (stats.assertions?.failed ?? 0) === 0 &&
   (stats.requests?.failed ?? 0) === 0 &&
@@ -107,26 +130,30 @@ for (const r of rows) {
   folderToRows.get(r.folder).push(r);
 }
 
-const failBlocks = failures.map((f, i) => {
-  const name = f.source?.name || f.error?.name || `失败项 ${i + 1}`;
-  const msg = f.error?.message || f.error?.test || JSON.stringify(f.error || f, null, 2);
-  return { name, msg };
-});
+function inferApiGroupId(url) {
+  const s = String(url);
+  for (const g of API_REPORT_GROUPS) {
+    if (g.id === "other") return "other";
+    if (g.pathIncludes && s.includes(g.pathIncludes)) return g.id;
+  }
+  return "other";
+}
 
-const folderSectionsHtml = folderOrder
-  .map((folder) => {
-    const list = folderToRows.get(folder);
-    const n = list.length;
-    const fails = list.reduce((acc, r) => acc + r.assertFail, 0);
-    const openFolder = fails > 0 ? " open" : "";
-    const inner = list
-      .map((r) => {
-        const openReq = r.assertFail > 0 ? " open" : "";
-        const failBadge = r.assertFail ? ` · <span class="bad">${r.assertFail} 失败</span>` : "";
-        return `<details class="details-req"${openReq}>
+function buildFolderSectionsHtml(folders) {
+  return folders
+    .map((folder) => {
+      const list = folderToRows.get(folder);
+      const n = list.length;
+      const fails = list.reduce((acc, r) => acc + r.assertFail, 0);
+      const openFolder = fails > 0 ? " open" : "";
+      const inner = list
+        .map((r) => {
+          const openReq = r.assertFail > 0 ? " open" : "";
+          const failBadge = r.assertFail ? ` · <span class="bad">${r.assertFail} 失败</span>` : "";
+          return `<details class="details-req"${openReq}>
       <summary><span class="sum-title">${esc(r.name)}</span><span class="sum-meta">HTTP ${esc(r.code)} · ${fmtResponseMs(
-          r.rt
-        )} · 断言 ${r.assertions.length} 条${failBadge}</span></summary>
+            r.rt
+          )} · 断言 ${r.assertions.length} 条${failBadge}</span></summary>
       <div class="details-body">
         <div class="meta">${esc(r.method)} · 响应体积 ${esc(r.size)} 字节</div>
         <div class="meta">${esc(r.url)}</div>
@@ -147,25 +174,111 @@ const folderSectionsHtml = folderOrder
         </table>
       </div>
     </details>`;
-      })
-      .join("\n");
-    const folderMeta =
-      fails > 0
-        ? `${n} 个用例 · <span class="bad">${fails} 条断言失败</span>`
-        : `${n} 个用例 · <span class="ok-inline">断言全过</span>`;
-    return `<details class="details-folder"${openFolder}>
+        })
+        .join("\n");
+      const folderMeta =
+        fails > 0
+          ? `${n} 个用例 · <span class="bad">${fails} 条断言失败</span>`
+          : `${n} 个用例 · <span class="ok-inline">断言全过</span>`;
+      return `<details class="details-folder"${openFolder}>
     <summary><span class="folder-title">${esc(folder)}</span><span class="folder-meta">${folderMeta}</span></summary>
     <div class="folder-inner">${inner}</div>
   </details>`;
-  })
-  .join("\n");
+    })
+    .join("\n");
+}
+
+const foldersByGroupId = Object.fromEntries(API_REPORT_GROUPS.map((g) => [g.id, []]));
+for (const folder of folderOrder) {
+  const list = folderToRows.get(folder);
+  const keys = new Set(list.map((r) => inferApiGroupId(r.url)));
+  if (keys.size === 1) {
+    const only = [...keys][0];
+    foldersByGroupId[only].push(folder);
+  } else {
+    foldersByGroupId.other.push(folder);
+  }
+}
+
+function aggregateByApi(rows) {
+  const agg = {};
+  for (const g of API_REPORT_GROUPS) {
+    agg[g.id] = { label: g.summaryLabel, reqs: 0, assertTotal: 0, assertFail: 0 };
+  }
+  for (const r of rows) {
+    const k = inferApiGroupId(r.url);
+    agg[k].reqs += 1;
+    agg[k].assertTotal += r.assertions.length;
+    agg[k].assertFail += r.assertFail;
+  }
+  return agg;
+}
+
+const byApi = aggregateByApi(rows);
+
+function summaryRow(g) {
+  const a = byApi[g.id];
+  if (!a || a.reqs === 0) return "";
+  const ok = a.assertFail === 0;
+  return `<tr>
+    <td><code>${esc(a.label)}</code></td>
+    <td>${a.reqs}</td>
+    <td>${a.assertTotal}</td>
+    <td>${a.assertFail > 0 ? `<span class="bad">${a.assertFail}</span>` : "0"}</td>
+    <td class="${ok ? "assert-ok" : "assert-bad"}">${ok ? "全通过" : "有失败"}</td>
+  </tr>`;
+}
+
+const summaryTableRows = API_REPORT_GROUPS.map((g) => summaryRow(g)).join("\n    ");
+
+const summaryTableHtml = `<table class="summary-api">
+  <thead><tr><th>接口</th><th>用例数</th><th>断言数</th><th>失败断言</th><th>结果</th></tr></thead>
+  <tbody>
+    ${summaryTableRows}
+  </tbody>
+</table>`;
+
+const CN_SECTION = "一二三四五六七八九十";
+
+function buildDetailSectionsHtml() {
+  const parts = [];
+  let n = 0;
+  for (const g of API_REPORT_GROUPS) {
+    if (g.id === "other") continue;
+    const block = buildFolderSectionsHtml(foldersByGroupId[g.id] || []);
+    const body = block.trim() ? block : '<p class="hint">（本运行无此类请求）</p>';
+    n += 1;
+    const num = n <= 10 ? `${CN_SECTION[n - 1]}、` : `${n}. `;
+    parts.push(`<section>
+    <h2>${num}${esc(g.summaryLabel)}</h2>
+    <p class="hint">按 Postman 文件夹折叠；含失败时对应块默认展开。</p>
+    ${body}
+  </section>`);
+  }
+  if ((foldersByGroupId.other || []).length) {
+    parts.push(`<section>
+    <h2>其它请求</h2>
+    <p class="hint">同一文件夹内混用多类 URL，或无法匹配上文路径前缀。</p>
+    ${buildFolderSectionsHtml(foldersByGroupId.other)}
+  </section>`);
+  }
+  return parts.join("\n\n");
+}
+
+const detailSectionsHtml = buildDetailSectionsHtml();
+
+const failBlocks = failures.map((f, i) => {
+  const name = f.source?.name || f.error?.name || `失败项 ${i + 1}`;
+  const msg = f.error?.message || f.error?.test || JSON.stringify(f.error || f, null, 2);
+  return { name, msg };
+});
 
 const html = `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Newman 运行报告 · ${esc(collectionName)}</title>
+  <title>Newman 合并报告 · ${esc(collectionName)}</title>
   <style>
     :root { --bg:#0f1419; --card:#1a2332; --text:#e6edf3; --muted:#8b9cb3; --ok:#3fb950; --bad:#f85149; --line:#30363d; }
     * { box-sizing: border-box; }
@@ -181,6 +294,11 @@ const html = `<!DOCTYPE html>
     .card .val { font-size:1.4rem; font-weight:700; }
     section { margin-top:28px; }
     section h2 { font-size:1.05rem; border-bottom:1px solid var(--line); padding-bottom:8px; margin-bottom:12px; }
+    .summary-api { width:100%; border-collapse:collapse; font-size:.9rem; margin-bottom:8px; background:var(--card); border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+    .summary-api th, .summary-api td { padding:12px 14px; border-bottom:1px solid var(--line); }
+    .summary-api th { color:var(--muted); font-weight:500; text-align:left; background:#161b22; }
+    .summary-api tr:last-child td, .summary-api tr:last-child th { border-bottom:none; }
+    .summary-api code { font-size:.85rem; }
     .hint { color:var(--muted); font-size:.82rem; margin:-8px 0 16px; }
     details.details-folder { border:1px solid var(--line); border-radius:10px; margin-bottom:12px; background:var(--card); }
     details.details-folder > summary {
@@ -220,10 +338,10 @@ const html = `<!DOCTYPE html>
   </style>
 </head>
 <body>
-  <h1>Newman 运行报告</h1>
+  <h1>Newman 合并报告（多接口）</h1>
   <div class="sub">集合：${esc(collectionName)} · Newman 结束时间（北京时间）：${esc(
     fmtTs(timings.completed)
-  )} · 本页生成：${esc(generatedAt)}</div>
+  )} · 本页生成：${esc(generatedAt)}<br/>同一次运行内，凡在 <code>scripts/newman-json-to-zh-html.mjs</code> 的 <code>API_REPORT_GROUPS</code> 中配置的路径，均汇总于本页；原始数据见 <code>reports/newman-event-list.json</code>。</div>
   <p><span class="badge ${pass ? "ok" : "bad"}">${pass ? "全部通过" : "存在失败"}</span></p>
 
   <div class="grid">
@@ -234,6 +352,12 @@ const html = `<!DOCTYPE html>
     <div class="card"><h3>失败断言</h3><div class="val">${stats.assertions?.failed ?? 0}</div></div>
     <div class="card"><h3>平均响应时间</h3><div class="val">${fmtResponseMs(timings.responseAverage)}</div></div>
   </div>
+
+  <section>
+    <h2>接口汇总</h2>
+    <p class="hint">按请求 URL 与配置表 <code>API_REPORT_GROUPS</code> 归类；下方为各接口分节明细，仍为<strong>一份</strong> HTML。</p>
+    ${summaryTableHtml}
+  </section>
 
   ${
     failBlocks.length
@@ -246,14 +370,10 @@ const html = `<!DOCTYPE html>
       : ""
   }
 
-  <section>
-    <h2>请求与断言明细</h2>
-    <p class="hint">同一接口下按 Postman 文件夹分组。点击<strong>文件夹标题</strong>或<strong>单条用例标题</strong>可展开 / 折叠；含失败断言的文件夹与用例会默认展开。</p>
-    ${folderSectionsHtml}
-  </section>
+  ${detailSectionsHtml}
 
   <footer>
-    由 postman-repo 脚本 <code>scripts/newman-json-to-zh-html.mjs</code> 根据 Newman JSON 导出自动生成；不依赖外网 CDN。
+    由 postman-repo <code>scripts/newman-json-to-zh-html.mjs</code> 根据单次 Newman JSON 导出生成<strong>合并</strong>报告；不依赖外网 CDN。
   </footer>
 </body>
 </html>`;
