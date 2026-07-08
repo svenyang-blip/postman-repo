@@ -44,10 +44,16 @@ npx --yes newman@6 --version
 
 ```bash
 npm run pm:event-list          # CLI + JSON + JUnit + 唯一中文 HTML（见下）
+npm run pm:admin-sync          # PmSyncController · testnet 网关（需 pm-admin-testnet.private.postman_environment.json）
+npm run pm:admin-sync:local    # 可选：直连本地 prediction-admin :8080
+npm run pm:admin-instant-product:local   # PmInstantProductController · 本地 :8080
+npm run pm:admin-instant-product:testnet # 同上 · testnet 网关（需 private 环境 Cookie）
+npm run pm:reports:index                 # 刷新 reports/index.html 汇总页
 npm run pm:report:zh           # 仅根据已有 JSON 重新生成中文 HTML（需先跑过 pm:event-list）
 ```
 
-- **`reports/newman-summary-zh.html`**：单次运行内 **`/categories` + `/event/list`** 合并为**一页**中文报告（含汇总表与分节明细）。详见 `reports/README.md`。
+- **`reports/index.html`**：所有 Controller 报告汇总入口
+- **`reports/controllers/*.html`**：每个 Controller 独立中文报告（用例要点 + 接口汇总 + 明细）
 
 全局安装（方式 B）时，等价命令示例：
 
@@ -91,8 +97,11 @@ https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?categoryId=30101&page=1&
 
 ## 集合文件
 
-- `postman/collections/pm-ce-testnet-event-list.postman_collection.json` — 对齐 Wiki 技术方案：**`GET /categories`** + **`GET /event/list`**，含边界/异常（约 **28** 个请求；不含「GET 误用 POST」）。
+- `postman/collections/pm-ce-testnet-event-list.postman_collection.json` — 对齐 Wiki 与 prediction-serv 源码：**`GET /categories`** + **`GET /event/list`**（`00 Setup` + A/B 共 **35** 个请求；含 `i18nName` / 列表 `rules` / `outcomes` key 等断言）。
+- `postman/collections/pm-admin-sync-controller.postman_collection.json` — **prediction-admin** `PmSyncController`：`/private/v1/pm/sync/*`（Setup + A/B/C，见 [`docs/pm-admin-sync-testing.md`](docs/pm-admin-sync-testing.md)）。
 
 ## 更完整的接口测试说明
 
 见 **[`docs/pm-event-list-testing.md`](docs/pm-event-list-testing.md)**：分层策略、环境变量、可继续扩展的方向（Schema、性能、数据对比等）。
+
+管理端同步接口见 **[`docs/pm-admin-sync-testing.md`](docs/pm-admin-sync-testing.md)**。

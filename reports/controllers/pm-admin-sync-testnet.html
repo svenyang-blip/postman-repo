@@ -1,0 +1,3102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PmSyncController · Newman 报告</title>
+  <style>
+    :root {
+      --bg: #f2f2f2; --surface: #fff; --border: #e5e5e5; --text: #333; --muted: #888;
+      --header: #1e293b; --passed: #16a34a; --failed: #dc2626; --accent: #2563eb;
+      --shadow: 0 1px 3px rgba(0,0,0,.08); --radius: 6px;
+    }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: ui-sans-serif, system-ui, "PingFang SC", "Microsoft YaHei", sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; font-size: 14px; }
+    .topbar { background: var(--header); color: #fff; padding: 16px clamp(16px,4vw,40px); }
+    .topbar h1 { margin: 0 0 4px; font-size: 1.3rem; }
+    .topbar .sub { color: rgba(255,255,255,.75); font-size: .85rem; }
+    .topbar a { color: #93c5fd; text-decoration: none; font-size: .85rem; }
+    .topbar a:hover { text-decoration: underline; }
+    .page { padding: 20px clamp(16px,4vw,40px) 48px; max-width: 1320px; margin: 0 auto; }
+    .widgets { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin-bottom: 20px; }
+    .widget { background: var(--surface); border-radius: var(--radius); padding: 12px 14px; border-left: 4px solid var(--accent); box-shadow: var(--shadow); }
+    .widget h3 { margin: 0 0 6px; font-size: .7rem; text-transform: uppercase; color: var(--muted); }
+    .widget .val { font-size: 1.5rem; font-weight: 700; }
+    .widget.passed { border-left-color: var(--passed); } .widget.passed .val { color: var(--passed); }
+    .widget.failed { border-left-color: var(--failed); } .widget.failed .val { color: var(--failed); }
+    .badge { display: inline-block; padding: 4px 12px; border-radius: 4px; font-size: .8rem; font-weight: 600; color: #fff; margin-bottom: 20px; }
+    .badge.ok { background: var(--passed); } .badge.bad { background: var(--failed); }
+    section { margin-top: 28px; }
+    section h2 { font-size: .92rem; font-weight: 600; text-transform: uppercase; color: var(--muted); margin: 0 0 12px; padding-bottom: 8px; border-bottom: 2px solid var(--border); }
+    .hint { color: var(--muted); font-size: .82rem; margin: -6px 0 12px; }
+    table { width: 100%; border-collapse: collapse; font-size: .86rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+    th, td { padding: 9px 11px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+    th { background: #fafafa; color: var(--muted); font-size: .72rem; text-transform: uppercase; font-weight: 600; }
+    tr:last-child td { border-bottom: none; }
+    tr.row-fail { background: #fff5f5; }
+    .row-folder { font-size: .75rem; color: var(--muted); }
+    .api-code { font-size: .78rem; word-break: break-all; }
+    .focus-cell .kv { display: inline-block; margin: 2px 6px 2px 0; padding: 2px 6px; background: #f3f4f6; border-radius: 4px; font-size: .78rem; }
+    .focus-cell .kv.important { background: #eff6ff; border: 1px solid #bfdbfe; }
+    .focus-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: var(--radius); padding: 10px 12px; margin-bottom: 10px; }
+    .focus-title { font-size: .72rem; font-weight: 600; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+    .kv-grid .kv { display: inline-block; margin: 3px 8px 3px 0; font-size: .82rem; }
+    .kv-grid .kv.important b { color: var(--accent); }
+    .summary-api code { font-size: .82rem; }
+    details.details-folder, details.details-req { border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 8px; background: var(--surface); box-shadow: var(--shadow); }
+    details > summary { list-style: none; cursor: pointer; padding: 10px 14px; display: flex; flex-wrap: wrap; gap: 8px 14px; user-select: none; background: #fafafa; }
+    details[open] > summary { border-bottom: 1px solid var(--border); }
+    details > summary::-webkit-details-marker { display: none; }
+    details > summary::before { content: "▸"; color: var(--muted); margin-right: 6px; transition: transform .15s; }
+    details[open] > summary::before { transform: rotate(90deg); }
+    .folder-inner { padding: 8px 10px 10px; }
+    details.details-req { margin-left: 10px; }
+    .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+    .status-dot.passed { background: var(--passed); } .status-dot.failed { background: var(--failed); }
+    .sum-meta, .folder-meta, .meta { color: var(--muted); font-size: .8rem; }
+    .sum-title { font-weight: 600; }
+    .details-body { padding: 12px; }
+    .payload { max-height: 280px; overflow: auto; background: #f8f8f8; border: 1px solid var(--border); border-radius: var(--radius); padding: 10px; font-size: .78rem; white-space: pre-wrap; word-break: break-word; }
+    .payload-label { font-size: .7rem; font-weight: 600; color: var(--muted); margin: 10px 0 4px; text-transform: uppercase; }
+    .fail-card { border-left: 4px solid var(--failed); background: #fff5f5; padding: 12px; margin-bottom: 10px; border-radius: var(--radius); }
+    .assert-ok { color: var(--passed); font-weight: 600; }
+    .assert-bad { color: var(--failed); font-weight: 600; }
+    .bad { color: var(--failed); font-weight: 600; }
+    .ok-inline { color: var(--passed); }
+    .muted { color: var(--muted); }
+    footer { margin-top: 28px; padding-top: 14px; border-top: 1px solid var(--border); color: var(--muted); font-size: .78rem; }
+    footer a { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <p><a href="../index.html">← 返回汇总</a></p>
+    <h1>PmSyncController</h1>
+    <div class="sub">管理端同步运营 · testnet 网关 · PM Admin · PmSyncController · /private/v1/pm/sync · 生成 2026/7/8 11:41:20</div>
+  </div>
+  <div class="page">
+    <div class="widgets">
+      <div class="widget"><h3>请求</h3><div class="val">31</div></div>
+      <div class="widget"><h3>断言</h3><div class="val">67</div></div>
+      <div class="widget failed"><h3>失败断言</h3><div class="val">40</div></div>
+      <div class="widget"><h3>平均耗时</h3><div class="val" style="font-size:1rem">818 ms</div></div>
+    </div>
+    <span class="badge bad">存在失败</span>
+
+    <section>
+      <h2>用例一览（测试要点）</h2>
+      <p class="hint">点击用例名跳转明细；<code>ret_code</code> 与 <code>result</code> 关键字段已提取。</p>
+      <table class="case-overview">
+        <thead><tr>
+          <th>#</th><th>用例</th><th>API</th><th>HTTP</th><th>ret_code</th>
+          <th>测试要点</th><th>断言</th><th>失败</th><th>耗时</th>
+        </tr></thead>
+        <tbody><tr class="row-fail">
+    <td>1</td>
+    <td><a href="#req-1">S01 拉取 setting 缓存初始值</a><div class="row-folder">00 Setup</div></td>
+    <td><code class="api-code">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/setting</code></td>
+    <td>200</td>
+    <td>—</td>
+    <td class="focus-cell"><span class="muted">—</span></td>
+    <td>2</td>
+    <td class="assert-bad">1</td>
+    <td>2643 ms</td>
+  </tr>
+<tr class="row-fail">
+    <td>2</td>
+    <td><a href="#req-2">S02 GET /sync/events tab=MANUAL 解析 stagingId</a><div class="row-folder">00 Setup</div></td>
+    <td><code class="api-code">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events?tab=MANUAL&amp;page=1&amp;pageSize=10</code></td>
+    <td>200</td>
+    <td>—</td>
+    <td class="focus-cell"><span class="muted">—</span></td>
+    <td>2</td>
+    <td class="assert-bad">1</td>
+    <td>851 ms</td>
+  </tr>
+<tr class="row-fail">
+    <td>3</td>
+    <td><a href="#req-3">S03 GET /sync/events tab=ONLINE 解析 stagingIdForEdit</a><div class="row-folder">00 Setup</div></td>
+    <td><code class="api-code">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events?tab=ONLINE&amp;page=1&amp;pageSize=10</code></td>
+    <td>200</td>
+    <td>—</td>
+    <td class="focus-cell"><span class="muted">—</span></td>
+    <td>2</td>
+    <td class="assert-bad">1</td>
+    <td>798 ms</td>
+  </tr>
+<tr class="row-fail">
+    <td>4</td>
+    <td><a href="#req-4">S04 GET /sync/events tab=BLOCKED 解析 stagingIdBlocked</a><div class="row-folder">00 Setup</div></td>
+    <td><code class="api-code">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events?tab=BLOCKED&amp;page=1&amp;pageSize=5</code></td>
+    <td>200</td>
+    <td>—</td>
+    <td class="focus-cell"><span class="muted">—</span></td>
+    <td>2</td>
+    <td class="assert-bad">1</td>
+    <td>865 ms</td>
+  </tr>
+<tr class="row-fail">
+    <td>5</td>
+    <td><a href="#req-5">S05 回退拉取 /events（ONLINE 无 eventId 时）</a><div class="row-folder">00 Setup</div></td>
+    <td><code class="api-code">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/events?page=1&amp;pageSize=20</code></td>
+    <td>200</td>
+    <td>—</td>
+    <td class="focus-cell"><span class="muted">—</span></td>
+    <td>2</td>
+    <td class="assert-bad">1</td>
+    <td>833 ms</td>
+  </tr>
+<tr class="row-fail">
+    <td>6</td>
+    <td><a href="#req-6">S06 回退拉取叶子分类 leafCategoryId</a><div class="row-folder">00 Setup</div></td>
+    <td><code class="api-code">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/categories/tree</code></td>
+    <td>200</td>
+    <td>—</td>
+    <td class="focus-cell"><span class="muted">—</span></td>
+    <td>2</td>
+    <td class="assert-bad">1</td>
+    <td>625 ms</td>
+  </tr>
+<tr class="row-fail">
+    <td>7</td>
+    <td><a href="#req-7">A01 GET /sync/setting</a><div class="row-folder">A · GET 正向 [ok]</div></td>
+    <td><code class="api-code">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/setting</code></td>
+    <td>200</td>
+    <td>—</td>
+    <td class="focus-cell"><span class="muted">—</span></td>
+    <td>2</td>
+    <td class="assert-bad">1</td>
+    <td>670 ms</td>
+  </tr>
+<tr class="row-fail">
+    <td>8</td>
+    <td><a href="#req-8">A02 GET /sync/stat-cards</a><div class="row-folder">A · GET 正向 [ok]</div></td>
+    <td><code class="api-code">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/stat-cards</code></td>
+    <td>200</td>
+    <td>—</td>
+    <td class="focus-cell"><span class="muted">—</span></td>
+    <td>2</td>
+    <td class="assert-bad">1</td>
+    <td>609 ms</td>
+  </tr>
+<tr class="row-fail">
+    <td>9</td>
+    <td><a href="#req-9">A03 GET /sync/events tab=MANUAL</a><div class="row-folder">A · GET 正向 [ok]</div></td>
+    <td><code class="api-code">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events?tab=MANUAL&amp;page=1&amp;pageSize=5</code></td>
+    <td>200</td>
+    <td>—</td>
+    <td class="focus-cell"><span class="muted">—</span></td>
+    <td>2</td>
+    <td class="assert-bad">1</td>
+    <td>791 ms</td>
+  </tr>
+<tr class="row-fail">
+    <td>10</td>
+    <td><a href="#req-10">B01 switch 缺 X-Operator → 10001</a><div class="row-folder">B · 参数校验 [err]</div></td>
+    <td><code class="api-code">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/setting/switch</code></td>
+    <td>200</td>
+    <td>—</td>
+    <td class="focus-cell"><span class="muted">—</span></td>
+    <td>2</td>
+    <td class="assert-bad">1</td>
+    <td>858 ms</td>
+  </tr>
+<tr class="row-fail">
+    <td>11</td>
+    <td><a href="#req-11">B02 switch 缺 enabled → HTTP 400</a><div class="row-folder">B · 参数校验 [err]</div></td>
+    <td><code class="api-code">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/setting/switch</code></td>
+    <td>200</td>
+    <td>—</td>
+    <td class="focus-cell"><span class="muted">—</span></td>
+    <td>2</td>
+    <td class="assert-bad">2</td>
+    <td>784 ms</td>
+  </tr>
+<tr class="row-fail">
+    <td>12</td>
+    <td><a href="#req-12">B03 threshold volumeThreshold=0 → HTTP 400</a><div class="row-folder">B · 参数校验 [err]</div></td>
+    <td><code class="api-code">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/setting/threshold</code></td>
+    <td>200</td>
+    <td>—</td>
+    <td class="focus-cell"><span class="muted">—</span></td>
+    <td>2</td>
+    <td class="assert-bad">2</td>
+    <td>832 ms</td>
+  </tr>
+<tr class="row-fail">
+    <td>13</td>
+    <td><a href="#req-13">B04 intercept 空 stagingIds → HTTP 400</a><div class="row-folder">B · 参数校验 [err]</div></td>
+    <td><code class="api-code">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events/intercept/batch</code></td>
+    <td>200</td>
+    <td>—</td>
+    <td class="focus-cell"><span class="muted">—</span></td>
+    <td>2</td>
+    <td class="assert-bad">2</td>
+    <td>857 ms</td>
+  </tr>
+<tr class="row-fail">
+    <td>14</td>
+    <td><a href="#req-14">B05 intercept 缺 operator → 10001</a><div class="row-folder">B · 参数校验 [err]</div></td>
+    <td><code class="api-code">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events/intercept/batch</code></td>
+    <td>200</td>
+    <td>—</td>
+    <td class="focus-cell"><span class="muted">—</span></td>
+    <td>2</td>
+    <td class="assert-bad">1</td>
+    <td>661 ms</td>
+  </tr>
+<tr class="row-fail">
+    <td>15</td>
+    <td><a href="#req-15">B06 online batch 缺 items → HTTP 400</a><div class="row-folder">B · 参数校验 [err]</div></td>
+    <td><code class="api-code">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events/online/batch</code></td>
+    <td>200</td>
+    <td>—</td>
+    <td class="focus-cell"><span class="muted">—</span></td>
+    <td>2</td>
+    <td class="assert-bad">2</td>
+    <td>792 ms</td>
+  </tr>
+<tr class="row-fail">
+    <td>16</td>
+    <td><a href="#req-16">B07 offline 缺 operator → 10001</a><div class="row-folder">B · 参数校验 [err]</div></td>
+    <td><code class="api-code">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events/offline/batch</code></td>
+    <td>200</td>
+    <td>—</td>
+    <td class="focus-cell"><span class="muted">—</span></td>
+    <td>3</td>
+    <td class="assert-bad">2</td>
+    <td>584 ms</td>
+  </tr>
+<tr class="row-fail">
+    <td>17</td>
+    <td><a href="#req-17">B08 edit 缺 operator → 10001</a><div class="row-folder">B · 参数校验 [err]</div></td>
+    <td><code class="api-code">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events/edit</code></td>
+    <td>200</td>
+    <td>—</td>
+    <td class="focus-cell"><span class="muted">—</span></td>
+    <td>3</td>
+    <td class="assert-bad">2</td>
+    <td>793 ms</td>
+  </tr>
+<tr class="row-fail">
+    <td>18</td>
+    <td><a href="#req-18">B09 restore 缺 operator → 10001</a><div class="row-folder">B · 参数校验 [err]</div></td>
+    <td><code class="api-code">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events/restore/batch</code></td>
+    <td>200</td>
+    <td>—</td>
+    <td class="focus-cell"><span class="muted">—</span></td>
+    <td>3</td>
+    <td class="assert-bad">2</td>
+    <td>657 ms</td>
+  </tr>
+<tr class="row-fail">
+    <td>19</td>
+    <td><a href="#req-19">B10 GET /sync/events 缺 tab → 10001</a><div class="row-folder">B · 参数校验 [err]</div></td>
+    <td><code class="api-code">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events?page=1&amp;pageSize=5</code></td>
+    <td>200</td>
+    <td>—</td>
+    <td class="focus-cell"><span class="muted">—</span></td>
+    <td>3</td>
+    <td class="assert-bad">2</td>
+    <td>869 ms</td>
+  </tr>
+<tr class="row-fail">
+    <td>20</td>
+    <td><a href="#req-20">B11 bootstrap 缺 operator → 10001</a><div class="row-folder">B · 参数校验 [err]</div></td>
+    <td><code class="api-code">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events/bootstrap</code></td>
+    <td>200</td>
+    <td>—</td>
+    <td class="focus-cell"><span class="muted">—</span></td>
+    <td>3</td>
+    <td class="assert-bad">2</td>
+    <td>690 ms</td>
+  </tr>
+<tr class="row-fail">
+    <td>21</td>
+    <td><a href="#req-21">B12 GET /sync/events 非法 tab → 10001</a><div class="row-folder">B · 参数校验 [err]</div></td>
+    <td><code class="api-code">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events?tab=UNKNOWN&amp;page=1&amp;pageSize=5</code></td>
+    <td>200</td>
+    <td>—</td>
+    <td class="focus-cell"><span class="muted">—</span></td>
+    <td>2</td>
+    <td class="assert-bad">1</td>
+    <td>632 ms</td>
+  </tr>
+<tr class="row-fail">
+    <td>22</td>
+    <td><a href="#req-22">C01 batch intercept 不存在 stagingId</a><div class="row-folder">C · 边界与异常</div></td>
+    <td><code class="api-code">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events/intercept/batch</code></td>
+    <td>200</td>
+    <td>—</td>
+    <td class="focus-cell"><span class="muted">—</span></td>
+    <td>2</td>
+    <td class="assert-bad">1</td>
+    <td>637 ms</td>
+  </tr>
+<tr class="row-fail">
+    <td>23</td>
+    <td><a href="#req-23">C02 batch online 不存在 stagingId</a><div class="row-folder">C · 边界与异常</div></td>
+    <td><code class="api-code">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events/online/batch</code></td>
+    <td>200</td>
+    <td>—</td>
+    <td class="focus-cell"><span class="muted">—</span></td>
+    <td>2</td>
+    <td class="assert-bad">1</td>
+    <td>837 ms</td>
+  </tr>
+<tr class="row-fail">
+    <td>24</td>
+    <td><a href="#req-24">C03 batch offline 不存在 eventId</a><div class="row-folder">C · 边界与异常</div></td>
+    <td><code class="api-code">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events/offline/batch</code></td>
+    <td>200</td>
+    <td>—</td>
+    <td class="focus-cell"><span class="muted">—</span></td>
+    <td>2</td>
+    <td class="assert-bad">1</td>
+    <td>794 ms</td>
+  </tr>
+<tr class="row-fail">
+    <td>25</td>
+    <td><a href="#req-25">C04 edit 不存在 stagingId</a><div class="row-folder">C · 边界与异常</div></td>
+    <td><code class="api-code">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events/edit</code></td>
+    <td>200</td>
+    <td>—</td>
+    <td class="focus-cell"><span class="muted">—</span></td>
+    <td>2</td>
+    <td class="assert-bad">1</td>
+    <td>603 ms</td>
+  </tr>
+<tr class="row-fail">
+    <td>26</td>
+    <td><a href="#req-26">C05 batch restore 不存在 stagingId</a><div class="row-folder">C · 边界与异常</div></td>
+    <td><code class="api-code">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events/restore/batch</code></td>
+    <td>200</td>
+    <td>—</td>
+    <td class="focus-cell"><span class="muted">—</span></td>
+    <td>2</td>
+    <td class="assert-bad">1</td>
+    <td>818 ms</td>
+  </tr>
+<tr class="row-fail">
+    <td>27</td>
+    <td><a href="#req-27">D01 switch 切换后 GET 校验并还原</a><div class="row-folder">D · POST 正向 [ok]</div></td>
+    <td><code class="api-code">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/setting/switch</code></td>
+    <td>200</td>
+    <td>—</td>
+    <td class="focus-cell"><span class="muted">—</span></td>
+    <td>2</td>
+    <td class="assert-bad">1</td>
+    <td>906 ms</td>
+  </tr>
+<tr class="row-fail">
+    <td>28</td>
+    <td><a href="#req-28">D01b switch 还原初始值</a><div class="row-folder">D · POST 正向 [ok]</div></td>
+    <td><code class="api-code">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/setting/switch</code></td>
+    <td>200</td>
+    <td>—</td>
+    <td class="focus-cell"><span class="muted">—</span></td>
+    <td>2</td>
+    <td class="assert-bad">1</td>
+    <td>784 ms</td>
+  </tr>
+<tr class="row-fail">
+    <td>29</td>
+    <td><a href="#req-29">D02 threshold 更新后 GET 校验并还原</a><div class="row-folder">D · POST 正向 [ok]</div></td>
+    <td><code class="api-code">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/setting/threshold</code></td>
+    <td>200</td>
+    <td>—</td>
+    <td class="focus-cell"><span class="muted">—</span></td>
+    <td>2</td>
+    <td class="assert-bad">1</td>
+    <td>617 ms</td>
+  </tr>
+<tr class="row-fail">
+    <td>30</td>
+    <td><a href="#req-30">D02b threshold 还原初始值</a><div class="row-folder">D · POST 正向 [ok]</div></td>
+    <td><code class="api-code">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/setting/threshold</code></td>
+    <td>200</td>
+    <td>—</td>
+    <td class="focus-cell"><span class="muted">—</span></td>
+    <td>2</td>
+    <td class="assert-bad">1</td>
+    <td>851 ms</td>
+  </tr>
+<tr class="row-fail">
+    <td>31</td>
+    <td><a href="#req-31">D08 bootstrap 限流正向 maxBatches=1</a><div class="row-folder">D · POST 正向 [ok]</div></td>
+    <td><code class="api-code">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events/bootstrap</code></td>
+    <td>200</td>
+    <td>—</td>
+    <td class="focus-cell"><span class="muted">—</span></td>
+    <td>2</td>
+    <td class="assert-bad">1</td>
+    <td>826 ms</td>
+  </tr></tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>接口汇总</h2>
+      <table class="summary-api">
+        <thead><tr><th>接口</th><th>用例</th><th>断言</th><th>失败</th><th>结果</th></tr></thead>
+        <tbody><tr>
+    <td><code>sync/setting</code></td>
+    <td>9</td>
+    <td>18</td>
+    <td><span class="bad">11</span></td>
+    <td class="assert-bad">有失败</td>
+  </tr>
+<tr>
+    <td><code>sync/stat-cards</code></td>
+    <td>1</td>
+    <td>2</td>
+    <td><span class="bad">1</span></td>
+    <td class="assert-bad">有失败</td>
+  </tr>
+<tr>
+    <td><code>GET /sync/events</code></td>
+    <td>6</td>
+    <td>13</td>
+    <td><span class="bad">7</span></td>
+    <td class="assert-bad">有失败</td>
+  </tr>
+<tr>
+    <td><code>sync/events/* POST</code></td>
+    <td>13</td>
+    <td>30</td>
+    <td><span class="bad">19</span></td>
+    <td class="assert-bad">有失败</td>
+  </tr>
+
+<tr>
+    <td><code>categories</code></td>
+    <td>1</td>
+    <td>2</td>
+    <td><span class="bad">1</span></td>
+    <td class="assert-bad">有失败</td>
+  </tr>
+<tr>
+    <td><code>GET /events</code></td>
+    <td>1</td>
+    <td>2</td>
+    <td><span class="bad">1</span></td>
+    <td class="assert-bad">有失败</td>
+  </tr>
+</tbody>
+      </table>
+    </section>
+
+    <section><h2>失败详情</h2><div class="fail-card"><strong>S01 拉取 setting 缓存初始值</strong><pre class="payload">响应为 HTML 而非 JSON API</pre></div><div class="fail-card"><strong>S01 拉取 setting 缓存初始值</strong><pre class="payload">Unexpected token '&lt;' at 1:1
+&lt;!DOCTYPE html&gt;
+^</pre></div><div class="fail-card"><strong>S02 GET /sync/events tab=MANUAL 解析 stagingId</strong><pre class="payload">响应为 HTML 而非 JSON API</pre></div><div class="fail-card"><strong>S02 GET /sync/events tab=MANUAL 解析 stagingId</strong><pre class="payload">Unexpected token '&lt;' at 1:1
+&lt;!DOCTYPE html&gt;
+^</pre></div><div class="fail-card"><strong>S03 GET /sync/events tab=ONLINE 解析 stagingIdForEdit</strong><pre class="payload">响应为 HTML 而非 JSON API</pre></div><div class="fail-card"><strong>S03 GET /sync/events tab=ONLINE 解析 stagingIdForEdit</strong><pre class="payload">Unexpected token '&lt;' at 1:1
+&lt;!DOCTYPE html&gt;
+^</pre></div><div class="fail-card"><strong>S04 GET /sync/events tab=BLOCKED 解析 stagingIdBlocked</strong><pre class="payload">响应为 HTML 而非 JSON API</pre></div><div class="fail-card"><strong>S04 GET /sync/events tab=BLOCKED 解析 stagingIdBlocked</strong><pre class="payload">Unexpected token '&lt;' at 1:1
+&lt;!DOCTYPE html&gt;
+^</pre></div><div class="fail-card"><strong>S05 回退拉取 /events（ONLINE 无 eventId 时）</strong><pre class="payload">响应为 HTML 而非 JSON API</pre></div><div class="fail-card"><strong>S05 回退拉取 /events（ONLINE 无 eventId 时）</strong><pre class="payload">Unexpected token '&lt;' at 1:1
+&lt;!DOCTYPE html&gt;
+^</pre></div><div class="fail-card"><strong>S06 回退拉取叶子分类 leafCategoryId</strong><pre class="payload">响应为 HTML 而非 JSON API</pre></div><div class="fail-card"><strong>S06 回退拉取叶子分类 leafCategoryId</strong><pre class="payload">Unexpected token '&lt;' at 1:1
+&lt;!DOCTYPE html&gt;
+^</pre></div><div class="fail-card"><strong>A01 GET /sync/setting</strong><pre class="payload">响应为 HTML 而非 JSON API</pre></div><div class="fail-card"><strong>A01 GET /sync/setting</strong><pre class="payload">Unexpected token '&lt;' at 1:1
+&lt;!DOCTYPE html&gt;
+^</pre></div><div class="fail-card"><strong>A02 GET /sync/stat-cards</strong><pre class="payload">响应为 HTML 而非 JSON API</pre></div><div class="fail-card"><strong>A02 GET /sync/stat-cards</strong><pre class="payload">Unexpected token '&lt;' at 1:1
+&lt;!DOCTYPE html&gt;
+^</pre></div><div class="fail-card"><strong>A03 GET /sync/events tab=MANUAL</strong><pre class="payload">响应为 HTML 而非 JSON API</pre></div><div class="fail-card"><strong>A03 GET /sync/events tab=MANUAL</strong><pre class="payload">Unexpected token '&lt;' at 1:1
+&lt;!DOCTYPE html&gt;
+^</pre></div><div class="fail-card"><strong>B01 switch 缺 X-Operator → 10001</strong><pre class="payload">响应为 HTML 而非 JSON API</pre></div><div class="fail-card"><strong>B01 switch 缺 X-Operator → 10001</strong><pre class="payload">Unexpected token '&lt;' at 1:1
+&lt;!DOCTYPE html&gt;
+^</pre></div><div class="fail-card"><strong>B02 switch 缺 enabled → HTTP 400</strong><pre class="payload">响应为 HTML 而非 JSON API</pre></div><div class="fail-card"><strong>B02 switch 缺 enabled → HTTP 400</strong><pre class="payload">expected response to have status code 400 but got 200</pre></div><div class="fail-card"><strong>B02 switch 缺 enabled → HTTP 400</strong><pre class="payload">Unexpected token '&lt;' at 1:1
+&lt;!DOCTYPE html&gt;
+^</pre></div><div class="fail-card"><strong>B03 threshold volumeThreshold=0 → HTTP 400</strong><pre class="payload">响应为 HTML 而非 JSON API</pre></div><div class="fail-card"><strong>B03 threshold volumeThreshold=0 → HTTP 400</strong><pre class="payload">expected response to have status code 400 but got 200</pre></div><div class="fail-card"><strong>B03 threshold volumeThreshold=0 → HTTP 400</strong><pre class="payload">Unexpected token '&lt;' at 1:1
+&lt;!DOCTYPE html&gt;
+^</pre></div><div class="fail-card"><strong>B04 intercept 空 stagingIds → HTTP 400</strong><pre class="payload">响应为 HTML 而非 JSON API</pre></div><div class="fail-card"><strong>B04 intercept 空 stagingIds → HTTP 400</strong><pre class="payload">expected response to have status code 400 but got 200</pre></div><div class="fail-card"><strong>B04 intercept 空 stagingIds → HTTP 400</strong><pre class="payload">Unexpected token '&lt;' at 1:1
+&lt;!DOCTYPE html&gt;
+^</pre></div><div class="fail-card"><strong>B05 intercept 缺 operator → 10001</strong><pre class="payload">响应为 HTML 而非 JSON API</pre></div><div class="fail-card"><strong>B05 intercept 缺 operator → 10001</strong><pre class="payload">Unexpected token '&lt;' at 1:1
+&lt;!DOCTYPE html&gt;
+^</pre></div><div class="fail-card"><strong>B06 online batch 缺 items → HTTP 400</strong><pre class="payload">响应为 HTML 而非 JSON API</pre></div><div class="fail-card"><strong>B06 online batch 缺 items → HTTP 400</strong><pre class="payload">expected response to have status code 400 but got 200</pre></div><div class="fail-card"><strong>B06 online batch 缺 items → HTTP 400</strong><pre class="payload">Unexpected token '&lt;' at 1:1
+&lt;!DOCTYPE html&gt;
+^</pre></div><div class="fail-card"><strong>B07 offline 缺 operator → 10001</strong><pre class="payload">响应为 HTML 而非 JSON API</pre></div><div class="fail-card"><strong>B07 offline 缺 operator → 10001</strong><pre class="payload">Unexpected token '&lt;' at 1:1
+&lt;!DOCTYPE html&gt;
+^</pre></div><div class="fail-card"><strong>B08 edit 缺 operator → 10001</strong><pre class="payload">响应为 HTML 而非 JSON API</pre></div><div class="fail-card"><strong>B08 edit 缺 operator → 10001</strong><pre class="payload">Unexpected token '&lt;' at 1:1
+&lt;!DOCTYPE html&gt;
+^</pre></div><div class="fail-card"><strong>B09 restore 缺 operator → 10001</strong><pre class="payload">响应为 HTML 而非 JSON API</pre></div><div class="fail-card"><strong>B09 restore 缺 operator → 10001</strong><pre class="payload">Unexpected token '&lt;' at 1:1
+&lt;!DOCTYPE html&gt;
+^</pre></div><div class="fail-card"><strong>B10 GET /sync/events 缺 tab → 10001</strong><pre class="payload">响应为 HTML 而非 JSON API</pre></div><div class="fail-card"><strong>B10 GET /sync/events 缺 tab → 10001</strong><pre class="payload">Unexpected token '&lt;' at 1:1
+&lt;!DOCTYPE html&gt;
+^</pre></div><div class="fail-card"><strong>B11 bootstrap 缺 operator → 10001</strong><pre class="payload">响应为 HTML 而非 JSON API</pre></div><div class="fail-card"><strong>B11 bootstrap 缺 operator → 10001</strong><pre class="payload">Unexpected token '&lt;' at 1:1
+&lt;!DOCTYPE html&gt;
+^</pre></div><div class="fail-card"><strong>B12 GET /sync/events 非法 tab → 10001</strong><pre class="payload">响应为 HTML 而非 JSON API</pre></div><div class="fail-card"><strong>B12 GET /sync/events 非法 tab → 10001</strong><pre class="payload">Unexpected token '&lt;' at 1:1
+&lt;!DOCTYPE html&gt;
+^</pre></div><div class="fail-card"><strong>C01 batch intercept 不存在 stagingId</strong><pre class="payload">响应为 HTML 而非 JSON API</pre></div><div class="fail-card"><strong>C01 batch intercept 不存在 stagingId</strong><pre class="payload">Unexpected token '&lt;' at 1:1
+&lt;!DOCTYPE html&gt;
+^</pre></div><div class="fail-card"><strong>C02 batch online 不存在 stagingId</strong><pre class="payload">响应为 HTML 而非 JSON API</pre></div><div class="fail-card"><strong>C02 batch online 不存在 stagingId</strong><pre class="payload">Unexpected token '&lt;' at 1:1
+&lt;!DOCTYPE html&gt;
+^</pre></div><div class="fail-card"><strong>C03 batch offline 不存在 eventId</strong><pre class="payload">响应为 HTML 而非 JSON API</pre></div><div class="fail-card"><strong>C03 batch offline 不存在 eventId</strong><pre class="payload">Unexpected token '&lt;' at 1:1
+&lt;!DOCTYPE html&gt;
+^</pre></div><div class="fail-card"><strong>C04 edit 不存在 stagingId</strong><pre class="payload">响应为 HTML 而非 JSON API</pre></div><div class="fail-card"><strong>C04 edit 不存在 stagingId</strong><pre class="payload">Unexpected token '&lt;' at 1:1
+&lt;!DOCTYPE html&gt;
+^</pre></div><div class="fail-card"><strong>C05 batch restore 不存在 stagingId</strong><pre class="payload">响应为 HTML 而非 JSON API</pre></div><div class="fail-card"><strong>C05 batch restore 不存在 stagingId</strong><pre class="payload">Unexpected token '&lt;' at 1:1
+&lt;!DOCTYPE html&gt;
+^</pre></div><div class="fail-card"><strong>D01 switch 切换后 GET 校验并还原</strong><pre class="payload">响应为 HTML 而非 JSON API</pre></div><div class="fail-card"><strong>D01 switch 切换后 GET 校验并还原</strong><pre class="payload">Unexpected token '&lt;' at 1:1
+&lt;!DOCTYPE html&gt;
+^</pre></div><div class="fail-card"><strong>D01b switch 还原初始值</strong><pre class="payload">响应为 HTML 而非 JSON API</pre></div><div class="fail-card"><strong>D01b switch 还原初始值</strong><pre class="payload">Unexpected token '&lt;' at 1:1
+&lt;!DOCTYPE html&gt;
+^</pre></div><div class="fail-card"><strong>D02 threshold 更新后 GET 校验并还原</strong><pre class="payload">响应为 HTML 而非 JSON API</pre></div><div class="fail-card"><strong>D02 threshold 更新后 GET 校验并还原</strong><pre class="payload">Unexpected token '&lt;' at 1:1
+&lt;!DOCTYPE html&gt;
+^</pre></div><div class="fail-card"><strong>D02b threshold 还原初始值</strong><pre class="payload">响应为 HTML 而非 JSON API</pre></div><div class="fail-card"><strong>D02b threshold 还原初始值</strong><pre class="payload">Unexpected token '&lt;' at 1:1
+&lt;!DOCTYPE html&gt;
+^</pre></div><div class="fail-card"><strong>D08 bootstrap 限流正向 maxBatches=1</strong><pre class="payload">响应为 HTML 而非 JSON API</pre></div><div class="fail-card"><strong>D08 bootstrap 限流正向 maxBatches=1</strong><pre class="payload">Unexpected token '&lt;' at 1:1
+&lt;!DOCTYPE html&gt;
+^</pre></div></section>
+
+    <section><h2>分节明细</h2><section id="api-syncSetting">
+    <h2>一、sync/setting</h2>
+    <p class="hint">（本运行无此类请求）</p>
+  </section>
+
+<section id="api-syncStatCards">
+    <h2>二、sync/stat-cards</h2>
+    <p class="hint">（本运行无此类请求）</p>
+  </section>
+
+<section id="api-syncEventsList">
+    <h2>三、GET /sync/events</h2>
+    <p class="hint">（本运行无此类请求）</p>
+  </section>
+
+<section id="api-syncEvents">
+    <h2>四、sync/events/* POST</h2>
+    <details class="details-folder" open>
+    <summary><span class="folder-title">C · 边界与异常</span><span class="folder-meta">5 个用例 · <span class="bad">5 条断言失败</span></span></summary>
+    <div class="folder-inner"><details class="details-req" id="req-22" open>
+      <summary><span class="sum-title"><span class="status-dot failed"></span>C01 batch intercept 不存在 stagingId</span><span class="sum-meta">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events/intercept/batch · HTTP 200 · 637 ms · <span class="bad">1 失败</span></span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="muted">—</span></div>
+        </div>
+        <div class="meta">响应体积 34286 字节</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events/intercept/batch</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">POST https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events/intercept/batch
+Content-Type: application/json
+X-Operator: sven.yang
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/sync-operation-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Google Chrome&quot;;v=&quot;149&quot;, &quot;Chromium&quot;;v=&quot;149&quot;, &quot;Not)A;Brand&quot;;v=&quot;24&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
+Accept-Language: zh-CN,zh;q=0.9
+
+{
+  &quot;stagingIds&quot;: [
+    999999999
+  ],
+  &quot;reason&quot;: &quot;postman-cli&quot;
+}</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: text/html;charset=utf-8
+
+&lt;!DOCTYPE html&gt;
+&lt;!--[if IE 7]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9 lt-ie8&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if IE 8]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9&quot;&gt; &lt;![endif]--&gt;
+&lt;!--[if IE 9]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if gt IE 9]&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if !IE]&gt;&lt;!--&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;!--&lt;![endif]--&gt;
+&lt;head&gt;
+    &lt;meta charset=&quot;UTF-8&quot;&gt;
+
+    &lt;script nonce=&quot;nlUksQvR9z9TxMoge9nbrQ&quot;&gt;if (typeof module === 'object') {window.module = module; module = undefined;}&lt;/script&gt;&lt;style type=&quot;text/css&quot; nonce=&quot;nlUksQvR9z9TxMoge9nbrQ&quot;&gt;
+        .bgStyle {
+          background-image: none
+        }
+        .bgStyleIE8 {
+          
+        }
+        .copyright a:focus-visible, 
+        .privacy-policy a:focus-visible {
+          border-radius: 6px;
+          outline: rgb(84, 107, 231) solid 1px;
+          outline-offset: 2px;
+          text-decoration: none !important;
+        }
+    &lt;/style&gt;&lt;title&gt;okta.thezmx.com - 登录&lt;/title&gt;
+        &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot; /&gt;
+    &lt;meta name=&quot;robots&quot; content=&quot;noindex,nofollow&quot; /&gt;
+
+    &lt;script nonce=&quot;nlUksQvR9z9TxMoge9nbrQ&quot;&gt;window.cspNonce = 'nlUksQvR9z9TxMoge9nbrQ';&lt;/script&gt;&lt;script src=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/js/okta-sign-in.min.js&quot; type=&quot;text/javascript&quot; integrity=&quot;sha384-/bdtnQ3qLULqGk7qWuTuzI+YFdTW72ZCe0acb4sdUSv2m1W7WasipClTLNS6TUJF&quot; crossorigin=&quot;anonymous&quot;&gt;&lt;/script&gt;
+    &lt;link href=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/css/okta-sign-in.min.css&quot; type=&quot;text/css&quot; rel=&quot;stylesheet&quot; integrity=&quot;sha384-ZNgLYd+ifeyipV1NIoXaz/Csuvdk/bCPieKwgj49kAskX0k1Y7jqvoN7FYzSosmn&quot; crossorigin=&quot;anonymous&quot;/&gt;
+
+    &lt;link rel=&quot;shortcut icon&quot; href=&quot;/favicon.ico&quot; type=&quot;image/x-icon&quot;/&gt;
+&lt;link href=&quot;https://ok3static2.oktacdn.com/assets/
+…（已截断，全文 33979 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — Cookie 鉴权失败（返回 HTML 登录页，请更新 adminCookie）<br/><small>响应为 HTML 而非 JSON API</small></td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-23" open>
+      <summary><span class="sum-title"><span class="status-dot failed"></span>C02 batch online 不存在 stagingId</span><span class="sum-meta">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events/online/batch · HTTP 200 · 837 ms · <span class="bad">1 失败</span></span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="muted">—</span></div>
+        </div>
+        <div class="meta">响应体积 34202 字节</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events/online/batch</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">POST https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events/online/batch
+Content-Type: application/json
+X-Operator: sven.yang
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/sync-operation-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Google Chrome&quot;;v=&quot;149&quot;, &quot;Chromium&quot;;v=&quot;149&quot;, &quot;Not)A;Brand&quot;;v=&quot;24&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
+Accept-Language: zh-CN,zh;q=0.9
+
+{
+  &quot;items&quot;: [
+    {
+      &quot;stagingId&quot;: 999999999,
+      &quot;categoryId&quot;: 1
+    }
+  ]
+}</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: text/html;charset=utf-8
+
+&lt;!DOCTYPE html&gt;
+&lt;!--[if IE 7]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9 lt-ie8&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if IE 8]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9&quot;&gt; &lt;![endif]--&gt;
+&lt;!--[if IE 9]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if gt IE 9]&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if !IE]&gt;&lt;!--&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;!--&lt;![endif]--&gt;
+&lt;head&gt;
+    &lt;meta charset=&quot;UTF-8&quot;&gt;
+
+    &lt;script nonce=&quot;jF5BUlEecsoNieyvFWy9UA&quot;&gt;if (typeof module === 'object') {window.module = module; module = undefined;}&lt;/script&gt;&lt;style type=&quot;text/css&quot; nonce=&quot;jF5BUlEecsoNieyvFWy9UA&quot;&gt;
+        .bgStyle {
+          background-image: none
+        }
+        .bgStyleIE8 {
+          
+        }
+        .copyright a:focus-visible, 
+        .privacy-policy a:focus-visible {
+          border-radius: 6px;
+          outline: rgb(84, 107, 231) solid 1px;
+          outline-offset: 2px;
+          text-decoration: none !important;
+        }
+    &lt;/style&gt;&lt;title&gt;okta.thezmx.com - 登录&lt;/title&gt;
+        &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot; /&gt;
+    &lt;meta name=&quot;robots&quot; content=&quot;noindex,nofollow&quot; /&gt;
+
+    &lt;script nonce=&quot;jF5BUlEecsoNieyvFWy9UA&quot;&gt;window.cspNonce = 'jF5BUlEecsoNieyvFWy9UA';&lt;/script&gt;&lt;script src=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/js/okta-sign-in.min.js&quot; type=&quot;text/javascript&quot; integrity=&quot;sha384-/bdtnQ3qLULqGk7qWuTuzI+YFdTW72ZCe0acb4sdUSv2m1W7WasipClTLNS6TUJF&quot; crossorigin=&quot;anonymous&quot;&gt;&lt;/script&gt;
+    &lt;link href=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/css/okta-sign-in.min.css&quot; type=&quot;text/css&quot; rel=&quot;stylesheet&quot; integrity=&quot;sha384-ZNgLYd+ifeyipV1NIoXaz/Csuvdk/bCPieKwgj49kAskX0k1Y7jqvoN7FYzSosmn&quot; crossorigin=&quot;anonymous&quot;/&gt;
+
+    &lt;link rel=&quot;shortcut icon&quot; href=&quot;/favicon.ico&quot; type=&quot;image/x-icon&quot;/&gt;
+&lt;link href=&quot;https://ok3static2.oktacdn.com/assets/
+…（已截断，全文 33895 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — Cookie 鉴权失败（返回 HTML 登录页，请更新 adminCookie）<br/><small>响应为 HTML 而非 JSON API</small></td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-24" open>
+      <summary><span class="sum-title"><span class="status-dot failed"></span>C03 batch offline 不存在 eventId</span><span class="sum-meta">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events/offline/batch · HTTP 200 · 794 ms · <span class="bad">1 失败</span></span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="muted">—</span></div>
+        </div>
+        <div class="meta">响应体积 34306 字节</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events/offline/batch</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">POST https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events/offline/batch
+Content-Type: application/json
+X-Operator: sven.yang
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/sync-operation-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Google Chrome&quot;;v=&quot;149&quot;, &quot;Chromium&quot;;v=&quot;149&quot;, &quot;Not)A;Brand&quot;;v=&quot;24&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
+Accept-Language: zh-CN,zh;q=0.9
+
+{
+  &quot;eventIds&quot;: [
+    999999999
+  ],
+  &quot;reason&quot;: &quot;postman-cli&quot;
+}</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: text/html;charset=utf-8
+
+&lt;!DOCTYPE html&gt;
+&lt;!--[if IE 7]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9 lt-ie8&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if IE 8]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9&quot;&gt; &lt;![endif]--&gt;
+&lt;!--[if IE 9]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if gt IE 9]&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if !IE]&gt;&lt;!--&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;!--&lt;![endif]--&gt;
+&lt;head&gt;
+    &lt;meta charset=&quot;UTF-8&quot;&gt;
+
+    &lt;script nonce=&quot;sMavqDvOa6lERcnBJ3fkSw&quot;&gt;if (typeof module === 'object') {window.module = module; module = undefined;}&lt;/script&gt;&lt;style type=&quot;text/css&quot; nonce=&quot;sMavqDvOa6lERcnBJ3fkSw&quot;&gt;
+        .bgStyle {
+          background-image: none
+        }
+        .bgStyleIE8 {
+          
+        }
+        .copyright a:focus-visible, 
+        .privacy-policy a:focus-visible {
+          border-radius: 6px;
+          outline: rgb(84, 107, 231) solid 1px;
+          outline-offset: 2px;
+          text-decoration: none !important;
+        }
+    &lt;/style&gt;&lt;title&gt;okta.thezmx.com - 登录&lt;/title&gt;
+        &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot; /&gt;
+    &lt;meta name=&quot;robots&quot; content=&quot;noindex,nofollow&quot; /&gt;
+
+    &lt;script nonce=&quot;sMavqDvOa6lERcnBJ3fkSw&quot;&gt;window.cspNonce = 'sMavqDvOa6lERcnBJ3fkSw';&lt;/script&gt;&lt;script src=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/js/okta-sign-in.min.js&quot; type=&quot;text/javascript&quot; integrity=&quot;sha384-/bdtnQ3qLULqGk7qWuTuzI+YFdTW72ZCe0acb4sdUSv2m1W7WasipClTLNS6TUJF&quot; crossorigin=&quot;anonymous&quot;&gt;&lt;/script&gt;
+    &lt;link href=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/css/okta-sign-in.min.css&quot; type=&quot;text/css&quot; rel=&quot;stylesheet&quot; integrity=&quot;sha384-ZNgLYd+ifeyipV1NIoXaz/Csuvdk/bCPieKwgj49kAskX0k1Y7jqvoN7FYzSosmn&quot; crossorigin=&quot;anonymous&quot;/&gt;
+
+    &lt;link rel=&quot;shortcut icon&quot; href=&quot;/favicon.ico&quot; type=&quot;image/x-icon&quot;/&gt;
+&lt;link href=&quot;https://ok3static2.oktacdn.com/assets/
+…（已截断，全文 33999 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — Cookie 鉴权失败（返回 HTML 登录页，请更新 adminCookie）<br/><small>响应为 HTML 而非 JSON API</small></td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-25" open>
+      <summary><span class="sum-title"><span class="status-dot failed"></span>C04 edit 不存在 stagingId</span><span class="sum-meta">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events/edit · HTTP 200 · 603 ms · <span class="bad">1 失败</span></span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="muted">—</span></div>
+        </div>
+        <div class="meta">响应体积 34282 字节</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events/edit</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">POST https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events/edit
+Content-Type: application/json
+X-Operator: sven.yang
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/sync-operation-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Google Chrome&quot;;v=&quot;149&quot;, &quot;Chromium&quot;;v=&quot;149&quot;, &quot;Not)A;Brand&quot;;v=&quot;24&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
+Accept-Language: zh-CN,zh;q=0.9
+
+{
+  &quot;id&quot;: 999999999,
+  &quot;categoryId&quot;: 1,
+  &quot;version&quot;: 0
+}</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: text/html;charset=utf-8
+
+&lt;!DOCTYPE html&gt;
+&lt;!--[if IE 7]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9 lt-ie8&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if IE 8]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9&quot;&gt; &lt;![endif]--&gt;
+&lt;!--[if IE 9]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if gt IE 9]&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if !IE]&gt;&lt;!--&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;!--&lt;![endif]--&gt;
+&lt;head&gt;
+    &lt;meta charset=&quot;UTF-8&quot;&gt;
+
+    &lt;script nonce=&quot;E_-Xbab51IQ-5GIz6UYrkA&quot;&gt;if (typeof module === 'object') {window.module = module; module = undefined;}&lt;/script&gt;&lt;style type=&quot;text/css&quot; nonce=&quot;E_-Xbab51IQ-5GIz6UYrkA&quot;&gt;
+        .bgStyle {
+          background-image: none
+        }
+        .bgStyleIE8 {
+          
+        }
+        .copyright a:focus-visible, 
+        .privacy-policy a:focus-visible {
+          border-radius: 6px;
+          outline: rgb(84, 107, 231) solid 1px;
+          outline-offset: 2px;
+          text-decoration: none !important;
+        }
+    &lt;/style&gt;&lt;title&gt;okta.thezmx.com - 登录&lt;/title&gt;
+        &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot; /&gt;
+    &lt;meta name=&quot;robots&quot; content=&quot;noindex,nofollow&quot; /&gt;
+
+    &lt;script nonce=&quot;E_-Xbab51IQ-5GIz6UYrkA&quot;&gt;window.cspNonce = 'E_-Xbab51IQ-5GIz6UYrkA';&lt;/script&gt;&lt;script src=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/js/okta-sign-in.min.js&quot; type=&quot;text/javascript&quot; integrity=&quot;sha384-/bdtnQ3qLULqGk7qWuTuzI+YFdTW72ZCe0acb4sdUSv2m1W7WasipClTLNS6TUJF&quot; crossorigin=&quot;anonymous&quot;&gt;&lt;/script&gt;
+    &lt;link href=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/css/okta-sign-in.min.css&quot; type=&quot;text/css&quot; rel=&quot;stylesheet&quot; integrity=&quot;sha384-ZNgLYd+ifeyipV1NIoXaz/Csuvdk/bCPieKwgj49kAskX0k1Y7jqvoN7FYzSosmn&quot; crossorigin=&quot;anonymous&quot;/&gt;
+
+    &lt;link rel=&quot;shortcut icon&quot; href=&quot;/favicon.ico&quot; type=&quot;image/x-icon&quot;/&gt;
+&lt;link href=&quot;https://ok3static2.oktacdn.com/assets/
+…（已截断，全文 33975 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — Cookie 鉴权失败（返回 HTML 登录页，请更新 adminCookie）<br/><small>响应为 HTML 而非 JSON API</small></td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-26" open>
+      <summary><span class="sum-title"><span class="status-dot failed"></span>C05 batch restore 不存在 stagingId</span><span class="sum-meta">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events/restore/batch · HTTP 200 · 818 ms · <span class="bad">1 失败</span></span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="muted">—</span></div>
+        </div>
+        <div class="meta">响应体积 34360 字节</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events/restore/batch</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">POST https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events/restore/batch
+Content-Type: application/json
+X-Operator: sven.yang
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/sync-operation-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Google Chrome&quot;;v=&quot;149&quot;, &quot;Chromium&quot;;v=&quot;149&quot;, &quot;Not)A;Brand&quot;;v=&quot;24&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
+Accept-Language: zh-CN,zh;q=0.9
+
+{
+  &quot;stagingIds&quot;: [
+    999999999
+  ],
+  &quot;remark&quot;: &quot;postman-cli&quot;
+}</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: text/html;charset=utf-8
+
+&lt;!DOCTYPE html&gt;
+&lt;!--[if IE 7]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9 lt-ie8&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if IE 8]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9&quot;&gt; &lt;![endif]--&gt;
+&lt;!--[if IE 9]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if gt IE 9]&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if !IE]&gt;&lt;!--&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;!--&lt;![endif]--&gt;
+&lt;head&gt;
+    &lt;meta charset=&quot;UTF-8&quot;&gt;
+
+    &lt;script nonce=&quot;_T9vNfbIVwcOPpkPK0rf1A&quot;&gt;if (typeof module === 'object') {window.module = module; module = undefined;}&lt;/script&gt;&lt;style type=&quot;text/css&quot; nonce=&quot;_T9vNfbIVwcOPpkPK0rf1A&quot;&gt;
+        .bgStyle {
+          background-image: none
+        }
+        .bgStyleIE8 {
+          
+        }
+        .copyright a:focus-visible, 
+        .privacy-policy a:focus-visible {
+          border-radius: 6px;
+          outline: rgb(84, 107, 231) solid 1px;
+          outline-offset: 2px;
+          text-decoration: none !important;
+        }
+    &lt;/style&gt;&lt;title&gt;okta.thezmx.com - 登录&lt;/title&gt;
+        &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot; /&gt;
+    &lt;meta name=&quot;robots&quot; content=&quot;noindex,nofollow&quot; /&gt;
+
+    &lt;script nonce=&quot;_T9vNfbIVwcOPpkPK0rf1A&quot;&gt;window.cspNonce = '_T9vNfbIVwcOPpkPK0rf1A';&lt;/script&gt;&lt;script src=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/js/okta-sign-in.min.js&quot; type=&quot;text/javascript&quot; integrity=&quot;sha384-/bdtnQ3qLULqGk7qWuTuzI+YFdTW72ZCe0acb4sdUSv2m1W7WasipClTLNS6TUJF&quot; crossorigin=&quot;anonymous&quot;&gt;&lt;/script&gt;
+    &lt;link href=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/css/okta-sign-in.min.css&quot; type=&quot;text/css&quot; rel=&quot;stylesheet&quot; integrity=&quot;sha384-ZNgLYd+ifeyipV1NIoXaz/Csuvdk/bCPieKwgj49kAskX0k1Y7jqvoN7FYzSosmn&quot; crossorigin=&quot;anonymous&quot;/&gt;
+
+    &lt;link rel=&quot;shortcut icon&quot; href=&quot;/favicon.ico&quot; type=&quot;image/x-icon&quot;/&gt;
+&lt;link href=&quot;https://ok3static2.oktacdn.com/assets/
+…（已截断，全文 34053 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — Cookie 鉴权失败（返回 HTML 登录页，请更新 adminCookie）<br/><small>响应为 HTML 而非 JSON API</small></td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details></div>
+  </details>
+  </section>
+
+<section id="api-syncEventsRoot">
+    <h2>五、sync/events</h2>
+    <p class="hint">（本运行无此类请求）</p>
+  </section>
+
+<section id="api-categories">
+    <h2>六、categories</h2>
+    <p class="hint">（本运行无此类请求）</p>
+  </section>
+
+<section id="api-events">
+    <h2>七、GET /events</h2>
+    <p class="hint">（本运行无此类请求）</p>
+  </section>
+
+<section id="api-other">
+    <h2>其它请求</h2>
+    <details class="details-folder" open>
+    <summary><span class="folder-title">00 Setup</span><span class="folder-meta">6 个用例 · <span class="bad">6 条断言失败</span></span></summary>
+    <div class="folder-inner"><details class="details-req" id="req-1" open>
+      <summary><span class="sum-title"><span class="status-dot failed"></span>S01 拉取 setting 缓存初始值</span><span class="sum-meta">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/setting · HTTP 200 · 2643 ms · <span class="bad">1 失败</span></span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="muted">—</span></div>
+        </div>
+        <div class="meta">响应体积 34354 字节</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/setting</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/setting
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/sync-operation-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Google Chrome&quot;;v=&quot;149&quot;, &quot;Chromium&quot;;v=&quot;149&quot;, &quot;Not)A;Brand&quot;;v=&quot;24&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
+Accept-Language: zh-CN,zh;q=0.9</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: text/html;charset=utf-8
+
+&lt;!DOCTYPE html&gt;
+&lt;!--[if IE 7]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9 lt-ie8&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if IE 8]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9&quot;&gt; &lt;![endif]--&gt;
+&lt;!--[if IE 9]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if gt IE 9]&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if !IE]&gt;&lt;!--&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;!--&lt;![endif]--&gt;
+&lt;head&gt;
+    &lt;meta charset=&quot;UTF-8&quot;&gt;
+
+    &lt;script nonce=&quot;jJzSXjl0J8U2cz4atoJTHg&quot;&gt;if (typeof module === 'object') {window.module = module; module = undefined;}&lt;/script&gt;&lt;style type=&quot;text/css&quot; nonce=&quot;jJzSXjl0J8U2cz4atoJTHg&quot;&gt;
+        .bgStyle {
+          background-image: none
+        }
+        .bgStyleIE8 {
+          
+        }
+        .copyright a:focus-visible, 
+        .privacy-policy a:focus-visible {
+          border-radius: 6px;
+          outline: rgb(84, 107, 231) solid 1px;
+          outline-offset: 2px;
+          text-decoration: none !important;
+        }
+    &lt;/style&gt;&lt;title&gt;okta.thezmx.com - 登录&lt;/title&gt;
+        &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot; /&gt;
+    &lt;meta name=&quot;robots&quot; content=&quot;noindex,nofollow&quot; /&gt;
+
+    &lt;script nonce=&quot;jJzSXjl0J8U2cz4atoJTHg&quot;&gt;window.cspNonce = 'jJzSXjl0J8U2cz4atoJTHg';&lt;/script&gt;&lt;script src=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/js/okta-sign-in.min.js&quot; type=&quot;text/javascript&quot; integrity=&quot;sha384-/bdtnQ3qLULqGk7qWuTuzI+YFdTW72ZCe0acb4sdUSv2m1W7WasipClTLNS6TUJF&quot; crossorigin=&quot;anonymous&quot;&gt;&lt;/script&gt;
+    &lt;link href=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/css/okta-sign-in.min.css&quot; type=&quot;text/css&quot; rel=&quot;stylesheet&quot; integrity=&quot;sha384-ZNgLYd+ifeyipV1NIoXaz/Csuvdk/bCPieKwgj49kAskX0k1Y7jqvoN7FYzSosmn&quot; crossorigin=&quot;anonymous&quot;/&gt;
+
+    &lt;link rel=&quot;shortcut icon&quot; href=&quot;/favicon.ico&quot; type=&quot;image/x-icon&quot;/&gt;
+&lt;link href=&quot;https://ok3static2.oktacdn.com/assets/
+…（已截断，全文 34047 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — Cookie 鉴权失败（返回 HTML 登录页，请更新 adminCookie）<br/><small>响应为 HTML 而非 JSON API</small></td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-2" open>
+      <summary><span class="sum-title"><span class="status-dot failed"></span>S02 GET /sync/events tab=MANUAL 解析 stagingId</span><span class="sum-meta">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events?tab=MANUAL&amp;page=1&amp;pageSize=10 · HTTP 200 · 851 ms · <span class="bad">1 失败</span></span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="muted">—</span></div>
+        </div>
+        <div class="meta">响应体积 34324 字节</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events?tab=MANUAL&amp;page=1&amp;pageSize=10</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events?tab=MANUAL&amp;page=1&amp;pageSize=10
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/sync-operation-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Google Chrome&quot;;v=&quot;149&quot;, &quot;Chromium&quot;;v=&quot;149&quot;, &quot;Not)A;Brand&quot;;v=&quot;24&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
+Accept-Language: zh-CN,zh;q=0.9</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: text/html;charset=utf-8
+
+&lt;!DOCTYPE html&gt;
+&lt;!--[if IE 7]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9 lt-ie8&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if IE 8]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9&quot;&gt; &lt;![endif]--&gt;
+&lt;!--[if IE 9]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if gt IE 9]&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if !IE]&gt;&lt;!--&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;!--&lt;![endif]--&gt;
+&lt;head&gt;
+    &lt;meta charset=&quot;UTF-8&quot;&gt;
+
+    &lt;script nonce=&quot;umf2y5KK5ehfSd5je_m57g&quot;&gt;if (typeof module === 'object') {window.module = module; module = undefined;}&lt;/script&gt;&lt;style type=&quot;text/css&quot; nonce=&quot;umf2y5KK5ehfSd5je_m57g&quot;&gt;
+        .bgStyle {
+          background-image: none
+        }
+        .bgStyleIE8 {
+          
+        }
+        .copyright a:focus-visible, 
+        .privacy-policy a:focus-visible {
+          border-radius: 6px;
+          outline: rgb(84, 107, 231) solid 1px;
+          outline-offset: 2px;
+          text-decoration: none !important;
+        }
+    &lt;/style&gt;&lt;title&gt;okta.thezmx.com - 登录&lt;/title&gt;
+        &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot; /&gt;
+    &lt;meta name=&quot;robots&quot; content=&quot;noindex,nofollow&quot; /&gt;
+
+    &lt;script nonce=&quot;umf2y5KK5ehfSd5je_m57g&quot;&gt;window.cspNonce = 'umf2y5KK5ehfSd5je_m57g';&lt;/script&gt;&lt;script src=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/js/okta-sign-in.min.js&quot; type=&quot;text/javascript&quot; integrity=&quot;sha384-/bdtnQ3qLULqGk7qWuTuzI+YFdTW72ZCe0acb4sdUSv2m1W7WasipClTLNS6TUJF&quot; crossorigin=&quot;anonymous&quot;&gt;&lt;/script&gt;
+    &lt;link href=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/css/okta-sign-in.min.css&quot; type=&quot;text/css&quot; rel=&quot;stylesheet&quot; integrity=&quot;sha384-ZNgLYd+ifeyipV1NIoXaz/Csuvdk/bCPieKwgj49kAskX0k1Y7jqvoN7FYzSosmn&quot; crossorigin=&quot;anonymous&quot;/&gt;
+
+    &lt;link rel=&quot;shortcut icon&quot; href=&quot;/favicon.ico&quot; type=&quot;image/x-icon&quot;/&gt;
+&lt;link href=&quot;https://ok3static2.oktacdn.com/assets/
+…（已截断，全文 34017 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — Cookie 鉴权失败（返回 HTML 登录页，请更新 adminCookie）<br/><small>响应为 HTML 而非 JSON API</small></td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-3" open>
+      <summary><span class="sum-title"><span class="status-dot failed"></span>S03 GET /sync/events tab=ONLINE 解析 stagingIdForEdit</span><span class="sum-meta">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events?tab=ONLINE&amp;page=1&amp;pageSize=10 · HTTP 200 · 798 ms · <span class="bad">1 失败</span></span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="muted">—</span></div>
+        </div>
+        <div class="meta">响应体积 34394 字节</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events?tab=ONLINE&amp;page=1&amp;pageSize=10</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events?tab=ONLINE&amp;page=1&amp;pageSize=10
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/sync-operation-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Google Chrome&quot;;v=&quot;149&quot;, &quot;Chromium&quot;;v=&quot;149&quot;, &quot;Not)A;Brand&quot;;v=&quot;24&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
+Accept-Language: zh-CN,zh;q=0.9</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: text/html;charset=utf-8
+
+&lt;!DOCTYPE html&gt;
+&lt;!--[if IE 7]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9 lt-ie8&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if IE 8]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9&quot;&gt; &lt;![endif]--&gt;
+&lt;!--[if IE 9]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if gt IE 9]&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if !IE]&gt;&lt;!--&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;!--&lt;![endif]--&gt;
+&lt;head&gt;
+    &lt;meta charset=&quot;UTF-8&quot;&gt;
+
+    &lt;script nonce=&quot;nlOh2A1HDWfLdDCs9MCfig&quot;&gt;if (typeof module === 'object') {window.module = module; module = undefined;}&lt;/script&gt;&lt;style type=&quot;text/css&quot; nonce=&quot;nlOh2A1HDWfLdDCs9MCfig&quot;&gt;
+        .bgStyle {
+          background-image: none
+        }
+        .bgStyleIE8 {
+          
+        }
+        .copyright a:focus-visible, 
+        .privacy-policy a:focus-visible {
+          border-radius: 6px;
+          outline: rgb(84, 107, 231) solid 1px;
+          outline-offset: 2px;
+          text-decoration: none !important;
+        }
+    &lt;/style&gt;&lt;title&gt;okta.thezmx.com - 登录&lt;/title&gt;
+        &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot; /&gt;
+    &lt;meta name=&quot;robots&quot; content=&quot;noindex,nofollow&quot; /&gt;
+
+    &lt;script nonce=&quot;nlOh2A1HDWfLdDCs9MCfig&quot;&gt;window.cspNonce = 'nlOh2A1HDWfLdDCs9MCfig';&lt;/script&gt;&lt;script src=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/js/okta-sign-in.min.js&quot; type=&quot;text/javascript&quot; integrity=&quot;sha384-/bdtnQ3qLULqGk7qWuTuzI+YFdTW72ZCe0acb4sdUSv2m1W7WasipClTLNS6TUJF&quot; crossorigin=&quot;anonymous&quot;&gt;&lt;/script&gt;
+    &lt;link href=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/css/okta-sign-in.min.css&quot; type=&quot;text/css&quot; rel=&quot;stylesheet&quot; integrity=&quot;sha384-ZNgLYd+ifeyipV1NIoXaz/Csuvdk/bCPieKwgj49kAskX0k1Y7jqvoN7FYzSosmn&quot; crossorigin=&quot;anonymous&quot;/&gt;
+
+    &lt;link rel=&quot;shortcut icon&quot; href=&quot;/favicon.ico&quot; type=&quot;image/x-icon&quot;/&gt;
+&lt;link href=&quot;https://ok3static2.oktacdn.com/assets/
+…（已截断，全文 34087 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — Cookie 鉴权失败（返回 HTML 登录页，请更新 adminCookie）<br/><small>响应为 HTML 而非 JSON API</small></td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-4" open>
+      <summary><span class="sum-title"><span class="status-dot failed"></span>S04 GET /sync/events tab=BLOCKED 解析 stagingIdBlocked</span><span class="sum-meta">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events?tab=BLOCKED&amp;page=1&amp;pageSize=5 · HTTP 200 · 865 ms · <span class="bad">1 失败</span></span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="muted">—</span></div>
+        </div>
+        <div class="meta">响应体积 34396 字节</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events?tab=BLOCKED&amp;page=1&amp;pageSize=5</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events?tab=BLOCKED&amp;page=1&amp;pageSize=5
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/sync-operation-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Google Chrome&quot;;v=&quot;149&quot;, &quot;Chromium&quot;;v=&quot;149&quot;, &quot;Not)A;Brand&quot;;v=&quot;24&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
+Accept-Language: zh-CN,zh;q=0.9</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: text/html;charset=utf-8
+
+&lt;!DOCTYPE html&gt;
+&lt;!--[if IE 7]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9 lt-ie8&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if IE 8]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9&quot;&gt; &lt;![endif]--&gt;
+&lt;!--[if IE 9]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if gt IE 9]&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if !IE]&gt;&lt;!--&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;!--&lt;![endif]--&gt;
+&lt;head&gt;
+    &lt;meta charset=&quot;UTF-8&quot;&gt;
+
+    &lt;script nonce=&quot;AiPsYJ5Ndl9oijJJwL2GUg&quot;&gt;if (typeof module === 'object') {window.module = module; module = undefined;}&lt;/script&gt;&lt;style type=&quot;text/css&quot; nonce=&quot;AiPsYJ5Ndl9oijJJwL2GUg&quot;&gt;
+        .bgStyle {
+          background-image: none
+        }
+        .bgStyleIE8 {
+          
+        }
+        .copyright a:focus-visible, 
+        .privacy-policy a:focus-visible {
+          border-radius: 6px;
+          outline: rgb(84, 107, 231) solid 1px;
+          outline-offset: 2px;
+          text-decoration: none !important;
+        }
+    &lt;/style&gt;&lt;title&gt;okta.thezmx.com - 登录&lt;/title&gt;
+        &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot; /&gt;
+    &lt;meta name=&quot;robots&quot; content=&quot;noindex,nofollow&quot; /&gt;
+
+    &lt;script nonce=&quot;AiPsYJ5Ndl9oijJJwL2GUg&quot;&gt;window.cspNonce = 'AiPsYJ5Ndl9oijJJwL2GUg';&lt;/script&gt;&lt;script src=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/js/okta-sign-in.min.js&quot; type=&quot;text/javascript&quot; integrity=&quot;sha384-/bdtnQ3qLULqGk7qWuTuzI+YFdTW72ZCe0acb4sdUSv2m1W7WasipClTLNS6TUJF&quot; crossorigin=&quot;anonymous&quot;&gt;&lt;/script&gt;
+    &lt;link href=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/css/okta-sign-in.min.css&quot; type=&quot;text/css&quot; rel=&quot;stylesheet&quot; integrity=&quot;sha384-ZNgLYd+ifeyipV1NIoXaz/Csuvdk/bCPieKwgj49kAskX0k1Y7jqvoN7FYzSosmn&quot; crossorigin=&quot;anonymous&quot;/&gt;
+
+    &lt;link rel=&quot;shortcut icon&quot; href=&quot;/favicon.ico&quot; type=&quot;image/x-icon&quot;/&gt;
+&lt;link href=&quot;https://ok3static2.oktacdn.com/assets/
+…（已截断，全文 34089 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — Cookie 鉴权失败（返回 HTML 登录页，请更新 adminCookie）<br/><small>响应为 HTML 而非 JSON API</small></td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-5" open>
+      <summary><span class="sum-title"><span class="status-dot failed"></span>S05 回退拉取 /events（ONLINE 无 eventId 时）</span><span class="sum-meta">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/events?page=1&amp;pageSize=20 · HTTP 200 · 833 ms · <span class="bad">1 失败</span></span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="muted">—</span></div>
+        </div>
+        <div class="meta">响应体积 34240 字节</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/events?page=1&amp;pageSize=20</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/events?page=1&amp;pageSize=20
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/sync-operation-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Google Chrome&quot;;v=&quot;149&quot;, &quot;Chromium&quot;;v=&quot;149&quot;, &quot;Not)A;Brand&quot;;v=&quot;24&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
+Accept-Language: zh-CN,zh;q=0.9</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: text/html;charset=utf-8
+
+&lt;!DOCTYPE html&gt;
+&lt;!--[if IE 7]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9 lt-ie8&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if IE 8]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9&quot;&gt; &lt;![endif]--&gt;
+&lt;!--[if IE 9]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if gt IE 9]&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if !IE]&gt;&lt;!--&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;!--&lt;![endif]--&gt;
+&lt;head&gt;
+    &lt;meta charset=&quot;UTF-8&quot;&gt;
+
+    &lt;script nonce=&quot;f3qJ_c0iSFZCFZGmDkXfLQ&quot;&gt;if (typeof module === 'object') {window.module = module; module = undefined;}&lt;/script&gt;&lt;style type=&quot;text/css&quot; nonce=&quot;f3qJ_c0iSFZCFZGmDkXfLQ&quot;&gt;
+        .bgStyle {
+          background-image: none
+        }
+        .bgStyleIE8 {
+          
+        }
+        .copyright a:focus-visible, 
+        .privacy-policy a:focus-visible {
+          border-radius: 6px;
+          outline: rgb(84, 107, 231) solid 1px;
+          outline-offset: 2px;
+          text-decoration: none !important;
+        }
+    &lt;/style&gt;&lt;title&gt;okta.thezmx.com - 登录&lt;/title&gt;
+        &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot; /&gt;
+    &lt;meta name=&quot;robots&quot; content=&quot;noindex,nofollow&quot; /&gt;
+
+    &lt;script nonce=&quot;f3qJ_c0iSFZCFZGmDkXfLQ&quot;&gt;window.cspNonce = 'f3qJ_c0iSFZCFZGmDkXfLQ';&lt;/script&gt;&lt;script src=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/js/okta-sign-in.min.js&quot; type=&quot;text/javascript&quot; integrity=&quot;sha384-/bdtnQ3qLULqGk7qWuTuzI+YFdTW72ZCe0acb4sdUSv2m1W7WasipClTLNS6TUJF&quot; crossorigin=&quot;anonymous&quot;&gt;&lt;/script&gt;
+    &lt;link href=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/css/okta-sign-in.min.css&quot; type=&quot;text/css&quot; rel=&quot;stylesheet&quot; integrity=&quot;sha384-ZNgLYd+ifeyipV1NIoXaz/Csuvdk/bCPieKwgj49kAskX0k1Y7jqvoN7FYzSosmn&quot; crossorigin=&quot;anonymous&quot;/&gt;
+
+    &lt;link rel=&quot;shortcut icon&quot; href=&quot;/favicon.ico&quot; type=&quot;image/x-icon&quot;/&gt;
+&lt;link href=&quot;https://ok3static2.oktacdn.com/assets/
+…（已截断，全文 33933 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — Cookie 鉴权失败（返回 HTML 登录页，请更新 adminCookie）<br/><small>响应为 HTML 而非 JSON API</small></td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-6" open>
+      <summary><span class="sum-title"><span class="status-dot failed"></span>S06 回退拉取叶子分类 leafCategoryId</span><span class="sum-meta">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/categories/tree · HTTP 200 · 625 ms · <span class="bad">1 失败</span></span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="muted">—</span></div>
+        </div>
+        <div class="meta">响应体积 34248 字节</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/categories/tree</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/categories/tree
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/sync-operation-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Google Chrome&quot;;v=&quot;149&quot;, &quot;Chromium&quot;;v=&quot;149&quot;, &quot;Not)A;Brand&quot;;v=&quot;24&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
+Accept-Language: zh-CN,zh;q=0.9</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: text/html;charset=utf-8
+
+&lt;!DOCTYPE html&gt;
+&lt;!--[if IE 7]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9 lt-ie8&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if IE 8]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9&quot;&gt; &lt;![endif]--&gt;
+&lt;!--[if IE 9]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if gt IE 9]&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if !IE]&gt;&lt;!--&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;!--&lt;![endif]--&gt;
+&lt;head&gt;
+    &lt;meta charset=&quot;UTF-8&quot;&gt;
+
+    &lt;script nonce=&quot;b_RrKHcos7SbihTOaVpXcg&quot;&gt;if (typeof module === 'object') {window.module = module; module = undefined;}&lt;/script&gt;&lt;style type=&quot;text/css&quot; nonce=&quot;b_RrKHcos7SbihTOaVpXcg&quot;&gt;
+        .bgStyle {
+          background-image: none
+        }
+        .bgStyleIE8 {
+          
+        }
+        .copyright a:focus-visible, 
+        .privacy-policy a:focus-visible {
+          border-radius: 6px;
+          outline: rgb(84, 107, 231) solid 1px;
+          outline-offset: 2px;
+          text-decoration: none !important;
+        }
+    &lt;/style&gt;&lt;title&gt;okta.thezmx.com - 登录&lt;/title&gt;
+        &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot; /&gt;
+    &lt;meta name=&quot;robots&quot; content=&quot;noindex,nofollow&quot; /&gt;
+
+    &lt;script nonce=&quot;b_RrKHcos7SbihTOaVpXcg&quot;&gt;window.cspNonce = 'b_RrKHcos7SbihTOaVpXcg';&lt;/script&gt;&lt;script src=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/js/okta-sign-in.min.js&quot; type=&quot;text/javascript&quot; integrity=&quot;sha384-/bdtnQ3qLULqGk7qWuTuzI+YFdTW72ZCe0acb4sdUSv2m1W7WasipClTLNS6TUJF&quot; crossorigin=&quot;anonymous&quot;&gt;&lt;/script&gt;
+    &lt;link href=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/css/okta-sign-in.min.css&quot; type=&quot;text/css&quot; rel=&quot;stylesheet&quot; integrity=&quot;sha384-ZNgLYd+ifeyipV1NIoXaz/Csuvdk/bCPieKwgj49kAskX0k1Y7jqvoN7FYzSosmn&quot; crossorigin=&quot;anonymous&quot;/&gt;
+
+    &lt;link rel=&quot;shortcut icon&quot; href=&quot;/favicon.ico&quot; type=&quot;image/x-icon&quot;/&gt;
+&lt;link href=&quot;https://ok3static2.oktacdn.com/assets/
+…（已截断，全文 33941 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — Cookie 鉴权失败（返回 HTML 登录页，请更新 adminCookie）<br/><small>响应为 HTML 而非 JSON API</small></td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details></div>
+  </details>
+<details class="details-folder" open>
+    <summary><span class="folder-title">A · GET 正向 [ok]</span><span class="folder-meta">3 个用例 · <span class="bad">3 条断言失败</span></span></summary>
+    <div class="folder-inner"><details class="details-req" id="req-7" open>
+      <summary><span class="sum-title"><span class="status-dot failed"></span>A01 GET /sync/setting</span><span class="sum-meta">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/setting · HTTP 200 · 670 ms · <span class="bad">1 失败</span></span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="muted">—</span></div>
+        </div>
+        <div class="meta">响应体积 34244 字节</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/setting</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/setting
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/sync-operation-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Google Chrome&quot;;v=&quot;149&quot;, &quot;Chromium&quot;;v=&quot;149&quot;, &quot;Not)A;Brand&quot;;v=&quot;24&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
+Accept-Language: zh-CN,zh;q=0.9</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: text/html;charset=utf-8
+
+&lt;!DOCTYPE html&gt;
+&lt;!--[if IE 7]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9 lt-ie8&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if IE 8]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9&quot;&gt; &lt;![endif]--&gt;
+&lt;!--[if IE 9]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if gt IE 9]&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if !IE]&gt;&lt;!--&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;!--&lt;![endif]--&gt;
+&lt;head&gt;
+    &lt;meta charset=&quot;UTF-8&quot;&gt;
+
+    &lt;script nonce=&quot;Z8hHuGryIKVtueptCO8zEg&quot;&gt;if (typeof module === 'object') {window.module = module; module = undefined;}&lt;/script&gt;&lt;style type=&quot;text/css&quot; nonce=&quot;Z8hHuGryIKVtueptCO8zEg&quot;&gt;
+        .bgStyle {
+          background-image: none
+        }
+        .bgStyleIE8 {
+          
+        }
+        .copyright a:focus-visible, 
+        .privacy-policy a:focus-visible {
+          border-radius: 6px;
+          outline: rgb(84, 107, 231) solid 1px;
+          outline-offset: 2px;
+          text-decoration: none !important;
+        }
+    &lt;/style&gt;&lt;title&gt;okta.thezmx.com - 登录&lt;/title&gt;
+        &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot; /&gt;
+    &lt;meta name=&quot;robots&quot; content=&quot;noindex,nofollow&quot; /&gt;
+
+    &lt;script nonce=&quot;Z8hHuGryIKVtueptCO8zEg&quot;&gt;window.cspNonce = 'Z8hHuGryIKVtueptCO8zEg';&lt;/script&gt;&lt;script src=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/js/okta-sign-in.min.js&quot; type=&quot;text/javascript&quot; integrity=&quot;sha384-/bdtnQ3qLULqGk7qWuTuzI+YFdTW72ZCe0acb4sdUSv2m1W7WasipClTLNS6TUJF&quot; crossorigin=&quot;anonymous&quot;&gt;&lt;/script&gt;
+    &lt;link href=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/css/okta-sign-in.min.css&quot; type=&quot;text/css&quot; rel=&quot;stylesheet&quot; integrity=&quot;sha384-ZNgLYd+ifeyipV1NIoXaz/Csuvdk/bCPieKwgj49kAskX0k1Y7jqvoN7FYzSosmn&quot; crossorigin=&quot;anonymous&quot;/&gt;
+
+    &lt;link rel=&quot;shortcut icon&quot; href=&quot;/favicon.ico&quot; type=&quot;image/x-icon&quot;/&gt;
+&lt;link href=&quot;https://ok3static2.oktacdn.com/assets/
+…（已截断，全文 33937 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — Cookie 鉴权失败（返回 HTML 登录页，请更新 adminCookie）<br/><small>响应为 HTML 而非 JSON API</small></td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-8" open>
+      <summary><span class="sum-title"><span class="status-dot failed"></span>A02 GET /sync/stat-cards</span><span class="sum-meta">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/stat-cards · HTTP 200 · 609 ms · <span class="bad">1 失败</span></span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="muted">—</span></div>
+        </div>
+        <div class="meta">响应体积 34274 字节</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/stat-cards</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/stat-cards
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/sync-operation-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Google Chrome&quot;;v=&quot;149&quot;, &quot;Chromium&quot;;v=&quot;149&quot;, &quot;Not)A;Brand&quot;;v=&quot;24&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
+Accept-Language: zh-CN,zh;q=0.9</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: text/html;charset=utf-8
+
+&lt;!DOCTYPE html&gt;
+&lt;!--[if IE 7]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9 lt-ie8&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if IE 8]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9&quot;&gt; &lt;![endif]--&gt;
+&lt;!--[if IE 9]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if gt IE 9]&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if !IE]&gt;&lt;!--&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;!--&lt;![endif]--&gt;
+&lt;head&gt;
+    &lt;meta charset=&quot;UTF-8&quot;&gt;
+
+    &lt;script nonce=&quot;l6YKVlQ2q7wu_u_w9vbSgw&quot;&gt;if (typeof module === 'object') {window.module = module; module = undefined;}&lt;/script&gt;&lt;style type=&quot;text/css&quot; nonce=&quot;l6YKVlQ2q7wu_u_w9vbSgw&quot;&gt;
+        .bgStyle {
+          background-image: none
+        }
+        .bgStyleIE8 {
+          
+        }
+        .copyright a:focus-visible, 
+        .privacy-policy a:focus-visible {
+          border-radius: 6px;
+          outline: rgb(84, 107, 231) solid 1px;
+          outline-offset: 2px;
+          text-decoration: none !important;
+        }
+    &lt;/style&gt;&lt;title&gt;okta.thezmx.com - 登录&lt;/title&gt;
+        &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot; /&gt;
+    &lt;meta name=&quot;robots&quot; content=&quot;noindex,nofollow&quot; /&gt;
+
+    &lt;script nonce=&quot;l6YKVlQ2q7wu_u_w9vbSgw&quot;&gt;window.cspNonce = 'l6YKVlQ2q7wu_u_w9vbSgw';&lt;/script&gt;&lt;script src=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/js/okta-sign-in.min.js&quot; type=&quot;text/javascript&quot; integrity=&quot;sha384-/bdtnQ3qLULqGk7qWuTuzI+YFdTW72ZCe0acb4sdUSv2m1W7WasipClTLNS6TUJF&quot; crossorigin=&quot;anonymous&quot;&gt;&lt;/script&gt;
+    &lt;link href=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/css/okta-sign-in.min.css&quot; type=&quot;text/css&quot; rel=&quot;stylesheet&quot; integrity=&quot;sha384-ZNgLYd+ifeyipV1NIoXaz/Csuvdk/bCPieKwgj49kAskX0k1Y7jqvoN7FYzSosmn&quot; crossorigin=&quot;anonymous&quot;/&gt;
+
+    &lt;link rel=&quot;shortcut icon&quot; href=&quot;/favicon.ico&quot; type=&quot;image/x-icon&quot;/&gt;
+&lt;link href=&quot;https://ok3static2.oktacdn.com/assets/
+…（已截断，全文 33967 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — Cookie 鉴权失败（返回 HTML 登录页，请更新 adminCookie）<br/><small>响应为 HTML 而非 JSON API</small></td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-9" open>
+      <summary><span class="sum-title"><span class="status-dot failed"></span>A03 GET /sync/events tab=MANUAL</span><span class="sum-meta">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events?tab=MANUAL&amp;page=1&amp;pageSize=5 · HTTP 200 · 791 ms · <span class="bad">1 失败</span></span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="muted">—</span></div>
+        </div>
+        <div class="meta">响应体积 34280 字节</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events?tab=MANUAL&amp;page=1&amp;pageSize=5</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events?tab=MANUAL&amp;page=1&amp;pageSize=5
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/sync-operation-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Google Chrome&quot;;v=&quot;149&quot;, &quot;Chromium&quot;;v=&quot;149&quot;, &quot;Not)A;Brand&quot;;v=&quot;24&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
+Accept-Language: zh-CN,zh;q=0.9</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: text/html;charset=utf-8
+
+&lt;!DOCTYPE html&gt;
+&lt;!--[if IE 7]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9 lt-ie8&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if IE 8]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9&quot;&gt; &lt;![endif]--&gt;
+&lt;!--[if IE 9]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if gt IE 9]&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if !IE]&gt;&lt;!--&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;!--&lt;![endif]--&gt;
+&lt;head&gt;
+    &lt;meta charset=&quot;UTF-8&quot;&gt;
+
+    &lt;script nonce=&quot;j62Zl3EJM3x9tAvscLyQGQ&quot;&gt;if (typeof module === 'object') {window.module = module; module = undefined;}&lt;/script&gt;&lt;style type=&quot;text/css&quot; nonce=&quot;j62Zl3EJM3x9tAvscLyQGQ&quot;&gt;
+        .bgStyle {
+          background-image: none
+        }
+        .bgStyleIE8 {
+          
+        }
+        .copyright a:focus-visible, 
+        .privacy-policy a:focus-visible {
+          border-radius: 6px;
+          outline: rgb(84, 107, 231) solid 1px;
+          outline-offset: 2px;
+          text-decoration: none !important;
+        }
+    &lt;/style&gt;&lt;title&gt;okta.thezmx.com - 登录&lt;/title&gt;
+        &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot; /&gt;
+    &lt;meta name=&quot;robots&quot; content=&quot;noindex,nofollow&quot; /&gt;
+
+    &lt;script nonce=&quot;j62Zl3EJM3x9tAvscLyQGQ&quot;&gt;window.cspNonce = 'j62Zl3EJM3x9tAvscLyQGQ';&lt;/script&gt;&lt;script src=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/js/okta-sign-in.min.js&quot; type=&quot;text/javascript&quot; integrity=&quot;sha384-/bdtnQ3qLULqGk7qWuTuzI+YFdTW72ZCe0acb4sdUSv2m1W7WasipClTLNS6TUJF&quot; crossorigin=&quot;anonymous&quot;&gt;&lt;/script&gt;
+    &lt;link href=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/css/okta-sign-in.min.css&quot; type=&quot;text/css&quot; rel=&quot;stylesheet&quot; integrity=&quot;sha384-ZNgLYd+ifeyipV1NIoXaz/Csuvdk/bCPieKwgj49kAskX0k1Y7jqvoN7FYzSosmn&quot; crossorigin=&quot;anonymous&quot;/&gt;
+
+    &lt;link rel=&quot;shortcut icon&quot; href=&quot;/favicon.ico&quot; type=&quot;image/x-icon&quot;/&gt;
+&lt;link href=&quot;https://ok3static2.oktacdn.com/assets/
+…（已截断，全文 33973 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — Cookie 鉴权失败（返回 HTML 登录页，请更新 adminCookie）<br/><small>响应为 HTML 而非 JSON API</small></td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details></div>
+  </details>
+<details class="details-folder" open>
+    <summary><span class="folder-title">B · 参数校验 [err]</span><span class="folder-meta">12 个用例 · <span class="bad">21 条断言失败</span></span></summary>
+    <div class="folder-inner"><details class="details-req" id="req-10" open>
+      <summary><span class="sum-title"><span class="status-dot failed"></span>B01 switch 缺 X-Operator → 10001</span><span class="sum-meta">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/setting/switch · HTTP 200 · 858 ms · <span class="bad">1 失败</span></span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="muted">—</span></div>
+        </div>
+        <div class="meta">响应体积 34358 字节</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/setting/switch</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">POST https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/setting/switch
+Content-Type: application/json
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/sync-operation-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Google Chrome&quot;;v=&quot;149&quot;, &quot;Chromium&quot;;v=&quot;149&quot;, &quot;Not)A;Brand&quot;;v=&quot;24&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
+Accept-Language: zh-CN,zh;q=0.9
+
+{
+  &quot;enabled&quot;: true
+}</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: text/html;charset=utf-8
+
+&lt;!DOCTYPE html&gt;
+&lt;!--[if IE 7]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9 lt-ie8&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if IE 8]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9&quot;&gt; &lt;![endif]--&gt;
+&lt;!--[if IE 9]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if gt IE 9]&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if !IE]&gt;&lt;!--&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;!--&lt;![endif]--&gt;
+&lt;head&gt;
+    &lt;meta charset=&quot;UTF-8&quot;&gt;
+
+    &lt;script nonce=&quot;_47gcUX863Of8c_PoPwscw&quot;&gt;if (typeof module === 'object') {window.module = module; module = undefined;}&lt;/script&gt;&lt;style type=&quot;text/css&quot; nonce=&quot;_47gcUX863Of8c_PoPwscw&quot;&gt;
+        .bgStyle {
+          background-image: none
+        }
+        .bgStyleIE8 {
+          
+        }
+        .copyright a:focus-visible, 
+        .privacy-policy a:focus-visible {
+          border-radius: 6px;
+          outline: rgb(84, 107, 231) solid 1px;
+          outline-offset: 2px;
+          text-decoration: none !important;
+        }
+    &lt;/style&gt;&lt;title&gt;okta.thezmx.com - 登录&lt;/title&gt;
+        &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot; /&gt;
+    &lt;meta name=&quot;robots&quot; content=&quot;noindex,nofollow&quot; /&gt;
+
+    &lt;script nonce=&quot;_47gcUX863Of8c_PoPwscw&quot;&gt;window.cspNonce = '_47gcUX863Of8c_PoPwscw';&lt;/script&gt;&lt;script src=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/js/okta-sign-in.min.js&quot; type=&quot;text/javascript&quot; integrity=&quot;sha384-/bdtnQ3qLULqGk7qWuTuzI+YFdTW72ZCe0acb4sdUSv2m1W7WasipClTLNS6TUJF&quot; crossorigin=&quot;anonymous&quot;&gt;&lt;/script&gt;
+    &lt;link href=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/css/okta-sign-in.min.css&quot; type=&quot;text/css&quot; rel=&quot;stylesheet&quot; integrity=&quot;sha384-ZNgLYd+ifeyipV1NIoXaz/Csuvdk/bCPieKwgj49kAskX0k1Y7jqvoN7FYzSosmn&quot; crossorigin=&quot;anonymous&quot;/&gt;
+
+    &lt;link rel=&quot;shortcut icon&quot; href=&quot;/favicon.ico&quot; type=&quot;image/x-icon&quot;/&gt;
+&lt;link href=&quot;https://ok3static2.oktacdn.com/assets/
+…（已截断，全文 34051 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — Cookie 鉴权失败（返回 HTML 登录页，请更新 adminCookie）<br/><small>响应为 HTML 而非 JSON API</small></td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-11" open>
+      <summary><span class="sum-title"><span class="status-dot failed"></span>B02 switch 缺 enabled → HTTP 400</span><span class="sum-meta">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/setting/switch · HTTP 200 · 784 ms · <span class="bad">2 失败</span></span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="muted">—</span></div>
+        </div>
+        <div class="meta">响应体积 34454 字节</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/setting/switch</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">POST https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/setting/switch
+Content-Type: application/json
+X-Operator: sven.yang
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/sync-operation-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Google Chrome&quot;;v=&quot;149&quot;, &quot;Chromium&quot;;v=&quot;149&quot;, &quot;Not)A;Brand&quot;;v=&quot;24&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
+Accept-Language: zh-CN,zh;q=0.9
+
+{}</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: text/html;charset=utf-8
+
+&lt;!DOCTYPE html&gt;
+&lt;!--[if IE 7]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9 lt-ie8&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if IE 8]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9&quot;&gt; &lt;![endif]--&gt;
+&lt;!--[if IE 9]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if gt IE 9]&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if !IE]&gt;&lt;!--&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;!--&lt;![endif]--&gt;
+&lt;head&gt;
+    &lt;meta charset=&quot;UTF-8&quot;&gt;
+
+    &lt;script nonce=&quot;27qr7gUEdzS3pwq6ynzv9A&quot;&gt;if (typeof module === 'object') {window.module = module; module = undefined;}&lt;/script&gt;&lt;style type=&quot;text/css&quot; nonce=&quot;27qr7gUEdzS3pwq6ynzv9A&quot;&gt;
+        .bgStyle {
+          background-image: none
+        }
+        .bgStyleIE8 {
+          
+        }
+        .copyright a:focus-visible, 
+        .privacy-policy a:focus-visible {
+          border-radius: 6px;
+          outline: rgb(84, 107, 231) solid 1px;
+          outline-offset: 2px;
+          text-decoration: none !important;
+        }
+    &lt;/style&gt;&lt;title&gt;okta.thezmx.com - 登录&lt;/title&gt;
+        &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot; /&gt;
+    &lt;meta name=&quot;robots&quot; content=&quot;noindex,nofollow&quot; /&gt;
+
+    &lt;script nonce=&quot;27qr7gUEdzS3pwq6ynzv9A&quot;&gt;window.cspNonce = '27qr7gUEdzS3pwq6ynzv9A';&lt;/script&gt;&lt;script src=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/js/okta-sign-in.min.js&quot; type=&quot;text/javascript&quot; integrity=&quot;sha384-/bdtnQ3qLULqGk7qWuTuzI+YFdTW72ZCe0acb4sdUSv2m1W7WasipClTLNS6TUJF&quot; crossorigin=&quot;anonymous&quot;&gt;&lt;/script&gt;
+    &lt;link href=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/css/okta-sign-in.min.css&quot; type=&quot;text/css&quot; rel=&quot;stylesheet&quot; integrity=&quot;sha384-ZNgLYd+ifeyipV1NIoXaz/Csuvdk/bCPieKwgj49kAskX0k1Y7jqvoN7FYzSosmn&quot; crossorigin=&quot;anonymous&quot;/&gt;
+
+    &lt;link rel=&quot;shortcut icon&quot; href=&quot;/favicon.ico&quot; type=&quot;image/x-icon&quot;/&gt;
+&lt;link href=&quot;https://ok3static2.oktacdn.com/assets/
+…（已截断，全文 34147 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — Cookie 鉴权失败（返回 HTML 登录页，请更新 adminCookie）<br/><small>响应为 HTML 而非 JSON API</small></td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — HTTP 400<br/><small>expected response to have status code 400 but got 200</small></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-12" open>
+      <summary><span class="sum-title"><span class="status-dot failed"></span>B03 threshold volumeThreshold=0 → HTTP 400</span><span class="sum-meta">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/setting/threshold · HTTP 200 · 832 ms · <span class="bad">2 失败</span></span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="muted">—</span></div>
+        </div>
+        <div class="meta">响应体积 34274 字节</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/setting/threshold</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">POST https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/setting/threshold
+Content-Type: application/json
+X-Operator: sven.yang
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/sync-operation-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Google Chrome&quot;;v=&quot;149&quot;, &quot;Chromium&quot;;v=&quot;149&quot;, &quot;Not)A;Brand&quot;;v=&quot;24&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
+Accept-Language: zh-CN,zh;q=0.9
+
+{
+  &quot;volumeThreshold&quot;: 0
+}</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: text/html;charset=utf-8
+
+&lt;!DOCTYPE html&gt;
+&lt;!--[if IE 7]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9 lt-ie8&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if IE 8]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9&quot;&gt; &lt;![endif]--&gt;
+&lt;!--[if IE 9]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if gt IE 9]&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if !IE]&gt;&lt;!--&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;!--&lt;![endif]--&gt;
+&lt;head&gt;
+    &lt;meta charset=&quot;UTF-8&quot;&gt;
+
+    &lt;script nonce=&quot;fYDeCIUYfs3AIEi7To316Q&quot;&gt;if (typeof module === 'object') {window.module = module; module = undefined;}&lt;/script&gt;&lt;style type=&quot;text/css&quot; nonce=&quot;fYDeCIUYfs3AIEi7To316Q&quot;&gt;
+        .bgStyle {
+          background-image: none
+        }
+        .bgStyleIE8 {
+          
+        }
+        .copyright a:focus-visible, 
+        .privacy-policy a:focus-visible {
+          border-radius: 6px;
+          outline: rgb(84, 107, 231) solid 1px;
+          outline-offset: 2px;
+          text-decoration: none !important;
+        }
+    &lt;/style&gt;&lt;title&gt;okta.thezmx.com - 登录&lt;/title&gt;
+        &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot; /&gt;
+    &lt;meta name=&quot;robots&quot; content=&quot;noindex,nofollow&quot; /&gt;
+
+    &lt;script nonce=&quot;fYDeCIUYfs3AIEi7To316Q&quot;&gt;window.cspNonce = 'fYDeCIUYfs3AIEi7To316Q';&lt;/script&gt;&lt;script src=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/js/okta-sign-in.min.js&quot; type=&quot;text/javascript&quot; integrity=&quot;sha384-/bdtnQ3qLULqGk7qWuTuzI+YFdTW72ZCe0acb4sdUSv2m1W7WasipClTLNS6TUJF&quot; crossorigin=&quot;anonymous&quot;&gt;&lt;/script&gt;
+    &lt;link href=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/css/okta-sign-in.min.css&quot; type=&quot;text/css&quot; rel=&quot;stylesheet&quot; integrity=&quot;sha384-ZNgLYd+ifeyipV1NIoXaz/Csuvdk/bCPieKwgj49kAskX0k1Y7jqvoN7FYzSosmn&quot; crossorigin=&quot;anonymous&quot;/&gt;
+
+    &lt;link rel=&quot;shortcut icon&quot; href=&quot;/favicon.ico&quot; type=&quot;image/x-icon&quot;/&gt;
+&lt;link href=&quot;https://ok3static2.oktacdn.com/assets/
+…（已截断，全文 33967 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — Cookie 鉴权失败（返回 HTML 登录页，请更新 adminCookie）<br/><small>响应为 HTML 而非 JSON API</small></td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — HTTP 400<br/><small>expected response to have status code 400 but got 200</small></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-13" open>
+      <summary><span class="sum-title"><span class="status-dot failed"></span>B04 intercept 空 stagingIds → HTTP 400</span><span class="sum-meta">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events/intercept/batch · HTTP 200 · 857 ms · <span class="bad">2 失败</span></span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="muted">—</span></div>
+        </div>
+        <div class="meta">响应体积 34300 字节</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events/intercept/batch</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">POST https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events/intercept/batch
+Content-Type: application/json
+X-Operator: sven.yang
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/sync-operation-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Google Chrome&quot;;v=&quot;149&quot;, &quot;Chromium&quot;;v=&quot;149&quot;, &quot;Not)A;Brand&quot;;v=&quot;24&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
+Accept-Language: zh-CN,zh;q=0.9
+
+{
+  &quot;stagingIds&quot;: []
+}</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: text/html;charset=utf-8
+
+&lt;!DOCTYPE html&gt;
+&lt;!--[if IE 7]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9 lt-ie8&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if IE 8]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9&quot;&gt; &lt;![endif]--&gt;
+&lt;!--[if IE 9]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if gt IE 9]&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if !IE]&gt;&lt;!--&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;!--&lt;![endif]--&gt;
+&lt;head&gt;
+    &lt;meta charset=&quot;UTF-8&quot;&gt;
+
+    &lt;script nonce=&quot;y4MEMNjPyQOeAu_RUABrSA&quot;&gt;if (typeof module === 'object') {window.module = module; module = undefined;}&lt;/script&gt;&lt;style type=&quot;text/css&quot; nonce=&quot;y4MEMNjPyQOeAu_RUABrSA&quot;&gt;
+        .bgStyle {
+          background-image: none
+        }
+        .bgStyleIE8 {
+          
+        }
+        .copyright a:focus-visible, 
+        .privacy-policy a:focus-visible {
+          border-radius: 6px;
+          outline: rgb(84, 107, 231) solid 1px;
+          outline-offset: 2px;
+          text-decoration: none !important;
+        }
+    &lt;/style&gt;&lt;title&gt;okta.thezmx.com - 登录&lt;/title&gt;
+        &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot; /&gt;
+    &lt;meta name=&quot;robots&quot; content=&quot;noindex,nofollow&quot; /&gt;
+
+    &lt;script nonce=&quot;y4MEMNjPyQOeAu_RUABrSA&quot;&gt;window.cspNonce = 'y4MEMNjPyQOeAu_RUABrSA';&lt;/script&gt;&lt;script src=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/js/okta-sign-in.min.js&quot; type=&quot;text/javascript&quot; integrity=&quot;sha384-/bdtnQ3qLULqGk7qWuTuzI+YFdTW72ZCe0acb4sdUSv2m1W7WasipClTLNS6TUJF&quot; crossorigin=&quot;anonymous&quot;&gt;&lt;/script&gt;
+    &lt;link href=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/css/okta-sign-in.min.css&quot; type=&quot;text/css&quot; rel=&quot;stylesheet&quot; integrity=&quot;sha384-ZNgLYd+ifeyipV1NIoXaz/Csuvdk/bCPieKwgj49kAskX0k1Y7jqvoN7FYzSosmn&quot; crossorigin=&quot;anonymous&quot;/&gt;
+
+    &lt;link rel=&quot;shortcut icon&quot; href=&quot;/favicon.ico&quot; type=&quot;image/x-icon&quot;/&gt;
+&lt;link href=&quot;https://ok3static2.oktacdn.com/assets/
+…（已截断，全文 33993 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — Cookie 鉴权失败（返回 HTML 登录页，请更新 adminCookie）<br/><small>响应为 HTML 而非 JSON API</small></td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — HTTP 400<br/><small>expected response to have status code 400 but got 200</small></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-14" open>
+      <summary><span class="sum-title"><span class="status-dot failed"></span>B05 intercept 缺 operator → 10001</span><span class="sum-meta">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events/intercept/batch · HTTP 200 · 661 ms · <span class="bad">1 失败</span></span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="muted">—</span></div>
+        </div>
+        <div class="meta">响应体积 34308 字节</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events/intercept/batch</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">POST https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events/intercept/batch
+Content-Type: application/json
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/sync-operation-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Google Chrome&quot;;v=&quot;149&quot;, &quot;Chromium&quot;;v=&quot;149&quot;, &quot;Not)A;Brand&quot;;v=&quot;24&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
+Accept-Language: zh-CN,zh;q=0.9
+
+{
+  &quot;stagingIds&quot;: [
+    1
+  ]
+}</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: text/html;charset=utf-8
+
+&lt;!DOCTYPE html&gt;
+&lt;!--[if IE 7]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9 lt-ie8&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if IE 8]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9&quot;&gt; &lt;![endif]--&gt;
+&lt;!--[if IE 9]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if gt IE 9]&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if !IE]&gt;&lt;!--&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;!--&lt;![endif]--&gt;
+&lt;head&gt;
+    &lt;meta charset=&quot;UTF-8&quot;&gt;
+
+    &lt;script nonce=&quot;S13DsDTAOpWsFXxs33syaA&quot;&gt;if (typeof module === 'object') {window.module = module; module = undefined;}&lt;/script&gt;&lt;style type=&quot;text/css&quot; nonce=&quot;S13DsDTAOpWsFXxs33syaA&quot;&gt;
+        .bgStyle {
+          background-image: none
+        }
+        .bgStyleIE8 {
+          
+        }
+        .copyright a:focus-visible, 
+        .privacy-policy a:focus-visible {
+          border-radius: 6px;
+          outline: rgb(84, 107, 231) solid 1px;
+          outline-offset: 2px;
+          text-decoration: none !important;
+        }
+    &lt;/style&gt;&lt;title&gt;okta.thezmx.com - 登录&lt;/title&gt;
+        &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot; /&gt;
+    &lt;meta name=&quot;robots&quot; content=&quot;noindex,nofollow&quot; /&gt;
+
+    &lt;script nonce=&quot;S13DsDTAOpWsFXxs33syaA&quot;&gt;window.cspNonce = 'S13DsDTAOpWsFXxs33syaA';&lt;/script&gt;&lt;script src=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/js/okta-sign-in.min.js&quot; type=&quot;text/javascript&quot; integrity=&quot;sha384-/bdtnQ3qLULqGk7qWuTuzI+YFdTW72ZCe0acb4sdUSv2m1W7WasipClTLNS6TUJF&quot; crossorigin=&quot;anonymous&quot;&gt;&lt;/script&gt;
+    &lt;link href=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/css/okta-sign-in.min.css&quot; type=&quot;text/css&quot; rel=&quot;stylesheet&quot; integrity=&quot;sha384-ZNgLYd+ifeyipV1NIoXaz/Csuvdk/bCPieKwgj49kAskX0k1Y7jqvoN7FYzSosmn&quot; crossorigin=&quot;anonymous&quot;/&gt;
+
+    &lt;link rel=&quot;shortcut icon&quot; href=&quot;/favicon.ico&quot; type=&quot;image/x-icon&quot;/&gt;
+&lt;link href=&quot;https://ok3static2.oktacdn.com/assets/
+…（已截断，全文 34001 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — Cookie 鉴权失败（返回 HTML 登录页，请更新 adminCookie）<br/><small>响应为 HTML 而非 JSON API</small></td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-15" open>
+      <summary><span class="sum-title"><span class="status-dot failed"></span>B06 online batch 缺 items → HTTP 400</span><span class="sum-meta">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events/online/batch · HTTP 200 · 792 ms · <span class="bad">2 失败</span></span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="muted">—</span></div>
+        </div>
+        <div class="meta">响应体积 34224 字节</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events/online/batch</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">POST https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events/online/batch
+Content-Type: application/json
+X-Operator: sven.yang
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/sync-operation-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Google Chrome&quot;;v=&quot;149&quot;, &quot;Chromium&quot;;v=&quot;149&quot;, &quot;Not)A;Brand&quot;;v=&quot;24&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
+Accept-Language: zh-CN,zh;q=0.9
+
+{
+  &quot;items&quot;: []
+}</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: text/html;charset=utf-8
+
+&lt;!DOCTYPE html&gt;
+&lt;!--[if IE 7]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9 lt-ie8&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if IE 8]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9&quot;&gt; &lt;![endif]--&gt;
+&lt;!--[if IE 9]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if gt IE 9]&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if !IE]&gt;&lt;!--&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;!--&lt;![endif]--&gt;
+&lt;head&gt;
+    &lt;meta charset=&quot;UTF-8&quot;&gt;
+
+    &lt;script nonce=&quot;2HdxOy7SYECBKJEGEDpgcA&quot;&gt;if (typeof module === 'object') {window.module = module; module = undefined;}&lt;/script&gt;&lt;style type=&quot;text/css&quot; nonce=&quot;2HdxOy7SYECBKJEGEDpgcA&quot;&gt;
+        .bgStyle {
+          background-image: none
+        }
+        .bgStyleIE8 {
+          
+        }
+        .copyright a:focus-visible, 
+        .privacy-policy a:focus-visible {
+          border-radius: 6px;
+          outline: rgb(84, 107, 231) solid 1px;
+          outline-offset: 2px;
+          text-decoration: none !important;
+        }
+    &lt;/style&gt;&lt;title&gt;okta.thezmx.com - 登录&lt;/title&gt;
+        &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot; /&gt;
+    &lt;meta name=&quot;robots&quot; content=&quot;noindex,nofollow&quot; /&gt;
+
+    &lt;script nonce=&quot;2HdxOy7SYECBKJEGEDpgcA&quot;&gt;window.cspNonce = '2HdxOy7SYECBKJEGEDpgcA';&lt;/script&gt;&lt;script src=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/js/okta-sign-in.min.js&quot; type=&quot;text/javascript&quot; integrity=&quot;sha384-/bdtnQ3qLULqGk7qWuTuzI+YFdTW72ZCe0acb4sdUSv2m1W7WasipClTLNS6TUJF&quot; crossorigin=&quot;anonymous&quot;&gt;&lt;/script&gt;
+    &lt;link href=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/css/okta-sign-in.min.css&quot; type=&quot;text/css&quot; rel=&quot;stylesheet&quot; integrity=&quot;sha384-ZNgLYd+ifeyipV1NIoXaz/Csuvdk/bCPieKwgj49kAskX0k1Y7jqvoN7FYzSosmn&quot; crossorigin=&quot;anonymous&quot;/&gt;
+
+    &lt;link rel=&quot;shortcut icon&quot; href=&quot;/favicon.ico&quot; type=&quot;image/x-icon&quot;/&gt;
+&lt;link href=&quot;https://ok3static2.oktacdn.com/assets/
+…（已截断，全文 33917 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — Cookie 鉴权失败（返回 HTML 登录页，请更新 adminCookie）<br/><small>响应为 HTML 而非 JSON API</small></td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — HTTP 400<br/><small>expected response to have status code 400 but got 200</small></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-16" open>
+      <summary><span class="sum-title"><span class="status-dot failed"></span>B07 offline 缺 operator → 10001</span><span class="sum-meta">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events/offline/batch · HTTP 200 · 584 ms · <span class="bad">2 失败</span></span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="muted">—</span></div>
+        </div>
+        <div class="meta">响应体积 34170 字节</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events/offline/batch</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">POST https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events/offline/batch
+Content-Type: application/json
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/sync-operation-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Google Chrome&quot;;v=&quot;149&quot;, &quot;Chromium&quot;;v=&quot;149&quot;, &quot;Not)A;Brand&quot;;v=&quot;24&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
+Accept-Language: zh-CN,zh;q=0.9
+
+{
+  &quot;eventIds&quot;: [
+    1
+  ]
+}</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: text/html;charset=utf-8
+
+&lt;!DOCTYPE html&gt;
+&lt;!--[if IE 7]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9 lt-ie8&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if IE 8]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9&quot;&gt; &lt;![endif]--&gt;
+&lt;!--[if IE 9]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if gt IE 9]&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if !IE]&gt;&lt;!--&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;!--&lt;![endif]--&gt;
+&lt;head&gt;
+    &lt;meta charset=&quot;UTF-8&quot;&gt;
+
+    &lt;script nonce=&quot;Iy3KzCawDXG7GK15i1nyjQ&quot;&gt;if (typeof module === 'object') {window.module = module; module = undefined;}&lt;/script&gt;&lt;style type=&quot;text/css&quot; nonce=&quot;Iy3KzCawDXG7GK15i1nyjQ&quot;&gt;
+        .bgStyle {
+          background-image: none
+        }
+        .bgStyleIE8 {
+          
+        }
+        .copyright a:focus-visible, 
+        .privacy-policy a:focus-visible {
+          border-radius: 6px;
+          outline: rgb(84, 107, 231) solid 1px;
+          outline-offset: 2px;
+          text-decoration: none !important;
+        }
+    &lt;/style&gt;&lt;title&gt;okta.thezmx.com - 登录&lt;/title&gt;
+        &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot; /&gt;
+    &lt;meta name=&quot;robots&quot; content=&quot;noindex,nofollow&quot; /&gt;
+
+    &lt;script nonce=&quot;Iy3KzCawDXG7GK15i1nyjQ&quot;&gt;window.cspNonce = 'Iy3KzCawDXG7GK15i1nyjQ';&lt;/script&gt;&lt;script src=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/js/okta-sign-in.min.js&quot; type=&quot;text/javascript&quot; integrity=&quot;sha384-/bdtnQ3qLULqGk7qWuTuzI+YFdTW72ZCe0acb4sdUSv2m1W7WasipClTLNS6TUJF&quot; crossorigin=&quot;anonymous&quot;&gt;&lt;/script&gt;
+    &lt;link href=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/css/okta-sign-in.min.css&quot; type=&quot;text/css&quot; rel=&quot;stylesheet&quot; integrity=&quot;sha384-ZNgLYd+ifeyipV1NIoXaz/Csuvdk/bCPieKwgj49kAskX0k1Y7jqvoN7FYzSosmn&quot; crossorigin=&quot;anonymous&quot;/&gt;
+
+    &lt;link rel=&quot;shortcut icon&quot; href=&quot;/favicon.ico&quot; type=&quot;image/x-icon&quot;/&gt;
+&lt;link href=&quot;https://ok3static2.oktacdn.com/assets/
+…（已截断，全文 33863 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — Cookie 鉴权失败（返回 HTML 登录页，请更新 adminCookie）<br/><small>响应为 HTML 而非 JSON API</small></td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — ret_code=10001<br/><small>Unexpected token '&lt;' at 1:1
+&lt;!DOCTYPE html&gt;
+^</small></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-17" open>
+      <summary><span class="sum-title"><span class="status-dot failed"></span>B08 edit 缺 operator → 10001</span><span class="sum-meta">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events/edit · HTTP 200 · 793 ms · <span class="bad">2 失败</span></span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="muted">—</span></div>
+        </div>
+        <div class="meta">响应体积 34432 字节</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events/edit</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">POST https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events/edit
+Content-Type: application/json
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/sync-operation-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Google Chrome&quot;;v=&quot;149&quot;, &quot;Chromium&quot;;v=&quot;149&quot;, &quot;Not)A;Brand&quot;;v=&quot;24&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
+Accept-Language: zh-CN,zh;q=0.9
+
+{
+  &quot;id&quot;: 999999999,
+  &quot;categoryId&quot;: 1,
+  &quot;version&quot;: 0
+}</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: text/html;charset=utf-8
+
+&lt;!DOCTYPE html&gt;
+&lt;!--[if IE 7]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9 lt-ie8&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if IE 8]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9&quot;&gt; &lt;![endif]--&gt;
+&lt;!--[if IE 9]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if gt IE 9]&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if !IE]&gt;&lt;!--&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;!--&lt;![endif]--&gt;
+&lt;head&gt;
+    &lt;meta charset=&quot;UTF-8&quot;&gt;
+
+    &lt;script nonce=&quot;rQfnHVIO6V7Bd1F85TgU_g&quot;&gt;if (typeof module === 'object') {window.module = module; module = undefined;}&lt;/script&gt;&lt;style type=&quot;text/css&quot; nonce=&quot;rQfnHVIO6V7Bd1F85TgU_g&quot;&gt;
+        .bgStyle {
+          background-image: none
+        }
+        .bgStyleIE8 {
+          
+        }
+        .copyright a:focus-visible, 
+        .privacy-policy a:focus-visible {
+          border-radius: 6px;
+          outline: rgb(84, 107, 231) solid 1px;
+          outline-offset: 2px;
+          text-decoration: none !important;
+        }
+    &lt;/style&gt;&lt;title&gt;okta.thezmx.com - 登录&lt;/title&gt;
+        &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot; /&gt;
+    &lt;meta name=&quot;robots&quot; content=&quot;noindex,nofollow&quot; /&gt;
+
+    &lt;script nonce=&quot;rQfnHVIO6V7Bd1F85TgU_g&quot;&gt;window.cspNonce = 'rQfnHVIO6V7Bd1F85TgU_g';&lt;/script&gt;&lt;script src=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/js/okta-sign-in.min.js&quot; type=&quot;text/javascript&quot; integrity=&quot;sha384-/bdtnQ3qLULqGk7qWuTuzI+YFdTW72ZCe0acb4sdUSv2m1W7WasipClTLNS6TUJF&quot; crossorigin=&quot;anonymous&quot;&gt;&lt;/script&gt;
+    &lt;link href=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/css/okta-sign-in.min.css&quot; type=&quot;text/css&quot; rel=&quot;stylesheet&quot; integrity=&quot;sha384-ZNgLYd+ifeyipV1NIoXaz/Csuvdk/bCPieKwgj49kAskX0k1Y7jqvoN7FYzSosmn&quot; crossorigin=&quot;anonymous&quot;/&gt;
+
+    &lt;link rel=&quot;shortcut icon&quot; href=&quot;/favicon.ico&quot; type=&quot;image/x-icon&quot;/&gt;
+&lt;link href=&quot;https://ok3static2.oktacdn.com/assets/
+…（已截断，全文 34125 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — Cookie 鉴权失败（返回 HTML 登录页，请更新 adminCookie）<br/><small>响应为 HTML 而非 JSON API</small></td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — ret_code=10001<br/><small>Unexpected token '&lt;' at 1:1
+&lt;!DOCTYPE html&gt;
+^</small></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-18" open>
+      <summary><span class="sum-title"><span class="status-dot failed"></span>B09 restore 缺 operator → 10001</span><span class="sum-meta">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events/restore/batch · HTTP 200 · 657 ms · <span class="bad">2 失败</span></span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="muted">—</span></div>
+        </div>
+        <div class="meta">响应体积 34298 字节</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events/restore/batch</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">POST https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events/restore/batch
+Content-Type: application/json
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/sync-operation-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Google Chrome&quot;;v=&quot;149&quot;, &quot;Chromium&quot;;v=&quot;149&quot;, &quot;Not)A;Brand&quot;;v=&quot;24&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
+Accept-Language: zh-CN,zh;q=0.9
+
+{
+  &quot;stagingIds&quot;: [
+    1
+  ]
+}</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: text/html;charset=utf-8
+
+&lt;!DOCTYPE html&gt;
+&lt;!--[if IE 7]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9 lt-ie8&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if IE 8]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9&quot;&gt; &lt;![endif]--&gt;
+&lt;!--[if IE 9]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if gt IE 9]&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if !IE]&gt;&lt;!--&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;!--&lt;![endif]--&gt;
+&lt;head&gt;
+    &lt;meta charset=&quot;UTF-8&quot;&gt;
+
+    &lt;script nonce=&quot;eQgMR380yYzZrxhfeh0lZQ&quot;&gt;if (typeof module === 'object') {window.module = module; module = undefined;}&lt;/script&gt;&lt;style type=&quot;text/css&quot; nonce=&quot;eQgMR380yYzZrxhfeh0lZQ&quot;&gt;
+        .bgStyle {
+          background-image: none
+        }
+        .bgStyleIE8 {
+          
+        }
+        .copyright a:focus-visible, 
+        .privacy-policy a:focus-visible {
+          border-radius: 6px;
+          outline: rgb(84, 107, 231) solid 1px;
+          outline-offset: 2px;
+          text-decoration: none !important;
+        }
+    &lt;/style&gt;&lt;title&gt;okta.thezmx.com - 登录&lt;/title&gt;
+        &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot; /&gt;
+    &lt;meta name=&quot;robots&quot; content=&quot;noindex,nofollow&quot; /&gt;
+
+    &lt;script nonce=&quot;eQgMR380yYzZrxhfeh0lZQ&quot;&gt;window.cspNonce = 'eQgMR380yYzZrxhfeh0lZQ';&lt;/script&gt;&lt;script src=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/js/okta-sign-in.min.js&quot; type=&quot;text/javascript&quot; integrity=&quot;sha384-/bdtnQ3qLULqGk7qWuTuzI+YFdTW72ZCe0acb4sdUSv2m1W7WasipClTLNS6TUJF&quot; crossorigin=&quot;anonymous&quot;&gt;&lt;/script&gt;
+    &lt;link href=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/css/okta-sign-in.min.css&quot; type=&quot;text/css&quot; rel=&quot;stylesheet&quot; integrity=&quot;sha384-ZNgLYd+ifeyipV1NIoXaz/Csuvdk/bCPieKwgj49kAskX0k1Y7jqvoN7FYzSosmn&quot; crossorigin=&quot;anonymous&quot;/&gt;
+
+    &lt;link rel=&quot;shortcut icon&quot; href=&quot;/favicon.ico&quot; type=&quot;image/x-icon&quot;/&gt;
+&lt;link href=&quot;https://ok3static2.oktacdn.com/assets/
+…（已截断，全文 33991 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — Cookie 鉴权失败（返回 HTML 登录页，请更新 adminCookie）<br/><small>响应为 HTML 而非 JSON API</small></td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — ret_code=10001<br/><small>Unexpected token '&lt;' at 1:1
+&lt;!DOCTYPE html&gt;
+^</small></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-19" open>
+      <summary><span class="sum-title"><span class="status-dot failed"></span>B10 GET /sync/events 缺 tab → 10001</span><span class="sum-meta">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events?page=1&amp;pageSize=5 · HTTP 200 · 869 ms · <span class="bad">2 失败</span></span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="muted">—</span></div>
+        </div>
+        <div class="meta">响应体积 34292 字节</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events?page=1&amp;pageSize=5</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events?page=1&amp;pageSize=5
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/sync-operation-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Google Chrome&quot;;v=&quot;149&quot;, &quot;Chromium&quot;;v=&quot;149&quot;, &quot;Not)A;Brand&quot;;v=&quot;24&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
+Accept-Language: zh-CN,zh;q=0.9</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: text/html;charset=utf-8
+
+&lt;!DOCTYPE html&gt;
+&lt;!--[if IE 7]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9 lt-ie8&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if IE 8]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9&quot;&gt; &lt;![endif]--&gt;
+&lt;!--[if IE 9]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if gt IE 9]&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if !IE]&gt;&lt;!--&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;!--&lt;![endif]--&gt;
+&lt;head&gt;
+    &lt;meta charset=&quot;UTF-8&quot;&gt;
+
+    &lt;script nonce=&quot;X7u-W2rhj9Kin5O1TBibKw&quot;&gt;if (typeof module === 'object') {window.module = module; module = undefined;}&lt;/script&gt;&lt;style type=&quot;text/css&quot; nonce=&quot;X7u-W2rhj9Kin5O1TBibKw&quot;&gt;
+        .bgStyle {
+          background-image: none
+        }
+        .bgStyleIE8 {
+          
+        }
+        .copyright a:focus-visible, 
+        .privacy-policy a:focus-visible {
+          border-radius: 6px;
+          outline: rgb(84, 107, 231) solid 1px;
+          outline-offset: 2px;
+          text-decoration: none !important;
+        }
+    &lt;/style&gt;&lt;title&gt;okta.thezmx.com - 登录&lt;/title&gt;
+        &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot; /&gt;
+    &lt;meta name=&quot;robots&quot; content=&quot;noindex,nofollow&quot; /&gt;
+
+    &lt;script nonce=&quot;X7u-W2rhj9Kin5O1TBibKw&quot;&gt;window.cspNonce = 'X7u-W2rhj9Kin5O1TBibKw';&lt;/script&gt;&lt;script src=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/js/okta-sign-in.min.js&quot; type=&quot;text/javascript&quot; integrity=&quot;sha384-/bdtnQ3qLULqGk7qWuTuzI+YFdTW72ZCe0acb4sdUSv2m1W7WasipClTLNS6TUJF&quot; crossorigin=&quot;anonymous&quot;&gt;&lt;/script&gt;
+    &lt;link href=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/css/okta-sign-in.min.css&quot; type=&quot;text/css&quot; rel=&quot;stylesheet&quot; integrity=&quot;sha384-ZNgLYd+ifeyipV1NIoXaz/Csuvdk/bCPieKwgj49kAskX0k1Y7jqvoN7FYzSosmn&quot; crossorigin=&quot;anonymous&quot;/&gt;
+
+    &lt;link rel=&quot;shortcut icon&quot; href=&quot;/favicon.ico&quot; type=&quot;image/x-icon&quot;/&gt;
+&lt;link href=&quot;https://ok3static2.oktacdn.com/assets/
+…（已截断，全文 33985 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — Cookie 鉴权失败（返回 HTML 登录页，请更新 adminCookie）<br/><small>响应为 HTML 而非 JSON API</small></td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — ret_code=10001<br/><small>Unexpected token '&lt;' at 1:1
+&lt;!DOCTYPE html&gt;
+^</small></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-20" open>
+      <summary><span class="sum-title"><span class="status-dot failed"></span>B11 bootstrap 缺 operator → 10001</span><span class="sum-meta">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events/bootstrap · HTTP 200 · 690 ms · <span class="bad">2 失败</span></span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="muted">—</span></div>
+        </div>
+        <div class="meta">响应体积 34192 字节</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events/bootstrap</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">POST https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events/bootstrap
+Content-Type: application/json
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/sync-operation-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Google Chrome&quot;;v=&quot;149&quot;, &quot;Chromium&quot;;v=&quot;149&quot;, &quot;Not)A;Brand&quot;;v=&quot;24&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
+Accept-Language: zh-CN,zh;q=0.9
+
+{
+  &quot;resetCursor&quot;: false,
+  &quot;maxBatches&quot;: 1
+}</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: text/html;charset=utf-8
+
+&lt;!DOCTYPE html&gt;
+&lt;!--[if IE 7]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9 lt-ie8&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if IE 8]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9&quot;&gt; &lt;![endif]--&gt;
+&lt;!--[if IE 9]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if gt IE 9]&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if !IE]&gt;&lt;!--&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;!--&lt;![endif]--&gt;
+&lt;head&gt;
+    &lt;meta charset=&quot;UTF-8&quot;&gt;
+
+    &lt;script nonce=&quot;2eMEFHPCLHq0ljWCwqJ7GQ&quot;&gt;if (typeof module === 'object') {window.module = module; module = undefined;}&lt;/script&gt;&lt;style type=&quot;text/css&quot; nonce=&quot;2eMEFHPCLHq0ljWCwqJ7GQ&quot;&gt;
+        .bgStyle {
+          background-image: none
+        }
+        .bgStyleIE8 {
+          
+        }
+        .copyright a:focus-visible, 
+        .privacy-policy a:focus-visible {
+          border-radius: 6px;
+          outline: rgb(84, 107, 231) solid 1px;
+          outline-offset: 2px;
+          text-decoration: none !important;
+        }
+    &lt;/style&gt;&lt;title&gt;okta.thezmx.com - 登录&lt;/title&gt;
+        &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot; /&gt;
+    &lt;meta name=&quot;robots&quot; content=&quot;noindex,nofollow&quot; /&gt;
+
+    &lt;script nonce=&quot;2eMEFHPCLHq0ljWCwqJ7GQ&quot;&gt;window.cspNonce = '2eMEFHPCLHq0ljWCwqJ7GQ';&lt;/script&gt;&lt;script src=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/js/okta-sign-in.min.js&quot; type=&quot;text/javascript&quot; integrity=&quot;sha384-/bdtnQ3qLULqGk7qWuTuzI+YFdTW72ZCe0acb4sdUSv2m1W7WasipClTLNS6TUJF&quot; crossorigin=&quot;anonymous&quot;&gt;&lt;/script&gt;
+    &lt;link href=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/css/okta-sign-in.min.css&quot; type=&quot;text/css&quot; rel=&quot;stylesheet&quot; integrity=&quot;sha384-ZNgLYd+ifeyipV1NIoXaz/Csuvdk/bCPieKwgj49kAskX0k1Y7jqvoN7FYzSosmn&quot; crossorigin=&quot;anonymous&quot;/&gt;
+
+    &lt;link rel=&quot;shortcut icon&quot; href=&quot;/favicon.ico&quot; type=&quot;image/x-icon&quot;/&gt;
+&lt;link href=&quot;https://ok3static2.oktacdn.com/assets/
+…（已截断，全文 33885 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — Cookie 鉴权失败（返回 HTML 登录页，请更新 adminCookie）<br/><small>响应为 HTML 而非 JSON API</small></td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — ret_code=10001<br/><small>Unexpected token '&lt;' at 1:1
+&lt;!DOCTYPE html&gt;
+^</small></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-21" open>
+      <summary><span class="sum-title"><span class="status-dot failed"></span>B12 GET /sync/events 非法 tab → 10001</span><span class="sum-meta">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events?tab=UNKNOWN&amp;page=1&amp;pageSize=5 · HTTP 200 · 632 ms · <span class="bad">1 失败</span></span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="muted">—</span></div>
+        </div>
+        <div class="meta">响应体积 34292 字节</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events?tab=UNKNOWN&amp;page=1&amp;pageSize=5</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events?tab=UNKNOWN&amp;page=1&amp;pageSize=5
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/sync-operation-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Google Chrome&quot;;v=&quot;149&quot;, &quot;Chromium&quot;;v=&quot;149&quot;, &quot;Not)A;Brand&quot;;v=&quot;24&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
+Accept-Language: zh-CN,zh;q=0.9</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: text/html;charset=utf-8
+
+&lt;!DOCTYPE html&gt;
+&lt;!--[if IE 7]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9 lt-ie8&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if IE 8]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9&quot;&gt; &lt;![endif]--&gt;
+&lt;!--[if IE 9]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if gt IE 9]&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if !IE]&gt;&lt;!--&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;!--&lt;![endif]--&gt;
+&lt;head&gt;
+    &lt;meta charset=&quot;UTF-8&quot;&gt;
+
+    &lt;script nonce=&quot;FH7cwNVdVHTf06NN09_J4w&quot;&gt;if (typeof module === 'object') {window.module = module; module = undefined;}&lt;/script&gt;&lt;style type=&quot;text/css&quot; nonce=&quot;FH7cwNVdVHTf06NN09_J4w&quot;&gt;
+        .bgStyle {
+          background-image: none
+        }
+        .bgStyleIE8 {
+          
+        }
+        .copyright a:focus-visible, 
+        .privacy-policy a:focus-visible {
+          border-radius: 6px;
+          outline: rgb(84, 107, 231) solid 1px;
+          outline-offset: 2px;
+          text-decoration: none !important;
+        }
+    &lt;/style&gt;&lt;title&gt;okta.thezmx.com - 登录&lt;/title&gt;
+        &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot; /&gt;
+    &lt;meta name=&quot;robots&quot; content=&quot;noindex,nofollow&quot; /&gt;
+
+    &lt;script nonce=&quot;FH7cwNVdVHTf06NN09_J4w&quot;&gt;window.cspNonce = 'FH7cwNVdVHTf06NN09_J4w';&lt;/script&gt;&lt;script src=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/js/okta-sign-in.min.js&quot; type=&quot;text/javascript&quot; integrity=&quot;sha384-/bdtnQ3qLULqGk7qWuTuzI+YFdTW72ZCe0acb4sdUSv2m1W7WasipClTLNS6TUJF&quot; crossorigin=&quot;anonymous&quot;&gt;&lt;/script&gt;
+    &lt;link href=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/css/okta-sign-in.min.css&quot; type=&quot;text/css&quot; rel=&quot;stylesheet&quot; integrity=&quot;sha384-ZNgLYd+ifeyipV1NIoXaz/Csuvdk/bCPieKwgj49kAskX0k1Y7jqvoN7FYzSosmn&quot; crossorigin=&quot;anonymous&quot;/&gt;
+
+    &lt;link rel=&quot;shortcut icon&quot; href=&quot;/favicon.ico&quot; type=&quot;image/x-icon&quot;/&gt;
+&lt;link href=&quot;https://ok3static2.oktacdn.com/assets/
+…（已截断，全文 33985 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — Cookie 鉴权失败（返回 HTML 登录页，请更新 adminCookie）<br/><small>响应为 HTML 而非 JSON API</small></td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details></div>
+  </details>
+<details class="details-folder" open>
+    <summary><span class="folder-title">D · POST 正向 [ok]</span><span class="folder-meta">5 个用例 · <span class="bad">5 条断言失败</span></span></summary>
+    <div class="folder-inner"><details class="details-req" id="req-27" open>
+      <summary><span class="sum-title"><span class="status-dot failed"></span>D01 switch 切换后 GET 校验并还原</span><span class="sum-meta">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/setting/switch · HTTP 200 · 906 ms · <span class="bad">1 失败</span></span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="muted">—</span></div>
+        </div>
+        <div class="meta">响应体积 34148 字节</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/setting/switch</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">POST https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/setting/switch
+Content-Type: application/json
+X-Operator: sven.yang
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/sync-operation-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Google Chrome&quot;;v=&quot;149&quot;, &quot;Chromium&quot;;v=&quot;149&quot;, &quot;Not)A;Brand&quot;;v=&quot;24&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
+Accept-Language: zh-CN,zh;q=0.9
+
+{
+  &quot;enabled&quot;: true
+}</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: text/html;charset=utf-8
+
+&lt;!DOCTYPE html&gt;
+&lt;!--[if IE 7]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9 lt-ie8&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if IE 8]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9&quot;&gt; &lt;![endif]--&gt;
+&lt;!--[if IE 9]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if gt IE 9]&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if !IE]&gt;&lt;!--&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;!--&lt;![endif]--&gt;
+&lt;head&gt;
+    &lt;meta charset=&quot;UTF-8&quot;&gt;
+
+    &lt;script nonce=&quot;QC8eO4CGj26KpfLS0PezhA&quot;&gt;if (typeof module === 'object') {window.module = module; module = undefined;}&lt;/script&gt;&lt;style type=&quot;text/css&quot; nonce=&quot;QC8eO4CGj26KpfLS0PezhA&quot;&gt;
+        .bgStyle {
+          background-image: none
+        }
+        .bgStyleIE8 {
+          
+        }
+        .copyright a:focus-visible, 
+        .privacy-policy a:focus-visible {
+          border-radius: 6px;
+          outline: rgb(84, 107, 231) solid 1px;
+          outline-offset: 2px;
+          text-decoration: none !important;
+        }
+    &lt;/style&gt;&lt;title&gt;okta.thezmx.com - 登录&lt;/title&gt;
+        &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot; /&gt;
+    &lt;meta name=&quot;robots&quot; content=&quot;noindex,nofollow&quot; /&gt;
+
+    &lt;script nonce=&quot;QC8eO4CGj26KpfLS0PezhA&quot;&gt;window.cspNonce = 'QC8eO4CGj26KpfLS0PezhA';&lt;/script&gt;&lt;script src=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/js/okta-sign-in.min.js&quot; type=&quot;text/javascript&quot; integrity=&quot;sha384-/bdtnQ3qLULqGk7qWuTuzI+YFdTW72ZCe0acb4sdUSv2m1W7WasipClTLNS6TUJF&quot; crossorigin=&quot;anonymous&quot;&gt;&lt;/script&gt;
+    &lt;link href=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/css/okta-sign-in.min.css&quot; type=&quot;text/css&quot; rel=&quot;stylesheet&quot; integrity=&quot;sha384-ZNgLYd+ifeyipV1NIoXaz/Csuvdk/bCPieKwgj49kAskX0k1Y7jqvoN7FYzSosmn&quot; crossorigin=&quot;anonymous&quot;/&gt;
+
+    &lt;link rel=&quot;shortcut icon&quot; href=&quot;/favicon.ico&quot; type=&quot;image/x-icon&quot;/&gt;
+&lt;link href=&quot;https://ok3static2.oktacdn.com/assets/
+…（已截断，全文 33841 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — Cookie 鉴权失败（返回 HTML 登录页，请更新 adminCookie）<br/><small>响应为 HTML 而非 JSON API</small></td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-28" open>
+      <summary><span class="sum-title"><span class="status-dot failed"></span>D01b switch 还原初始值</span><span class="sum-meta">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/setting/switch · HTTP 200 · 784 ms · <span class="bad">1 失败</span></span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="muted">—</span></div>
+        </div>
+        <div class="meta">响应体积 34256 字节</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/setting/switch</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">POST https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/setting/switch
+Content-Type: application/json
+X-Operator: sven.yang
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/sync-operation-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Google Chrome&quot;;v=&quot;149&quot;, &quot;Chromium&quot;;v=&quot;149&quot;, &quot;Not)A;Brand&quot;;v=&quot;24&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
+Accept-Language: zh-CN,zh;q=0.9
+
+{
+  &quot;enabled&quot;: 
+}</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: text/html;charset=utf-8
+
+&lt;!DOCTYPE html&gt;
+&lt;!--[if IE 7]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9 lt-ie8&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if IE 8]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9&quot;&gt; &lt;![endif]--&gt;
+&lt;!--[if IE 9]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if gt IE 9]&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if !IE]&gt;&lt;!--&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;!--&lt;![endif]--&gt;
+&lt;head&gt;
+    &lt;meta charset=&quot;UTF-8&quot;&gt;
+
+    &lt;script nonce=&quot;MN5ErrAPrNY-O6f42rDYqg&quot;&gt;if (typeof module === 'object') {window.module = module; module = undefined;}&lt;/script&gt;&lt;style type=&quot;text/css&quot; nonce=&quot;MN5ErrAPrNY-O6f42rDYqg&quot;&gt;
+        .bgStyle {
+          background-image: none
+        }
+        .bgStyleIE8 {
+          
+        }
+        .copyright a:focus-visible, 
+        .privacy-policy a:focus-visible {
+          border-radius: 6px;
+          outline: rgb(84, 107, 231) solid 1px;
+          outline-offset: 2px;
+          text-decoration: none !important;
+        }
+    &lt;/style&gt;&lt;title&gt;okta.thezmx.com - 登录&lt;/title&gt;
+        &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot; /&gt;
+    &lt;meta name=&quot;robots&quot; content=&quot;noindex,nofollow&quot; /&gt;
+
+    &lt;script nonce=&quot;MN5ErrAPrNY-O6f42rDYqg&quot;&gt;window.cspNonce = 'MN5ErrAPrNY-O6f42rDYqg';&lt;/script&gt;&lt;script src=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/js/okta-sign-in.min.js&quot; type=&quot;text/javascript&quot; integrity=&quot;sha384-/bdtnQ3qLULqGk7qWuTuzI+YFdTW72ZCe0acb4sdUSv2m1W7WasipClTLNS6TUJF&quot; crossorigin=&quot;anonymous&quot;&gt;&lt;/script&gt;
+    &lt;link href=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/css/okta-sign-in.min.css&quot; type=&quot;text/css&quot; rel=&quot;stylesheet&quot; integrity=&quot;sha384-ZNgLYd+ifeyipV1NIoXaz/Csuvdk/bCPieKwgj49kAskX0k1Y7jqvoN7FYzSosmn&quot; crossorigin=&quot;anonymous&quot;/&gt;
+
+    &lt;link rel=&quot;shortcut icon&quot; href=&quot;/favicon.ico&quot; type=&quot;image/x-icon&quot;/&gt;
+&lt;link href=&quot;https://ok3static2.oktacdn.com/assets/
+…（已截断，全文 33949 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — Cookie 鉴权失败（返回 HTML 登录页，请更新 adminCookie）<br/><small>响应为 HTML 而非 JSON API</small></td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-29" open>
+      <summary><span class="sum-title"><span class="status-dot failed"></span>D02 threshold 更新后 GET 校验并还原</span><span class="sum-meta">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/setting/threshold · HTTP 200 · 617 ms · <span class="bad">1 失败</span></span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="muted">—</span></div>
+        </div>
+        <div class="meta">响应体积 34440 字节</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/setting/threshold</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">POST https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/setting/threshold
+Content-Type: application/json
+X-Operator: sven.yang
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/sync-operation-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Google Chrome&quot;;v=&quot;149&quot;, &quot;Chromium&quot;;v=&quot;149&quot;, &quot;Not)A;Brand&quot;;v=&quot;24&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
+Accept-Language: zh-CN,zh;q=0.9
+
+{
+  &quot;volumeThreshold&quot;: 1500
+}</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: text/html;charset=utf-8
+
+&lt;!DOCTYPE html&gt;
+&lt;!--[if IE 7]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9 lt-ie8&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if IE 8]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9&quot;&gt; &lt;![endif]--&gt;
+&lt;!--[if IE 9]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if gt IE 9]&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if !IE]&gt;&lt;!--&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;!--&lt;![endif]--&gt;
+&lt;head&gt;
+    &lt;meta charset=&quot;UTF-8&quot;&gt;
+
+    &lt;script nonce=&quot;GojQM2rVromkV5tusng2iA&quot;&gt;if (typeof module === 'object') {window.module = module; module = undefined;}&lt;/script&gt;&lt;style type=&quot;text/css&quot; nonce=&quot;GojQM2rVromkV5tusng2iA&quot;&gt;
+        .bgStyle {
+          background-image: none
+        }
+        .bgStyleIE8 {
+          
+        }
+        .copyright a:focus-visible, 
+        .privacy-policy a:focus-visible {
+          border-radius: 6px;
+          outline: rgb(84, 107, 231) solid 1px;
+          outline-offset: 2px;
+          text-decoration: none !important;
+        }
+    &lt;/style&gt;&lt;title&gt;okta.thezmx.com - 登录&lt;/title&gt;
+        &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot; /&gt;
+    &lt;meta name=&quot;robots&quot; content=&quot;noindex,nofollow&quot; /&gt;
+
+    &lt;script nonce=&quot;GojQM2rVromkV5tusng2iA&quot;&gt;window.cspNonce = 'GojQM2rVromkV5tusng2iA';&lt;/script&gt;&lt;script src=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/js/okta-sign-in.min.js&quot; type=&quot;text/javascript&quot; integrity=&quot;sha384-/bdtnQ3qLULqGk7qWuTuzI+YFdTW72ZCe0acb4sdUSv2m1W7WasipClTLNS6TUJF&quot; crossorigin=&quot;anonymous&quot;&gt;&lt;/script&gt;
+    &lt;link href=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/css/okta-sign-in.min.css&quot; type=&quot;text/css&quot; rel=&quot;stylesheet&quot; integrity=&quot;sha384-ZNgLYd+ifeyipV1NIoXaz/Csuvdk/bCPieKwgj49kAskX0k1Y7jqvoN7FYzSosmn&quot; crossorigin=&quot;anonymous&quot;/&gt;
+
+    &lt;link rel=&quot;shortcut icon&quot; href=&quot;/favicon.ico&quot; type=&quot;image/x-icon&quot;/&gt;
+&lt;link href=&quot;https://ok3static2.oktacdn.com/assets/
+…（已截断，全文 34133 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — Cookie 鉴权失败（返回 HTML 登录页，请更新 adminCookie）<br/><small>响应为 HTML 而非 JSON API</small></td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-30" open>
+      <summary><span class="sum-title"><span class="status-dot failed"></span>D02b threshold 还原初始值</span><span class="sum-meta">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/setting/threshold · HTTP 200 · 851 ms · <span class="bad">1 失败</span></span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="muted">—</span></div>
+        </div>
+        <div class="meta">响应体积 34258 字节</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/setting/threshold</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">POST https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/setting/threshold
+Content-Type: application/json
+X-Operator: sven.yang
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/sync-operation-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Google Chrome&quot;;v=&quot;149&quot;, &quot;Chromium&quot;;v=&quot;149&quot;, &quot;Not)A;Brand&quot;;v=&quot;24&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
+Accept-Language: zh-CN,zh;q=0.9
+
+{
+  &quot;volumeThreshold&quot;: 1000
+}</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: text/html;charset=utf-8
+
+&lt;!DOCTYPE html&gt;
+&lt;!--[if IE 7]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9 lt-ie8&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if IE 8]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9&quot;&gt; &lt;![endif]--&gt;
+&lt;!--[if IE 9]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if gt IE 9]&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if !IE]&gt;&lt;!--&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;!--&lt;![endif]--&gt;
+&lt;head&gt;
+    &lt;meta charset=&quot;UTF-8&quot;&gt;
+
+    &lt;script nonce=&quot;heROoSNQZCpMuhUZ0LNvww&quot;&gt;if (typeof module === 'object') {window.module = module; module = undefined;}&lt;/script&gt;&lt;style type=&quot;text/css&quot; nonce=&quot;heROoSNQZCpMuhUZ0LNvww&quot;&gt;
+        .bgStyle {
+          background-image: none
+        }
+        .bgStyleIE8 {
+          
+        }
+        .copyright a:focus-visible, 
+        .privacy-policy a:focus-visible {
+          border-radius: 6px;
+          outline: rgb(84, 107, 231) solid 1px;
+          outline-offset: 2px;
+          text-decoration: none !important;
+        }
+    &lt;/style&gt;&lt;title&gt;okta.thezmx.com - 登录&lt;/title&gt;
+        &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot; /&gt;
+    &lt;meta name=&quot;robots&quot; content=&quot;noindex,nofollow&quot; /&gt;
+
+    &lt;script nonce=&quot;heROoSNQZCpMuhUZ0LNvww&quot;&gt;window.cspNonce = 'heROoSNQZCpMuhUZ0LNvww';&lt;/script&gt;&lt;script src=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/js/okta-sign-in.min.js&quot; type=&quot;text/javascript&quot; integrity=&quot;sha384-/bdtnQ3qLULqGk7qWuTuzI+YFdTW72ZCe0acb4sdUSv2m1W7WasipClTLNS6TUJF&quot; crossorigin=&quot;anonymous&quot;&gt;&lt;/script&gt;
+    &lt;link href=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/css/okta-sign-in.min.css&quot; type=&quot;text/css&quot; rel=&quot;stylesheet&quot; integrity=&quot;sha384-ZNgLYd+ifeyipV1NIoXaz/Csuvdk/bCPieKwgj49kAskX0k1Y7jqvoN7FYzSosmn&quot; crossorigin=&quot;anonymous&quot;/&gt;
+
+    &lt;link rel=&quot;shortcut icon&quot; href=&quot;/favicon.ico&quot; type=&quot;image/x-icon&quot;/&gt;
+&lt;link href=&quot;https://ok3static2.oktacdn.com/assets/
+…（已截断，全文 33951 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — Cookie 鉴权失败（返回 HTML 登录页，请更新 adminCookie）<br/><small>响应为 HTML 而非 JSON API</small></td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-31" open>
+      <summary><span class="sum-title"><span class="status-dot failed"></span>D08 bootstrap 限流正向 maxBatches=1</span><span class="sum-meta">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events/bootstrap · HTTP 200 · 826 ms · <span class="bad">1 失败</span></span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="muted">—</span></div>
+        </div>
+        <div class="meta">响应体积 34338 字节</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events/bootstrap</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">POST https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/sync/events/bootstrap
+Content-Type: application/json
+X-Operator: sven.yang
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/sync-operation-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Google Chrome&quot;;v=&quot;149&quot;, &quot;Chromium&quot;;v=&quot;149&quot;, &quot;Not)A;Brand&quot;;v=&quot;24&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
+Accept-Language: zh-CN,zh;q=0.9
+
+{
+  &quot;resetCursor&quot;: false,
+  &quot;maxBatches&quot;: 1
+}</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: text/html;charset=utf-8
+
+&lt;!DOCTYPE html&gt;
+&lt;!--[if IE 7]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9 lt-ie8&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if IE 8]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10 lt-ie9&quot;&gt; &lt;![endif]--&gt;
+&lt;!--[if IE 9]&gt;&lt;html lang=&quot;zh-CN&quot; class=&quot;lt-ie10&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if gt IE 9]&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;![endif]--&gt;
+&lt;!--[if !IE]&gt;&lt;!--&gt;&lt;html lang=&quot;zh-CN&quot;&gt;&lt;!--&lt;![endif]--&gt;
+&lt;head&gt;
+    &lt;meta charset=&quot;UTF-8&quot;&gt;
+
+    &lt;script nonce=&quot;ybegtGEYd7tgWGR75V1wSA&quot;&gt;if (typeof module === 'object') {window.module = module; module = undefined;}&lt;/script&gt;&lt;style type=&quot;text/css&quot; nonce=&quot;ybegtGEYd7tgWGR75V1wSA&quot;&gt;
+        .bgStyle {
+          background-image: none
+        }
+        .bgStyleIE8 {
+          
+        }
+        .copyright a:focus-visible, 
+        .privacy-policy a:focus-visible {
+          border-radius: 6px;
+          outline: rgb(84, 107, 231) solid 1px;
+          outline-offset: 2px;
+          text-decoration: none !important;
+        }
+    &lt;/style&gt;&lt;title&gt;okta.thezmx.com - 登录&lt;/title&gt;
+        &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot; /&gt;
+    &lt;meta name=&quot;robots&quot; content=&quot;noindex,nofollow&quot; /&gt;
+
+    &lt;script nonce=&quot;ybegtGEYd7tgWGR75V1wSA&quot;&gt;window.cspNonce = 'ybegtGEYd7tgWGR75V1wSA';&lt;/script&gt;&lt;script src=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/js/okta-sign-in.min.js&quot; type=&quot;text/javascript&quot; integrity=&quot;sha384-/bdtnQ3qLULqGk7qWuTuzI+YFdTW72ZCe0acb4sdUSv2m1W7WasipClTLNS6TUJF&quot; crossorigin=&quot;anonymous&quot;&gt;&lt;/script&gt;
+    &lt;link href=&quot;https://ok3static2.oktacdn.com/assets/js/sdk/okta-signin-widget/7.46.2/css/okta-sign-in.min.css&quot; type=&quot;text/css&quot; rel=&quot;stylesheet&quot; integrity=&quot;sha384-ZNgLYd+ifeyipV1NIoXaz/Csuvdk/bCPieKwgj49kAskX0k1Y7jqvoN7FYzSosmn&quot; crossorigin=&quot;anonymous&quot;/&gt;
+
+    &lt;link rel=&quot;shortcut icon&quot; href=&quot;/favicon.ico&quot; type=&quot;image/x-icon&quot;/&gt;
+&lt;link href=&quot;https://ok3static2.oktacdn.com/assets/
+…（已截断，全文 34031 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — Cookie 鉴权失败（返回 HTML 登录页，请更新 adminCookie）<br/><small>响应为 HTML 而非 JSON API</small></td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details></div>
+  </details>
+  </section></section>
+
+    <footer>由 <code>newman-json-to-zh-html.mjs</code> 生成 · registry <code>pm-admin-sync-testnet</code></footer>
+  </div>
+</body>
+</html>

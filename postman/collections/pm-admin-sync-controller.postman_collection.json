@@ -1,0 +1,1296 @@
+{
+  "info": {
+    "_postman_id": "c3d4e5f6-a7b8-9012-cdef-pm-admin-sync",
+    "name": "PM Admin · PmSyncController · /private/v1/pm/sync",
+    "description": "管理端 `PmSyncController` 外部契约测试。\n\n**apiBase**（默认 testnet 网关）：`https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm`\n\n**鉴权**：环境变量 `adminCookie` + `referer`（见 `pm-admin-testnet.private.postman_environment.json`，勿提交仓库）。\n\n**运行**：`npm run pm:admin-sync`（testnet） / `npm run pm:admin-sync:local`（本地 :8080）",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "apiBase", "value": "https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm" },
+    { "key": "operator", "value": "postman-cli" },
+    { "key": "autoSyncEnabledVersion", "value": "0" },
+    { "key": "autoOnlineVolumeThresholdVersion", "value": "0" },
+    { "key": "fakeStagingId", "value": "999999999" },
+    { "key": "fakeEventId", "value": "999999999" },
+    { "key": "positiveEventId", "value": "" },
+    { "key": "positiveEventCategoryId", "value": "101" },
+    { "key": "leafCategoryId", "value": "101" },
+    { "key": "stagingIdToManual", "value": "" },
+    { "key": "stagingIdBlocked", "value": "" },
+    { "key": "stagingIdForOnline", "value": "" },
+    { "key": "stagingIdForEdit", "value": "" },
+    { "key": "eventIdFromOnlineBatch", "value": "" },
+    { "key": "_origAutoSyncEnabled", "value": "" },
+    { "key": "_origVolumeThreshold", "value": "1000" }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const apiBase = pm.environment.get('apiBase') || pm.collectionVariables.get('apiBase') || '';",
+          "const isTestnet = apiBase.includes('thezmx.com');",
+          "const cookie = (pm.environment.get('adminCookie') || pm.collectionVariables.get('adminCookie') || '').trim();",
+          "if (isTestnet && !cookie) {",
+          "  throw new Error('testnet 网关需 Cookie 鉴权：复制 pm-admin-testnet.private.postman_environment.example.json 并填入 adminCookie');",
+          "}",
+          "if (cookie) {",
+          "  pm.request.headers.upsert({ key: 'Cookie', value: cookie });",
+          "}",
+          "const referer = pm.environment.get('referer');",
+          "if (referer) {",
+          "  pm.request.headers.upsert({ key: 'Referer', value: referer });",
+          "}",
+          "if (pm.environment.get('useXhr') === 'true' || isTestnet) {",
+          "  pm.request.headers.upsert({ key: 'X-Requested-With', value: 'XMLHttpRequest' });",
+          "}",
+          "if (isTestnet) {",
+          "  pm.request.headers.upsert({ key: 'User-Agent', value: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36' });",
+          "  pm.request.headers.upsert({ key: 'sec-ch-ua', value: '\"Google Chrome\";v=\"149\", \"Chromium\";v=\"149\", \"Not)A;Brand\";v=\"24\"' });",
+          "  pm.request.headers.upsert({ key: 'sec-ch-ua-mobile', value: '?0' });",
+          "  pm.request.headers.upsert({ key: 'sec-ch-ua-platform', value: '\"macOS\"' });",
+          "  pm.request.headers.upsert({ key: 'Sec-Fetch-Dest', value: 'empty' });",
+          "  pm.request.headers.upsert({ key: 'Sec-Fetch-Mode', value: 'cors' });",
+          "  pm.request.headers.upsert({ key: 'Sec-Fetch-Site', value: 'same-origin' });",
+          "  if (!referer) {",
+          "    pm.request.headers.upsert({ key: 'Referer', value: 'https://ls-management-platform-testnet.thezmx.com/cms/predict/sync-operation-management' });",
+          "  }",
+          "}",
+          "pm.request.headers.upsert({ key: 'Accept', value: 'application/json, text/plain, */*' });",
+          "pm.request.headers.upsert({ key: 'Accept-Language', value: 'zh-CN,zh;q=0.9' });"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const apiBase = pm.environment.get('apiBase') || pm.collectionVariables.get('apiBase') || '';",
+          "if (!apiBase.includes('thezmx.com')) return;",
+          "const ct = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+          "const body = pm.response.text() || '';",
+          "const looksHtml = ct.includes('text/html') || body.trimStart().startsWith('<!');",
+          "if (looksHtml) {",
+          "  pm.test('Cookie 鉴权失败（返回 HTML 登录页，请更新 adminCookie）', () => {",
+          "    pm.expect.fail('响应为 HTML 而非 JSON API');",
+          "  });",
+          "  return;",
+          "}",
+          "pm.test('响应为 JSON', () => {",
+          "  pm.response.to.be.json;",
+          "});"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "00 Setup",
+      "description": "缓存 setting；从 `GET /sync/events` 按 tab 解析 stagingId / eventId。",
+      "item": [
+        {
+          "name": "S01 拉取 setting 缓存初始值",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Responses 壳字段', () => {",
+                  "  pm.expect(body).to.include.keys('ret_code', 'ret_msg', 'time_now');",
+                  "});",
+                  "if (body.ret_code === 0 && body.result) {",
+                  "  pm.collectionVariables.set('autoSyncEnabledVersion', String(body.result.autoSyncEnabledVersion ?? 0));",
+                  "  pm.collectionVariables.set('autoOnlineVolumeThresholdVersion', String(body.result.autoOnlineVolumeThresholdVersion ?? 0));",
+                  "  pm.collectionVariables.set('_origAutoSyncEnabled', String(body.result.autoSyncEnabled));",
+                  "  pm.collectionVariables.set('_origVolumeThreshold', String(body.result.autoOnlineVolumeThreshold ?? 1000));",
+                  "  pm.test('已缓存 setting 初始值', () => {",
+                  "    pm.expect(pm.collectionVariables.get('_origAutoSyncEnabled')).to.match(/^(true|false)$/);",
+                  "  });",
+                  "} else {",
+                  "  pm.test('DB 未就绪时跳过 version 缓存（ret_code≠0）', () => {",
+                  "    pm.expect(body.ret_code).to.be.a('number');",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/sync/setting"
+          }
+        },
+        {
+          "name": "S02 GET /sync/events tab=MANUAL 解析 stagingId",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "pm.test('PageResponse 结构', () => {",
+                  "  pm.expect(body.result).to.include.keys('items', 'total', 'page', 'pageSize');",
+                  "  pm.expect(body.result.items).to.be.an('array');",
+                  "});",
+                  "const items = body.result.items || [];",
+                  "if (items.length >= 1) {",
+                  "  pm.collectionVariables.set('stagingIdForOnline', String(items[0].id));",
+                  "  if (items[0].resolvedCategoryId != null) {",
+                  "    pm.collectionVariables.set('leafCategoryId', String(items[0].resolvedCategoryId));",
+                  "  }",
+                  "  pm.test('stagingIdForOnline=' + items[0].id, () => pm.expect(items[0].id).to.be.a('number'));",
+                  "}",
+                  "if (items.length >= 2) {",
+                  "  pm.collectionVariables.set('stagingIdToManual', String(items[1].id));",
+                  "  pm.test('stagingIdToManual=' + items[1].id, () => pm.expect(items[1].id).to.be.a('number'));",
+                  "} else if (items.length === 1) {",
+                  "  pm.collectionVariables.set('stagingIdToManual', String(items[0].id));",
+                  "  pm.collectionVariables.set('stagingIdForOnline', '');",
+                  "}",
+                  "if (!items.length) {",
+                  "  pm.test('MANUAL 池为空，D04-D06 批量正向将跳过', () => pm.expect(body.result.total).to.eql(0));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/sync/events?tab=MANUAL&page=1&pageSize=10"
+          }
+        },
+        {
+          "name": "S03 GET /sync/events tab=ONLINE 解析 stagingIdForEdit",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "const items = body.result?.items || [];",
+                  "const withEvent = items.find((i) => i.eventId != null && i.eventId > 0);",
+                  "const picked = withEvent || items[0];",
+                  "if (picked?.id != null) {",
+                  "  pm.collectionVariables.set('stagingIdForEdit', String(picked.id));",
+                  "}",
+                  "if (picked?.eventId != null && picked.eventId > 0) {",
+                  "  pm.collectionVariables.set('positiveEventId', String(picked.eventId));",
+                  "  pm.test('positiveEventId=' + picked.eventId, () => pm.expect(picked.eventId).to.be.above(0));",
+                  "}",
+                  "if (picked?.resolvedCategoryId != null) {",
+                  "  pm.collectionVariables.set('positiveEventCategoryId', String(picked.resolvedCategoryId));",
+                  "}",
+                  "if (!picked?.eventId) {",
+                  "  pm.test('ONLINE 池无 eventId，D03 edit 回退旧 /events 或跳过', () => pm.expect(items).to.be.an('array'));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/sync/events?tab=ONLINE&page=1&pageSize=10"
+          }
+        },
+        {
+          "name": "S04 GET /sync/events tab=BLOCKED 解析 stagingIdBlocked",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "const items = body.result?.items || [];",
+                  "if (items.length && !pm.collectionVariables.get('stagingIdBlocked')) {",
+                  "  pm.collectionVariables.set('stagingIdBlocked', String(items[0].id));",
+                  "  pm.test('stagingIdBlocked=' + items[0].id, () => pm.expect(items[0].id).to.be.a('number'));",
+                  "}",
+                  "if (!items.length) {",
+                  "  pm.test('BLOCKED 池为空（D04 拦截成功后会写入）', () => pm.expect(body.result.total).to.eql(0));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/sync/events?tab=BLOCKED&page=1&pageSize=5"
+          }
+        },
+        {
+          "name": "S05 回退拉取 /events（ONLINE 无 eventId 时）",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('positiveEventId')) {",
+                  "  pm.execution.skipRequest();",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "const items = body.result?.items || [];",
+                  "const online = items.find((e) => e.clientVisible && e.workflowStatus === 'APPROVED');",
+                  "const picked = online || items[0];",
+                  "if (picked?.id != null) {",
+                  "  pm.collectionVariables.set('positiveEventId', String(picked.id));",
+                  "  pm.test('回退 positiveEventId=' + picked.id, () => pm.expect(String(picked.id)).to.match(/^\\d+$/));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/events?page=1&pageSize=20"
+          }
+        },
+        {
+          "name": "S06 回退拉取叶子分类 leafCategoryId",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const leaf = pm.collectionVariables.get('leafCategoryId');",
+                  "if (leaf && leaf !== '101') { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "function walk(nodes, fn) { (nodes || []).forEach((n) => { fn(n); walk(n.children, fn); }); }",
+                  "let leafId = null;",
+                  "walk(body.result, (n) => { if (!leafId && n.isLeaf && n.id != null) leafId = String(n.id); });",
+                  "if (leafId) {",
+                  "  pm.collectionVariables.set('leafCategoryId', leafId);",
+                  "  pm.test('已写入 leafCategoryId=' + leafId, () => pm.expect(leafId).to.match(/^\\d+$/));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/categories/tree"
+          }
+        }
+      ]
+    },
+    {
+      "name": "A · GET 正向 [ok]",
+      "description": "只读接口业务成功：`ret_code=0` 且 result 字段完整。",
+      "item": [
+        {
+          "name": "A01 GET /sync/setting",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "pm.test('result 含开关与门槛', () => {",
+                  "  pm.expect(body.result).to.include.keys(",
+                  "    'autoSyncEnabled', 'autoSyncEnabledVersion',",
+                  "    'autoOnlineVolumeThreshold', 'autoOnlineVolumeThresholdVersion',",
+                  "    'autoOnlineDefaultMaxOrderAmount', 'lastSyncCursor'",
+                  "  );",
+                  "  pm.expect(body.result.autoOnlineVolumeThreshold).to.be.at.least(1);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/sync/setting"
+          }
+        },
+        {
+          "name": "A02 GET /sync/stat-cards",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "pm.test('result 含统计字段', () => {",
+                  "  pm.expect(body.result).to.include.keys(",
+                  "    'onlineCount', 'manualCount', 'blockedCount', 'autoOnlineCount', 'autoOnlineRatio'",
+                  "  );",
+                  "  pm.expect(body.result.onlineCount).to.be.at.least(0);",
+                  "  pm.expect(body.result.autoOnlineRatio).to.be.within(0, 1);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/sync/stat-cards"
+          }
+        },
+        {
+          "name": "A03 GET /sync/events tab=MANUAL",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "pm.test('列表项含 staging 主键 id', () => {",
+                  "  const items = body.result.items || [];",
+                  "  pm.expect(body.result).to.include.keys('items', 'total', 'page', 'pageSize');",
+                  "  if (!items.length) return;",
+                  "  const row = items[0];",
+                  "  pm.expect(row).to.include.keys('id', 'routeResult', 'onlineStatus');",
+                  "  pm.expect(row.id).to.be.a('number');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/sync/events?tab=MANUAL&page=1&pageSize=5"
+          }
+        }
+      ]
+    },
+    {
+      "name": "B · 参数校验 [err]",
+      "description": "不依赖 DB：operator / @Valid 校验。",
+      "item": [
+        {
+          "name": "B01 switch 缺 X-Operator → 10001",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=10001', () => pm.expect(body.ret_code).to.eql(10001));",
+                  "pm.test('提示 operator 必填', () => {",
+                  "  pm.expect(body.ret_msg).to.include('X-Operator');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"enabled\": true\n}"
+            },
+            "url": "{{apiBase}}/sync/setting/switch"
+          }
+        },
+        {
+          "name": "B02 switch 缺 enabled → HTTP 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+                  "const body = pm.response.json();",
+                  "pm.test('enabled 校验信息', () => {",
+                  "  pm.expect(body.enabled).to.eql('enabled is required');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Operator", "value": "{{operator}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": "{{apiBase}}/sync/setting/switch"
+          }
+        },
+        {
+          "name": "B03 threshold volumeThreshold=0 → HTTP 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+                  "const body = pm.response.json();",
+                  "pm.test('volumeThreshold 校验', () => {",
+                  "  pm.expect(body.volumeThreshold).to.include('>= 1');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Operator", "value": "{{operator}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"volumeThreshold\": 0\n}"
+            },
+            "url": "{{apiBase}}/sync/setting/threshold"
+          }
+        },
+        {
+          "name": "B04 intercept 空 stagingIds → HTTP 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+                  "const body = pm.response.json();",
+                  "pm.test('stagingIds 校验', () => {",
+                  "  pm.expect(body.stagingIds).to.eql('stagingIds is required');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Operator", "value": "{{operator}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stagingIds\": []\n}"
+            },
+            "url": "{{apiBase}}/sync/events/intercept/batch"
+          }
+        },
+        {
+          "name": "B05 intercept 缺 operator → 10001",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=10001', () => pm.expect(body.ret_code).to.eql(10001));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stagingIds\": [1]\n}"
+            },
+            "url": "{{apiBase}}/sync/events/intercept/batch"
+          }
+        },
+        {
+          "name": "B06 online batch 缺 items → HTTP 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+                  "const body = pm.response.json();",
+                  "pm.test('items 校验', () => {",
+                  "  pm.expect(body.items).to.eql('items is required');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Operator", "value": "{{operator}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": []\n}"
+            },
+            "url": "{{apiBase}}/sync/events/online/batch"
+          }
+        },
+        {
+          "name": "B07 offline 缺 operator → 10001",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('ret_code=10001', () => pm.expect(pm.response.json().ret_code).to.eql(10001));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventIds\": [1]\n}"
+            },
+            "url": "{{apiBase}}/sync/events/offline/batch"
+          }
+        },
+        {
+          "name": "B08 edit 缺 operator → 10001",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('ret_code=10001', () => pm.expect(pm.response.json().ret_code).to.eql(10001));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": {{fakeStagingId}},\n  \"categoryId\": 1,\n  \"version\": 0\n}"
+            },
+            "url": "{{apiBase}}/sync/events/edit"
+          }
+        },
+        {
+          "name": "B09 restore 缺 operator → 10001",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('ret_code=10001', () => pm.expect(pm.response.json().ret_code).to.eql(10001));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stagingIds\": [1]\n}"
+            },
+            "url": "{{apiBase}}/sync/events/restore/batch"
+          }
+        },
+        {
+          "name": "B10 GET /sync/events 缺 tab → 10001",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('ret_code=10001', () => pm.expect(pm.response.json().ret_code).to.eql(10001));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/sync/events?page=1&pageSize=5"
+          }
+        },
+        {
+          "name": "B11 bootstrap 缺 operator → 10001",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('ret_code=10001', () => pm.expect(pm.response.json().ret_code).to.eql(10001));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resetCursor\": false,\n  \"maxBatches\": 1\n}"
+            },
+            "url": "{{apiBase}}/sync/events/bootstrap"
+          }
+        },
+        {
+          "name": "B12 GET /sync/events 非法 tab → 10001",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=10001', () => pm.expect(body.ret_code).to.eql(10001));",
+                  "pm.test('invalid tab 提示', () => pm.expect(body.ret_msg).to.include('tab'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/sync/events?tab=UNKNOWN&page=1&pageSize=5"
+          }
+        }
+      ]
+    },
+    {
+      "name": "C · 边界与异常",
+      "description": "假 id / 不存在数据：验证批量接口容错与失败明细，非业务正向。",
+      "item": [
+        {
+          "name": "C01 batch intercept 不存在 stagingId",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "pm.test('SyncBatchResultResponse 结构', () => {",
+                  "  pm.expect(body.result).to.include.keys('total', 'successCount', 'failedCount', 'failures', 'successes');",
+                  "  pm.expect(body.result.total).to.eql(1);",
+                  "  pm.expect(body.result.failedCount).to.eql(1);",
+                  "  pm.expect(body.result.failures).to.be.an('array').that.is.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Operator", "value": "{{operator}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stagingIds\": [{{fakeStagingId}}],\n  \"reason\": \"postman-cli\"\n}"
+            },
+            "url": "{{apiBase}}/sync/events/intercept/batch"
+          }
+        },
+        {
+          "name": "C02 batch online 不存在 stagingId",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "pm.test('批量结果壳', () => {",
+                  "  pm.expect(body.result.total).to.eql(1);",
+                  "  pm.expect(body.result.failedCount + body.result.successCount).to.eql(1);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Operator", "value": "{{operator}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    { \"stagingId\": {{fakeStagingId}}, \"categoryId\": 1 }\n  ]\n}"
+            },
+            "url": "{{apiBase}}/sync/events/online/batch"
+          }
+        },
+        {
+          "name": "C03 batch offline 不存在 eventId",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "pm.test('批量结果壳', () => {",
+                  "  pm.expect(body.result.total).to.eql(1);",
+                  "  pm.expect(body.result.failedCount).to.eql(1);",
+                  "  pm.expect(body.result.failures[0]).to.include.keys('id', 'message');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Operator", "value": "{{operator}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventIds\": [{{fakeEventId}}],\n  \"reason\": \"postman-cli\"\n}"
+            },
+            "url": "{{apiBase}}/sync/events/offline/batch"
+          }
+        },
+        {
+          "name": "C04 edit 不存在 stagingId",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('staging 不存在（ret_code≠0）', () => {",
+                  "  pm.expect(body.ret_code).to.be.a('number');",
+                  "  pm.expect(body.ret_code).to.not.eql(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Operator", "value": "{{operator}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": {{fakeStagingId}},\n  \"categoryId\": 1,\n  \"version\": 0\n}"
+            },
+            "url": "{{apiBase}}/sync/events/edit"
+          }
+        },
+        {
+          "name": "C05 batch restore 不存在 stagingId",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "pm.test('批量结果壳', () => {",
+                  "  pm.expect(body.result.total).to.eql(1);",
+                  "  pm.expect(body.result.failedCount).to.eql(1);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Operator", "value": "{{operator}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stagingIds\": [{{fakeStagingId}}],\n  \"remark\": \"postman-cli\"\n}"
+            },
+            "url": "{{apiBase}}/sync/events/restore/batch"
+          }
+        }
+      ]
+    },
+    {
+      "name": "D · POST 正向 [ok]",
+      "description": "业务成功路径：setting 往返、在线事件编辑；批量 id 由 Setup `GET /sync/events` 自动解析。",
+      "item": [
+        {
+          "name": "D01 switch 切换后 GET 校验并还原",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const orig = pm.collectionVariables.get('_origAutoSyncEnabled') === 'true';",
+                  "pm.collectionVariables.set('_toggleEnabled', orig ? 'false' : 'true');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "const orig = pm.collectionVariables.get('_origAutoSyncEnabled') === 'true';",
+                  "const toggled = body.result.autoSyncEnabled;",
+                  "pm.test('开关已切换', () => pm.expect(toggled).to.eql(!orig));",
+                  "pm.collectionVariables.set('autoSyncEnabledVersion', String(body.result.autoSyncEnabledVersion));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Operator", "value": "{{operator}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"enabled\": {{_toggleEnabled}}\n}"
+            },
+            "url": "{{apiBase}}/sync/setting/switch"
+          }
+        },
+        {
+          "name": "D01b switch 还原初始值",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('_restoreEnabled', pm.collectionVariables.get('_origAutoSyncEnabled'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "const orig = pm.collectionVariables.get('_origAutoSyncEnabled') === 'true';",
+                  "pm.test('开关已还原', () => pm.expect(body.result.autoSyncEnabled).to.eql(orig));",
+                  "pm.collectionVariables.set('autoSyncEnabledVersion', String(body.result.autoSyncEnabledVersion));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Operator", "value": "{{operator}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"enabled\": {{_restoreEnabled}}\n}"
+            },
+            "url": "{{apiBase}}/sync/setting/switch"
+          }
+        },
+        {
+          "name": "D02 threshold 更新后 GET 校验并还原",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "pm.test('门槛已更新为 1500', () => pm.expect(body.result.autoOnlineVolumeThreshold).to.eql(1500));",
+                  "pm.collectionVariables.set('autoOnlineVolumeThresholdVersion', String(body.result.autoOnlineVolumeThresholdVersion));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Operator", "value": "{{operator}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"volumeThreshold\": 1500\n}"
+            },
+            "url": "{{apiBase}}/sync/setting/threshold"
+          }
+        },
+        {
+          "name": "D02b threshold 还原初始值",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "const orig = Number(pm.collectionVariables.get('_origVolumeThreshold') || 1000);",
+                  "pm.test('门槛已还原', () => pm.expect(body.result.autoOnlineVolumeThreshold).to.eql(orig));",
+                  "pm.collectionVariables.set('autoOnlineVolumeThresholdVersion', String(body.result.autoOnlineVolumeThresholdVersion));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Operator", "value": "{{operator}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"volumeThreshold\": {{_origVolumeThreshold}}\n}"
+            },
+            "url": "{{apiBase}}/sync/setting/threshold"
+          }
+        },
+        {
+          "name": "D03 edit 在线事件 maxOrderAmount",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const eid = pm.collectionVariables.get('stagingIdForEdit');",
+                  "if (!eid) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "pm.test('SyncEventEditResponse', () => {",
+                  "  pm.expect(body.result.eventId).to.eql(Number(pm.collectionVariables.get('positiveEventId')));",
+                  "  pm.expect(body.result.maxOrderAmount).to.eql(99);",
+                  "  pm.expect(body.result.onlineStatus).to.eql('ONLINE');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Operator", "value": "{{operator}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": {{stagingIdForEdit}},\n  \"maxOrderAmount\": 99\n}"
+            },
+            "url": "{{apiBase}}/sync/events/edit"
+          }
+        },
+        {
+          "name": "D04 batch online 正向",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const sid = pm.collectionVariables.get('stagingIdForOnline');",
+                  "if (!sid) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "pm.test('上线成功', () => {",
+                  "  pm.expect(body.result.successCount).to.eql(1);",
+                  "  pm.expect(body.result.failedCount).to.eql(0);",
+                  "  pm.expect(body.result.successes).to.be.an('array').that.is.not.empty;",
+                  "  pm.expect(body.result.successes[0].eventId).to.be.a('number');",
+                  "});",
+                  "const eid = body.result?.successes?.[0]?.eventId;",
+                  "if (eid) pm.collectionVariables.set('eventIdFromOnlineBatch', String(eid));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Operator", "value": "{{operator}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"stagingId\": {{stagingIdForOnline}},\n      \"categoryId\": {{leafCategoryId}},\n      \"maxOrderAmount\": 50\n    }\n  ]\n}"
+            },
+            "url": "{{apiBase}}/sync/events/online/batch"
+          }
+        },
+        {
+          "name": "D05 batch intercept 正向",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const sid = pm.collectionVariables.get('stagingIdToManual');",
+                  "if (!sid) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "pm.test('拦截成功', () => {",
+                  "  pm.expect(body.result.successCount).to.eql(1);",
+                  "  pm.expect(body.result.failedCount).to.eql(0);",
+                  "});",
+                  "const sid = pm.collectionVariables.get('stagingIdToManual');",
+                  "if (sid) pm.collectionVariables.set('stagingIdBlocked', sid);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Operator", "value": "{{operator}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stagingIds\": [{{stagingIdToManual}}],\n  \"reason\": \"postman 正向拦截\"\n}"
+            },
+            "url": "{{apiBase}}/sync/events/intercept/batch"
+          }
+        },
+        {
+          "name": "D06 batch restore 正向",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const sid = pm.collectionVariables.get('stagingIdBlocked');",
+                  "if (!sid) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "pm.test('恢复成功', () => {",
+                  "  pm.expect(body.result.successCount).to.eql(1);",
+                  "  pm.expect(body.result.failedCount).to.eql(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Operator", "value": "{{operator}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stagingIds\": [{{stagingIdBlocked}}],\n  \"remark\": \"postman 正向恢复\"\n}"
+            },
+            "url": "{{apiBase}}/sync/events/restore/batch"
+          }
+        },
+        {
+          "name": "D07 batch offline 正向",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const eid = pm.collectionVariables.get('eventIdFromOnlineBatch') || pm.collectionVariables.get('positiveEventId');",
+                  "if (!eid) pm.execution.skipRequest();",
+                  "pm.collectionVariables.set('offlineTargetEventId', eid);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "pm.test('下线成功', () => {",
+                  "  pm.expect(body.result.total).to.eql(1);",
+                  "  pm.expect(body.result.successCount).to.eql(1);",
+                  "  pm.expect(body.result.failedCount).to.eql(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Operator", "value": "{{operator}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventIds\": [{{offlineTargetEventId}}],\n  \"reason\": \"postman 正向下线\"\n}"
+            },
+            "url": "{{apiBase}}/sync/events/offline/batch"
+          }
+        },
+        {
+          "name": "D08 bootstrap 限流正向 maxBatches=1",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "pm.test('SyncEventBootstrapResponse 结构', () => {",
+                  "  pm.expect(body.result).to.include.keys('batches', 'fetched', 'successCount', 'failedCount', 'truncated');",
+                  "  pm.expect(body.result.batches).to.be.at.least(0);",
+                  "  pm.expect(body.result.fetched).to.be.at.least(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Operator", "value": "{{operator}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resetCursor\": false,\n  \"maxBatches\": 1\n}"
+            },
+            "url": "{{apiBase}}/sync/events/bootstrap"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,92 @@
+{
+  "controllers": [
+    {
+      "id": "pm-ce-event-list",
+      "title": "PM CE · Event List",
+      "controller": "用户端事件列表",
+      "json": "reports/newman-event-list.json",
+      "html": "reports/controllers/pm-ce-event-list.html",
+      "apiGroups": [
+        { "id": "categories", "pathIncludes": "/ce/pm/v1/api/categories", "summaryLabel": "GET /categories" },
+        { "id": "eventList", "pathIncludes": "/ce/pm/v1/api/event/list", "summaryLabel": "GET /event/list" },
+        { "id": "other", "pathIncludes": null, "summaryLabel": "其它" }
+      ]
+    },
+    {
+      "id": "pm-admin-sync-local",
+      "title": "PmSyncController",
+      "controller": "管理端同步运营 · local :8080",
+      "json": "reports/newman-admin-sync-local.json",
+      "html": "reports/controllers/pm-admin-sync-local.html",
+      "apiGroups": [
+        { "id": "syncSetting", "pathIncludes": "/sync/setting", "summaryLabel": "sync/setting" },
+        { "id": "syncStatCards", "pathIncludes": "/sync/stat-cards", "summaryLabel": "sync/stat-cards" },
+        { "id": "syncEventsList", "pathIncludes": "/sync/events?", "summaryLabel": "GET /sync/events" },
+        { "id": "syncEvents", "pathIncludes": "/sync/events/", "summaryLabel": "sync/events/* POST" },
+        { "id": "syncEventsRoot", "pathIncludes": "/sync/events", "summaryLabel": "sync/events" },
+        { "id": "categories", "pathIncludes": "/categories/", "summaryLabel": "categories" },
+        { "id": "events", "pathIncludes": "/events?", "summaryLabel": "GET /events" },
+        { "id": "other", "pathIncludes": null, "summaryLabel": "其它" }
+      ]
+    },
+    {
+      "id": "pm-admin-sync-testnet",
+      "title": "PmSyncController",
+      "controller": "管理端同步运营 · testnet 网关",
+      "json": "reports/newman-admin-sync.json",
+      "html": "reports/controllers/pm-admin-sync-testnet.html",
+      "apiGroups": [
+        { "id": "syncSetting", "pathIncludes": "/sync/setting", "summaryLabel": "sync/setting" },
+        { "id": "syncStatCards", "pathIncludes": "/sync/stat-cards", "summaryLabel": "sync/stat-cards" },
+        { "id": "syncEventsList", "pathIncludes": "/sync/events?", "summaryLabel": "GET /sync/events" },
+        { "id": "syncEvents", "pathIncludes": "/sync/events/", "summaryLabel": "sync/events/* POST" },
+        { "id": "syncEventsRoot", "pathIncludes": "/sync/events", "summaryLabel": "sync/events" },
+        { "id": "categories", "pathIncludes": "/categories/", "summaryLabel": "categories" },
+        { "id": "events", "pathIncludes": "/events?", "summaryLabel": "GET /events" },
+        { "id": "other", "pathIncludes": null, "summaryLabel": "其它" }
+      ]
+    },
+    {
+      "id": "pm-admin-instant-product-local",
+      "title": "PmInstantProductController",
+      "controller": "即时产品同步 A1–A7 · local :8080",
+      "json": "reports/newman-admin-instant-product-local.json",
+      "html": "reports/controllers/pm-admin-instant-product-local.html",
+      "apiGroups": [
+        { "id": "validate", "pathIncludes": "/polymarket/series/validate", "summaryLabel": "A1 validate slug" },
+        { "id": "list", "pathIncludes": "/instant-products?", "summaryLabel": "A2 list（筛选）" },
+        { "id": "listRoot", "pathIncludes": "/instant-products", "summaryLabel": "A2 list" },
+        { "id": "create", "pathIncludes": "/instant-products", "method": "POST", "summaryLabel": "A3 create" },
+        { "id": "start", "pathIncludes": "/start", "summaryLabel": "A4-1 start" },
+        { "id": "stop", "pathIncludes": "/stop", "summaryLabel": "A4-2 stop" },
+        { "id": "sync", "pathIncludes": "/sync", "method": "POST", "summaryLabel": "A5 sync" },
+        { "id": "syncRuns", "pathIncludes": "/sync-runs/", "summaryLabel": "A6-2 sync-run 详情" },
+        { "id": "syncRunsList", "pathIncludes": "/sync-runs", "summaryLabel": "A6-1 sync-runs" },
+        { "id": "events", "pathIncludes": "/events", "summaryLabel": "A7-1 events" },
+        { "id": "windowPrices", "pathIncludes": "/window-prices", "summaryLabel": "A7-2 window-prices" },
+        { "id": "categories", "pathIncludes": "/categories/", "summaryLabel": "Setup categories" },
+        { "id": "other", "pathIncludes": null, "summaryLabel": "其它" }
+      ]
+    },
+    {
+      "id": "pm-admin-instant-product-testnet",
+      "title": "PmInstantProductController",
+      "controller": "即时产品同步 A1–A7 · testnet 网关",
+      "json": "reports/newman-admin-instant-product.json",
+      "html": "reports/controllers/pm-admin-instant-product-testnet.html",
+      "apiGroups": [
+        { "id": "validate", "pathIncludes": "/polymarket/series/validate", "summaryLabel": "A1 validate slug" },
+        { "id": "list", "pathIncludes": "/instant-products?", "summaryLabel": "A2 list（筛选）" },
+        { "id": "listRoot", "pathIncludes": "/instant-products", "summaryLabel": "A2 list" },
+        { "id": "start", "pathIncludes": "/start", "summaryLabel": "A4-1 start" },
+        { "id": "stop", "pathIncludes": "/stop", "summaryLabel": "A4-2 stop" },
+        { "id": "sync", "pathIncludes": "/sync", "method": "POST", "summaryLabel": "A5 sync" },
+        { "id": "syncRuns", "pathIncludes": "/sync-runs/", "summaryLabel": "A6-2 sync-run 详情" },
+        { "id": "syncRunsList", "pathIncludes": "/sync-runs", "summaryLabel": "A6-1 sync-runs" },
+        { "id": "events", "pathIncludes": "/events", "summaryLabel": "A7-1 events" },
+        { "id": "windowPrices", "pathIncludes": "/window-prices", "summaryLabel": "A7-2 window-prices" },
+        { "id": "other", "pathIncludes": null, "summaryLabel": "其它" }
+      ]
+    }
+  ]
+}

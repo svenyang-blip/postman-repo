@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PM Newman 测试报告汇总</title>
+  <style>
+    :root {
+      --bg: #f0f2f5; --surface: #fff; --border: #e5e7eb; --text: #1f2937;
+      --muted: #6b7280; --header: #1e293b; --pass: #16a34a; --fail: #dc2626;
+      --accent: #2563eb; --warn: #d97706; --radius: 8px;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: ui-sans-serif, system-ui, "PingFang SC", "Microsoft YaHei", sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; }
+    .topbar { background: var(--header); color: #fff; padding: 20px clamp(16px, 4vw, 40px); }
+    .topbar h1 { margin: 0 0 6px; font-size: 1.4rem; }
+    .topbar p { margin: 0; color: rgba(255,255,255,.75); font-size: .9rem; }
+    .page { max-width: 1100px; margin: 0 auto; padding: 24px clamp(16px, 4vw, 40px) 48px; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 14px; margin-bottom: 24px; }
+    .card { background: var(--surface); border-radius: var(--radius); padding: 16px; border: 1px solid var(--border); }
+    .card h3 { margin: 0 0 6px; font-size: .72rem; text-transform: uppercase; color: var(--muted); letter-spacing: .04em; }
+    .card .val { font-size: 1.6rem; font-weight: 700; }
+    .card.pass .val { color: var(--pass); }
+    .card.fail .val { color: var(--fail); }
+    table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; font-size: .9rem; }
+    th, td { padding: 12px 14px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+    th { background: #f9fafb; color: var(--muted); font-size: .75rem; text-transform: uppercase; }
+    tr:last-child td { border-bottom: none; }
+    .sub { font-size: .8rem; color: var(--muted); margin-top: 2px; }
+    .muted { color: var(--muted); font-size: .85rem; }
+    .pill { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: .78rem; font-weight: 600; color: #fff; }
+    .pill.ok { background: var(--pass); }
+    .pill.bad { background: var(--fail); }
+    .pill.warn { background: var(--warn); }
+    .bad { color: var(--fail); font-weight: 600; }
+    .btn { display: inline-block; padding: 6px 12px; background: var(--accent); color: #fff !important; text-decoration: none; border-radius: 6px; font-size: .82rem; font-weight: 500; }
+    .btn:hover { filter: brightness(1.08); }
+    .hint { color: var(--muted); font-size: .85rem; margin: 0 0 16px; }
+    footer { margin-top: 28px; color: var(--muted); font-size: .8rem; }
+    code { background: #f3f4f6; padding: 1px 5px; border-radius: 4px; font-size: .85em; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <h1>PM Newman 测试报告汇总</h1>
+    <p>每个 Controller 独立报告 · 生成于 2026/7/8 11:42:45</p>
+  </div>
+  <div class="page">
+    <div class="cards">
+      <div class="card"><h3>注册报告</h3><div class="val">5</div></div>
+      <div class="card"><h3>已有 JSON</h3><div class="val">3</div></div>
+      <div class="card pass"><h3>全通过</h3><div class="val">1</div></div>
+      <div class="card fail"><h3>有失败</h3><div class="val">2</div></div>
+    </div>
+    <p class="hint">运行 <code>npm run pm:…</code> 后会更新对应 JSON 与 <code>reports/controllers/*.html</code>，并刷新本页。</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Controller</th>
+          <th>状态</th>
+          <th>请求</th>
+          <th>断言</th>
+          <th>失败</th>
+          <th>更新时间</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+      <td><strong>PM CE · Event List</strong><div class="sub">用户端事件列表</div></td>
+      <td><span class="pill ok">通过</span></td>
+      <td>35</td>
+      <td>138</td>
+      <td>0</td>
+      <td class="muted">2026/6/23 14:59:05</td>
+      <td><a class="btn" href="controllers/pm-ce-event-list.html">查看报告</a></td>
+    </tr>
+<tr>
+      <td><strong>PmSyncController</strong><div class="sub">管理端同步运营 · local :8080</div></td>
+      <td><span class="muted">未运行</span></td>
+      <td>—</td>
+      <td>—</td>
+      <td>—</td>
+      <td class="muted">—</td>
+      <td><span class="muted">报告未生成</span></td>
+    </tr>
+<tr>
+      <td><strong>PmSyncController</strong><div class="sub">管理端同步运营 · testnet 网关</div></td>
+      <td><span class="pill bad">失败</span></td>
+      <td>31</td>
+      <td>67</td>
+      <td><span class="bad">40</span></td>
+      <td class="muted">2026/6/29 18:21:32</td>
+      <td><a class="btn" href="controllers/pm-admin-sync-testnet.html">查看报告</a></td>
+    </tr>
+<tr>
+      <td><strong>PmInstantProductController</strong><div class="sub">即时产品同步 A1–A7 · local :8080</div></td>
+      <td><span class="pill bad">失败</span></td>
+      <td>40</td>
+      <td>105</td>
+      <td><span class="bad">2</span></td>
+      <td class="muted">2026/7/8 11:42:37</td>
+      <td><a class="btn" href="controllers/pm-admin-instant-product-local.html">查看报告</a></td>
+    </tr>
+<tr>
+      <td><strong>PmInstantProductController</strong><div class="sub">即时产品同步 A1–A7 · testnet 网关</div></td>
+      <td><span class="muted">未运行</span></td>
+      <td>—</td>
+      <td>—</td>
+      <td>—</td>
+      <td class="muted">—</td>
+      <td><span class="muted">报告未生成</span></td>
+    </tr>
+      </tbody>
+    </table>
+    <footer>由 <code>scripts/build-reports-index.mjs</code> 生成 · 配置 <code>scripts/report-registry.json</code></footer>
+  </div>
+</body>
+</html>

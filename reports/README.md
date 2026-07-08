@@ -1,20 +1,30 @@
 # Newman 报告输出
 
-由 **`npm run pm:event-list`** 在本地生成（根目录 `.gitignore` 已忽略这些文件，仓库内只保留本说明）。
+## 入口（推荐）
 
-本仓库主要可读 HTML：`newman-summary-zh.html`（中文合并报告）与 `newman-dashboard.html`（htmlextra 仪表盘）；均为 Allure 风格，字体与图表引用 Google Fonts / Chart.js CDN。另附机器可读产物便于 CI 与排错。
+打开 **`reports/index.html`** — 汇总所有 Controller 报告，可跳转到各独立报告。
 
-| 文件 | 说明 |
+## 目录结构
+
+| 路径 | 说明 |
 |------|------|
-| `newman-event-list.json` | Newman 完整运行导出（含请求/响应体，体积可能较大） |
-| `newman-event-list.xml` | JUnit XML，适合 Jenkins / GitLab CI |
-| `newman-summary-zh.html` | **中文合并报告**：接口汇总表 + 按接口分节明细（Allure 风格） |
-| `newman-dashboard.html` | **htmlextra 仪表盘**（自定义 `postman/templates/htmlextra-inline-dashboard.hbs`） |
+| `reports/index.html` | **汇总页**：各 Controller 通过/失败、更新时间、链接 |
+| `reports/controllers/*.html` | **每个 Controller 一份中文报告** |
+| `reports/newman-*.json` | Newman 原始导出（含请求/响应体） |
+| `reports/newman-*-dashboard.html` | htmlextra 英文仪表盘（可选） |
 
-运行：
+## 生成
 
 ```bash
-npm run pm:event-list
+npm run pm:admin-instant-product:local   # 示例：跑用例 + 更新 controller 报告 + 刷新 index
+npm run pm:reports:index                 # 仅根据已有 JSON 刷新汇总页
+npm run pm:admin-instant-product:report:zh  # 仅根据已有 JSON 重生成 instant-product 报告
 ```
 
-然后在 `reports/` 下打开 **`newman-summary-zh.html`**。若仅需根据已有 JSON 重生成 HTML：`npm run pm:report:zh`。
+## 单份报告内容
+
+1. **用例一览**：HTTP、`ret_code`、从 `result` 提取的测试要点（id/status/items 等）
+2. **接口汇总**：按 API 分组统计
+3. **分节明细**：折叠请求/响应全文 + 断言结果
+
+新增 Controller：在 `scripts/report-registry.json` 注册，并在 `package.json` 的 npm script 中指向 `reports/controllers/<id>.html`。

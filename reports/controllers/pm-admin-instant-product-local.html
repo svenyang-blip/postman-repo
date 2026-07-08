@@ -1,0 +1,2818 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PmInstantProductController · Newman 报告</title>
+  <style>
+    :root {
+      --bg: #f2f2f2; --surface: #fff; --border: #e5e5e5; --text: #333; --muted: #888;
+      --header: #1e293b; --passed: #16a34a; --failed: #dc2626; --accent: #2563eb;
+      --shadow: 0 1px 3px rgba(0,0,0,.08); --radius: 6px;
+    }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: ui-sans-serif, system-ui, "PingFang SC", "Microsoft YaHei", sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; font-size: 14px; }
+    .topbar { background: var(--header); color: #fff; padding: 16px clamp(16px,4vw,40px); }
+    .topbar h1 { margin: 0 0 4px; font-size: 1.3rem; }
+    .topbar .sub { color: rgba(255,255,255,.75); font-size: .85rem; }
+    .topbar a { color: #93c5fd; text-decoration: none; font-size: .85rem; }
+    .topbar a:hover { text-decoration: underline; }
+    .page { padding: 20px clamp(16px,4vw,40px) 48px; max-width: 1320px; margin: 0 auto; }
+    .widgets { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin-bottom: 20px; }
+    .widget { background: var(--surface); border-radius: var(--radius); padding: 12px 14px; border-left: 4px solid var(--accent); box-shadow: var(--shadow); }
+    .widget h3 { margin: 0 0 6px; font-size: .7rem; text-transform: uppercase; color: var(--muted); }
+    .widget .val { font-size: 1.5rem; font-weight: 700; }
+    .widget.passed { border-left-color: var(--passed); } .widget.passed .val { color: var(--passed); }
+    .widget.failed { border-left-color: var(--failed); } .widget.failed .val { color: var(--failed); }
+    .badge { display: inline-block; padding: 4px 12px; border-radius: 4px; font-size: .8rem; font-weight: 600; color: #fff; margin-bottom: 20px; }
+    .badge.ok { background: var(--passed); } .badge.bad { background: var(--failed); }
+    section { margin-top: 28px; }
+    section h2 { font-size: .92rem; font-weight: 600; text-transform: uppercase; color: var(--muted); margin: 0 0 12px; padding-bottom: 8px; border-bottom: 2px solid var(--border); }
+    .hint { color: var(--muted); font-size: .82rem; margin: -6px 0 12px; }
+    table { width: 100%; border-collapse: collapse; font-size: .86rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+    th, td { padding: 9px 11px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+    th { background: #fafafa; color: var(--muted); font-size: .72rem; text-transform: uppercase; font-weight: 600; }
+    tr:last-child td { border-bottom: none; }
+    tr.row-fail { background: #fff5f5; }
+    .row-folder { font-size: .75rem; color: var(--muted); }
+    .api-code { font-size: .78rem; word-break: break-all; }
+    .focus-cell .kv { display: inline-block; margin: 2px 6px 2px 0; padding: 2px 6px; background: #f3f4f6; border-radius: 4px; font-size: .78rem; }
+    .focus-cell .kv.important { background: #eff6ff; border: 1px solid #bfdbfe; }
+    .focus-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: var(--radius); padding: 10px 12px; margin-bottom: 10px; }
+    .focus-title { font-size: .72rem; font-weight: 600; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+    .kv-grid .kv { display: inline-block; margin: 3px 8px 3px 0; font-size: .82rem; }
+    .kv-grid .kv.important b { color: var(--accent); }
+    .summary-api code { font-size: .82rem; }
+    details.details-folder, details.details-req { border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 8px; background: var(--surface); box-shadow: var(--shadow); }
+    details > summary { list-style: none; cursor: pointer; padding: 10px 14px; display: flex; flex-wrap: wrap; gap: 8px 14px; user-select: none; background: #fafafa; }
+    details[open] > summary { border-bottom: 1px solid var(--border); }
+    details > summary::-webkit-details-marker { display: none; }
+    details > summary::before { content: "▸"; color: var(--muted); margin-right: 6px; transition: transform .15s; }
+    details[open] > summary::before { transform: rotate(90deg); }
+    .folder-inner { padding: 8px 10px 10px; }
+    details.details-req { margin-left: 10px; }
+    .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+    .status-dot.passed { background: var(--passed); } .status-dot.failed { background: var(--failed); }
+    .sum-meta, .folder-meta, .meta { color: var(--muted); font-size: .8rem; }
+    .sum-title { font-weight: 600; }
+    .details-body { padding: 12px; }
+    .payload { max-height: 280px; overflow: auto; background: #f8f8f8; border: 1px solid var(--border); border-radius: var(--radius); padding: 10px; font-size: .78rem; white-space: pre-wrap; word-break: break-word; }
+    .payload-label { font-size: .7rem; font-weight: 600; color: var(--muted); margin: 10px 0 4px; text-transform: uppercase; }
+    .fail-card { border-left: 4px solid var(--failed); background: #fff5f5; padding: 12px; margin-bottom: 10px; border-radius: var(--radius); }
+    .assert-ok { color: var(--passed); font-weight: 600; }
+    .assert-bad { color: var(--failed); font-weight: 600; }
+    .bad { color: var(--failed); font-weight: 600; }
+    .ok-inline { color: var(--passed); }
+    .muted { color: var(--muted); }
+    footer { margin-top: 28px; padding-top: 14px; border-top: 1px solid var(--border); color: var(--muted); font-size: .78rem; }
+    footer a { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <p><a href="../index.html">← 返回汇总</a></p>
+    <h1>PmInstantProductController</h1>
+    <div class="sub">即时产品同步 A1–A7 · local :8080 · PM Admin · PmInstantProductController · /private/v1/pm/instant-products · 生成 2026/7/8 11:42:45</div>
+  </div>
+  <div class="page">
+    <div class="widgets">
+      <div class="widget"><h3>请求</h3><div class="val">40</div></div>
+      <div class="widget"><h3>断言</h3><div class="val">105</div></div>
+      <div class="widget failed"><h3>失败断言</h3><div class="val">2</div></div>
+      <div class="widget"><h3>平均耗时</h3><div class="val" style="font-size:1rem">400 ms</div></div>
+    </div>
+    <span class="badge bad">存在失败</span>
+
+    <section>
+      <h2>用例一览（测试要点）</h2>
+      <p class="hint">点击用例名跳转明细；<code>ret_code</code> 与 <code>result</code> 关键字段已提取。</p>
+      <table class="case-overview">
+        <thead><tr>
+          <th>#</th><th>用例</th><th>API</th><th>HTTP</th><th>ret_code</th>
+          <th>测试要点</th><th>断言</th><th>失败</th><th>耗时</th>
+        </tr></thead>
+        <tbody><tr class="">
+    <td>1</td>
+    <td><a href="#req-1">S01 拉取叶子分类 leafCategoryId</a><div class="row-folder">00 Setup</div></td>
+    <td><code class="api-code">GET /private/v1/pm/categories/tree</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>result</b>=数组 3 条</span><span class="kv"><b>[0].id</b>=100</span><span class="kv"><b>[0].name</b>=加密资产</span></td>
+    <td>3</td>
+    <td class="assert-ok">0</td>
+    <td>812 ms</td>
+  </tr>
+<tr class="">
+    <td>2</td>
+    <td><a href="#req-2">S02 GET /instant-products 解析 instantProductId</a><div class="row-folder">00 Setup</div></td>
+    <td><code class="api-code">GET /private/v1/pm/instant-products</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=1 条</span><span class="kv"><b>items[0].id</b>=1</span><span class="kv"><b>items[0].status</b>=STOPPED</span><span class="kv"><b>items[0].seriesSlug</b>=btc-up-or-down-5m</span><span class="kv"><b>items[0].asset</b>=BTC</span></td>
+    <td>4</td>
+    <td class="assert-ok">0</td>
+    <td>203 ms</td>
+  </tr>
+<tr class="">
+    <td>3</td>
+    <td><a href="#req-3">S03 A1 validate series slug 缓存</a><div class="row-folder">00 Setup</div></td>
+    <td><code class="api-code">GET /private/v1/pm/instant-products/polymarket/series/validate?slug=btc-up-or-down-5m</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>valid</b>=true</span><span class="kv"><b>sourceSeriesId</b>=10684</span><span class="kv"><b>slug</b>=btc-up-or-down-5m</span><span class="kv"><b>title</b>=BTC Up or Down 5m</span><span class="kv"><b>recurrence</b>=5m</span><span class="kv"><b>suggestedName</b>=BTC Up or Down 5m · 5m</span><span class="kv"><b>suggestedAsset</b>=BTC</span></td>
+    <td>3</td>
+    <td class="assert-ok">0</td>
+    <td>650 ms</td>
+  </tr>
+<tr class="">
+    <td>4</td>
+    <td><a href="#req-4">A01 A1 validate 有效 slug</a><div class="row-folder">A · GET 正向 [ok]</div></td>
+    <td><code class="api-code">GET /private/v1/pm/instant-products/polymarket/series/validate?slug=btc-up-or-down-5m</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>valid</b>=true</span><span class="kv"><b>sourceSeriesId</b>=10684</span><span class="kv"><b>slug</b>=btc-up-or-down-5m</span><span class="kv"><b>title</b>=BTC Up or Down 5m</span><span class="kv"><b>recurrence</b>=5m</span><span class="kv"><b>suggestedName</b>=BTC Up or Down 5m · 5m</span><span class="kv"><b>suggestedAsset</b>=BTC</span></td>
+    <td>3</td>
+    <td class="assert-ok">0</td>
+    <td>189 ms</td>
+  </tr>
+<tr class="">
+    <td>5</td>
+    <td><a href="#req-5">A02 A1 validate 无效 slug（valid=false）</a><div class="row-folder">A · GET 正向 [ok]</div></td>
+    <td><code class="api-code">GET /private/v1/pm/instant-products/polymarket/series/validate?slug=non-existent-series-slug-xyz</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>valid</b>=false</span><span class="kv"><b>slug</b>=non-existent-series-slug-xyz</span></td>
+    <td>3</td>
+    <td class="assert-ok">0</td>
+    <td>384 ms</td>
+  </tr>
+<tr class="">
+    <td>6</td>
+    <td><a href="#req-6">A03 A2 list 全量</a><div class="row-folder">A · GET 正向 [ok]</div></td>
+    <td><code class="api-code">GET /private/v1/pm/instant-products</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=1 条</span><span class="kv"><b>items[0].id</b>=1</span><span class="kv"><b>items[0].status</b>=STOPPED</span><span class="kv"><b>items[0].seriesSlug</b>=btc-up-or-down-5m</span><span class="kv"><b>items[0].asset</b>=BTC</span></td>
+    <td>3</td>
+    <td class="assert-ok">0</td>
+    <td>298 ms</td>
+  </tr>
+<tr class="">
+    <td>7</td>
+    <td><a href="#req-7">A04 A2 list status=STOPPED</a><div class="row-folder">A · GET 正向 [ok]</div></td>
+    <td><code class="api-code">GET /private/v1/pm/instant-products?status=STOPPED</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=1 条</span><span class="kv"><b>items[0].id</b>=1</span><span class="kv"><b>items[0].status</b>=STOPPED</span><span class="kv"><b>items[0].seriesSlug</b>=btc-up-or-down-5m</span><span class="kv"><b>items[0].asset</b>=BTC</span></td>
+    <td>3</td>
+    <td class="assert-ok">0</td>
+    <td>221 ms</td>
+  </tr>
+<tr class="">
+    <td>8</td>
+    <td><a href="#req-8">A05 A2 list asset=BTC</a><div class="row-folder">A · GET 正向 [ok]</div></td>
+    <td><code class="api-code">GET /private/v1/pm/instant-products?asset=BTC</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=1 条</span><span class="kv"><b>items[0].id</b>=1</span><span class="kv"><b>items[0].status</b>=STOPPED</span><span class="kv"><b>items[0].seriesSlug</b>=btc-up-or-down-5m</span><span class="kv"><b>items[0].asset</b>=BTC</span></td>
+    <td>3</td>
+    <td class="assert-ok">0</td>
+    <td>201 ms</td>
+  </tr>
+<tr class="">
+    <td>9</td>
+    <td><a href="#req-9">A06 A2 list keyword=btc</a><div class="row-folder">A · GET 正向 [ok]</div></td>
+    <td><code class="api-code">GET /private/v1/pm/instant-products?keyword=btc</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=1 条</span><span class="kv"><b>items[0].id</b>=1</span><span class="kv"><b>items[0].status</b>=STOPPED</span><span class="kv"><b>items[0].seriesSlug</b>=btc-up-or-down-5m</span><span class="kv"><b>items[0].asset</b>=BTC</span></td>
+    <td>3</td>
+    <td class="assert-ok">0</td>
+    <td>202 ms</td>
+  </tr>
+<tr class="">
+    <td>10</td>
+    <td><a href="#req-10">A07 A6-1 list sync-runs</a><div class="row-folder">A · GET 正向 [ok]</div></td>
+    <td><code class="api-code">GET /private/v1/pm/instant-products/1/sync-runs?limit=20</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=1 条</span><span class="kv"><b>items[0].id</b>=1</span><span class="kv"><b>items[0].status</b>=RUNNING</span><span class="kv"><b>items[0].failedCount</b>=0</span></td>
+    <td>3</td>
+    <td class="assert-ok">0</td>
+    <td>403 ms</td>
+  </tr>
+<tr class="">
+    <td>11</td>
+    <td><a href="#req-11">A08 A6-2 get sync-run 详情</a><div class="row-folder">A · GET 正向 [ok]</div></td>
+    <td><code class="api-code">GET /private/v1/pm/instant-products/1/sync-runs/1</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>id</b>=1</span><span class="kv important"><b>status</b>=RUNNING</span><span class="kv"><b>failedCount</b>=0</span><span class="kv"><b>triggerType</b>=MANUAL</span><span class="kv"><b>fetchedCount</b>=0</span><span class="kv"><b>insertedCount</b>=0</span><span class="kv"><b>updatedCount</b>=0</span><span class="kv"><b>failedCount</b>=0</span><span class="kv"><b>startedAt</b>=2026-07-08T03:37:05.116+00:00</span><span class="kv"><b>gammaCursorStart</b>=</span></td>
+    <td>3</td>
+    <td class="assert-ok">0</td>
+    <td>410 ms</td>
+  </tr>
+<tr class="">
+    <td>12</td>
+    <td><a href="#req-12">A09 A7-1 list events source=local</a><div class="row-folder">A · GET 正向 [ok]</div></td>
+    <td><code class="api-code">GET /private/v1/pm/instant-products/1/events?source=local&amp;limit=50</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=0 条</span></td>
+    <td>3</td>
+    <td class="assert-ok">0</td>
+    <td>401 ms</td>
+  </tr>
+<tr class="">
+    <td>13</td>
+    <td><a href="#req-13">A10 A7-1 list events source=gamma</a><div class="row-folder">A · GET 正向 [ok]</div></td>
+    <td><code class="api-code">GET /private/v1/pm/instant-products/1/events?source=gamma&amp;limit=10</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=0 条</span></td>
+    <td>3</td>
+    <td class="assert-ok">0</td>
+    <td>724 ms</td>
+  </tr>
+<tr class="">
+    <td>14</td>
+    <td><a href="#req-14">A11 A7-2 list window-prices</a><div class="row-folder">A · GET 正向 [ok]</div></td>
+    <td><code class="api-code">GET /private/v1/pm/instant-products/1/window-prices?limit=50</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=0 条</span></td>
+    <td>3</td>
+    <td class="assert-ok">0</td>
+    <td>525 ms</td>
+  </tr>
+<tr class="">
+    <td>15</td>
+    <td><a href="#req-15">A12 A7-2 list window-prices captureStatus=PENDING</a><div class="row-folder">A · GET 正向 [ok]</div></td>
+    <td><code class="api-code">GET /private/v1/pm/instant-products/1/window-prices?captureStatus=PENDING&amp;limit=20</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=0 条</span></td>
+    <td>3</td>
+    <td class="assert-ok">0</td>
+    <td>401 ms</td>
+  </tr>
+<tr class="">
+    <td>16</td>
+    <td><a href="#req-16">B01 A1 validate 缺 slug → 10001</a><div class="row-folder">B · 参数校验 [err]</div></td>
+    <td><code class="api-code">GET /private/v1/pm/instant-products/polymarket/series/validate</code></td>
+    <td>200</td>
+    <td><span class="assert-bad">50000</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=50000</span><span class="kv important"><b>ret_msg</b>=Required request parameter 'slug' for method parameter type String is not present</span></td>
+    <td>3</td>
+    <td class="assert-ok">0</td>
+    <td>4 ms</td>
+  </tr>
+<tr class="row-fail">
+    <td>17</td>
+    <td><a href="#req-17">B02 A3 create 缺 seriesSlug → HTTP 400</a><div class="row-folder">B · 参数校验 [err]</div></td>
+    <td><code class="api-code">POST /private/v1/pm/instant-products</code></td>
+    <td>400</td>
+    <td>—</td>
+    <td class="focus-cell"><span class="muted">—</span></td>
+    <td>2</td>
+    <td class="assert-ok">0</td>
+    <td>4 ms</td>
+  </tr>
+<tr class="row-fail">
+    <td>18</td>
+    <td><a href="#req-18">B03 A3 create 缺 categoryId → HTTP 400</a><div class="row-folder">B · 参数校验 [err]</div></td>
+    <td><code class="api-code">POST /private/v1/pm/instant-products</code></td>
+    <td>400</td>
+    <td>—</td>
+    <td class="focus-cell"><span class="muted">—</span></td>
+    <td>2</td>
+    <td class="assert-ok">0</td>
+    <td>3 ms</td>
+  </tr>
+<tr class="row-fail">
+    <td>19</td>
+    <td><a href="#req-19">B04 A3 create 缺 operator → HTTP 400</a><div class="row-folder">B · 参数校验 [err]</div></td>
+    <td><code class="api-code">POST /private/v1/pm/instant-products</code></td>
+    <td>400</td>
+    <td>—</td>
+    <td class="focus-cell"><span class="muted">—</span></td>
+    <td>2</td>
+    <td class="assert-ok">0</td>
+    <td>2 ms</td>
+  </tr>
+<tr class="row-fail">
+    <td>20</td>
+    <td><a href="#req-20">B05 A4-1 start 缺 operator → HTTP 400</a><div class="row-folder">B · 参数校验 [err]</div></td>
+    <td><code class="api-code">POST /private/v1/pm/instant-products/1/start</code></td>
+    <td>400</td>
+    <td>—</td>
+    <td class="focus-cell"><span class="muted">—</span></td>
+    <td>2</td>
+    <td class="assert-ok">0</td>
+    <td>4 ms</td>
+  </tr>
+<tr class="row-fail">
+    <td>21</td>
+    <td><a href="#req-21">B06 A4-2 stop 缺 operator → HTTP 400</a><div class="row-folder">B · 参数校验 [err]</div></td>
+    <td><code class="api-code">POST /private/v1/pm/instant-products/1/stop</code></td>
+    <td>400</td>
+    <td>—</td>
+    <td class="focus-cell"><span class="muted">—</span></td>
+    <td>2</td>
+    <td class="assert-ok">0</td>
+    <td>4 ms</td>
+  </tr>
+<tr class="row-fail">
+    <td>22</td>
+    <td><a href="#req-22">B07 A5 sync 缺 operator → HTTP 400</a><div class="row-folder">B · 参数校验 [err]</div></td>
+    <td><code class="api-code">POST /private/v1/pm/instant-products/1/sync</code></td>
+    <td>400</td>
+    <td>—</td>
+    <td class="focus-cell"><span class="muted">—</span></td>
+    <td>2</td>
+    <td class="assert-ok">0</td>
+    <td>4 ms</td>
+  </tr>
+<tr class="">
+    <td>23</td>
+    <td><a href="#req-23">C01 A4-1 start 不存在 id</a><div class="row-folder">C · 边界与异常</div></td>
+    <td><code class="api-code">POST /private/v1/pm/instant-products/999999999/start</code></td>
+    <td>200</td>
+    <td><span class="assert-bad">10001</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=10001</span><span class="kv important"><b>ret_msg</b>=instant product not found</span></td>
+    <td>2</td>
+    <td class="assert-ok">0</td>
+    <td>500 ms</td>
+  </tr>
+<tr class="">
+    <td>24</td>
+    <td><a href="#req-24">C02 A4-2 stop 不存在 id</a><div class="row-folder">C · 边界与异常</div></td>
+    <td><code class="api-code">POST /private/v1/pm/instant-products/999999999/stop</code></td>
+    <td>200</td>
+    <td><span class="assert-bad">10001</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=10001</span><span class="kv important"><b>ret_msg</b>=instant product not found</span></td>
+    <td>2</td>
+    <td class="assert-ok">0</td>
+    <td>495 ms</td>
+  </tr>
+<tr class="">
+    <td>25</td>
+    <td><a href="#req-25">C03 A5 sync 不存在 id</a><div class="row-folder">C · 边界与异常</div></td>
+    <td><code class="api-code">POST /private/v1/pm/instant-products/999999999/sync</code></td>
+    <td>200</td>
+    <td><span class="assert-bad">10001</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=10001</span><span class="kv important"><b>ret_msg</b>=instant product not found</span></td>
+    <td>2</td>
+    <td class="assert-ok">0</td>
+    <td>513 ms</td>
+  </tr>
+<tr class="">
+    <td>26</td>
+    <td><a href="#req-26">C04 A6-1 list sync-runs 不存在 id</a><div class="row-folder">C · 边界与异常</div></td>
+    <td><code class="api-code">GET /private/v1/pm/instant-products/999999999/sync-runs</code></td>
+    <td>200</td>
+    <td><span class="assert-bad">10001</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=10001</span><span class="kv important"><b>ret_msg</b>=instant product not found</span></td>
+    <td>2</td>
+    <td class="assert-ok">0</td>
+    <td>196 ms</td>
+  </tr>
+<tr class="">
+    <td>27</td>
+    <td><a href="#req-27">C05 A6-2 get sync-run 不存在 runId</a><div class="row-folder">C · 边界与异常</div></td>
+    <td><code class="api-code">GET /private/v1/pm/instant-products/1/sync-runs/999999999</code></td>
+    <td>200</td>
+    <td><span class="assert-bad">10001</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=10001</span><span class="kv important"><b>ret_msg</b>=sync run not found</span></td>
+    <td>2</td>
+    <td class="assert-ok">0</td>
+    <td>400 ms</td>
+  </tr>
+<tr class="">
+    <td>28</td>
+    <td><a href="#req-28">C06 A7-1 list events 不存在 id</a><div class="row-folder">C · 边界与异常</div></td>
+    <td><code class="api-code">GET /private/v1/pm/instant-products/999999999/events</code></td>
+    <td>200</td>
+    <td><span class="assert-bad">10001</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=10001</span><span class="kv important"><b>ret_msg</b>=instant product not found</span></td>
+    <td>2</td>
+    <td class="assert-ok">0</td>
+    <td>201 ms</td>
+  </tr>
+<tr class="">
+    <td>29</td>
+    <td><a href="#req-29">C07 A7-2 list window-prices 不存在 id</a><div class="row-folder">C · 边界与异常</div></td>
+    <td><code class="api-code">GET /private/v1/pm/instant-products/999999999/window-prices</code></td>
+    <td>200</td>
+    <td><span class="assert-bad">10001</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=10001</span><span class="kv important"><b>ret_msg</b>=instant product not found</span></td>
+    <td>2</td>
+    <td class="assert-ok">0</td>
+    <td>203 ms</td>
+  </tr>
+<tr class="">
+    <td>30</td>
+    <td><a href="#req-30">C08 A3 create 重复 seriesSlug</a><div class="row-folder">C · 边界与异常</div></td>
+    <td><code class="api-code">POST /private/v1/pm/instant-products</code></td>
+    <td>200</td>
+    <td><span class="assert-bad">10001</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=10001</span><span class="kv important"><b>ret_msg</b>=series slug already exists</span></td>
+    <td>2</td>
+    <td class="assert-ok">0</td>
+    <td>759 ms</td>
+  </tr>
+<tr class="">
+    <td>31</td>
+    <td><a href="#req-31">C09 A3 create 无效 seriesSlug</a><div class="row-folder">C · 边界与异常</div></td>
+    <td><code class="api-code">POST /private/v1/pm/instant-products</code></td>
+    <td>200</td>
+    <td><span class="assert-bad">10001</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=10001</span><span class="kv important"><b>ret_msg</b>=invalid series slug</span></td>
+    <td>2</td>
+    <td class="assert-ok">0</td>
+    <td>448 ms</td>
+  </tr>
+<tr class="">
+    <td>32</td>
+    <td><a href="#req-32">D02 A4-1 start 启用</a><div class="row-folder">D · POST 正向 [ok]</div></td>
+    <td><code class="api-code">POST /private/v1/pm/instant-products/1/start</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>id</b>=1</span><span class="kv important"><b>status</b>=RUNNING</span><span class="kv"><b>name</b>=BTC Up or Down 5m · 5m</span><span class="kv"><b>seriesSlug</b>=btc-up-or-down-5m</span><span class="kv"><b>asset</b>=BTC</span><span class="kv"><b>categoryId</b>=101</span><span class="kv"><b>recurrenceMinutes</b>=5</span><span class="kv"><b>syncEnabled</b>=true</span><span class="kv"><b>iconUrl</b>=</span><span class="kv"><b>resolutionSource</b>=</span></td>
+    <td>3</td>
+    <td class="assert-ok">0</td>
+    <td>1289 ms</td>
+  </tr>
+<tr class="row-fail">
+    <td>33</td>
+    <td><a href="#req-33">D03 A5 sync 立即同步</a><div class="row-folder">D · POST 正向 [ok]</div></td>
+    <td><code class="api-code">POST /private/v1/pm/instant-products/1/sync</code></td>
+    <td>200</td>
+    <td><span class="assert-bad">10001</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=10001</span><span class="kv important"><b>ret_msg</b>=sync already running</span></td>
+    <td>3</td>
+    <td class="assert-bad">2</td>
+    <td>693 ms</td>
+  </tr>
+<tr class="">
+    <td>34</td>
+    <td><a href="#req-34">D04 A6-2 get sync-run（提交后查询）</a><div class="row-folder">D · POST 正向 [ok]</div></td>
+    <td><code class="api-code">GET /private/v1/pm/instant-products/1/sync-runs/1</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>id</b>=1</span><span class="kv important"><b>status</b>=RUNNING</span><span class="kv"><b>failedCount</b>=0</span><span class="kv"><b>triggerType</b>=MANUAL</span><span class="kv"><b>fetchedCount</b>=0</span><span class="kv"><b>insertedCount</b>=0</span><span class="kv"><b>updatedCount</b>=0</span><span class="kv"><b>failedCount</b>=0</span><span class="kv"><b>startedAt</b>=2026-07-08T03:37:05.116+00:00</span><span class="kv"><b>gammaCursorStart</b>=</span></td>
+    <td>3</td>
+    <td class="assert-ok">0</td>
+    <td>399 ms</td>
+  </tr>
+<tr class="">
+    <td>35</td>
+    <td><a href="#req-35">D05 A5 sync 重复提交（sync already running）</a><div class="row-folder">D · POST 正向 [ok]</div></td>
+    <td><code class="api-code">POST /private/v1/pm/instant-products/1/sync</code></td>
+    <td>200</td>
+    <td><span class="assert-bad">10001</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=10001</span><span class="kv important"><b>ret_msg</b>=sync already running</span></td>
+    <td>2</td>
+    <td class="assert-ok">0</td>
+    <td>726 ms</td>
+  </tr>
+<tr class="">
+    <td>36</td>
+    <td><a href="#req-36">D06 A6-1 list sync-runs</a><div class="row-folder">D · POST 正向 [ok]</div></td>
+    <td><code class="api-code">GET /private/v1/pm/instant-products/1/sync-runs?limit=5</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=1 条</span><span class="kv"><b>items[0].id</b>=1</span><span class="kv"><b>items[0].status</b>=RUNNING</span><span class="kv"><b>items[0].failedCount</b>=0</span></td>
+    <td>3</td>
+    <td class="assert-ok">0</td>
+    <td>395 ms</td>
+  </tr>
+<tr class="">
+    <td>37</td>
+    <td><a href="#req-37">D07 A7-1 list events local</a><div class="row-folder">D · POST 正向 [ok]</div></td>
+    <td><code class="api-code">GET /private/v1/pm/instant-products/1/events?source=local&amp;limit=20</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=0 条</span></td>
+    <td>3</td>
+    <td class="assert-ok">0</td>
+    <td>391 ms</td>
+  </tr>
+<tr class="">
+    <td>38</td>
+    <td><a href="#req-38">D08 A7-1 list events gamma 预览</a><div class="row-folder">D · POST 正向 [ok]</div></td>
+    <td><code class="api-code">GET /private/v1/pm/instant-products/1/events?source=gamma&amp;limit=5</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=0 条</span></td>
+    <td>3</td>
+    <td class="assert-ok">0</td>
+    <td>653 ms</td>
+  </tr>
+<tr class="">
+    <td>39</td>
+    <td><a href="#req-39">D09 A7-2 list window-prices</a><div class="row-folder">D · POST 正向 [ok]</div></td>
+    <td><code class="api-code">GET /private/v1/pm/instant-products/1/window-prices?limit=20</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=0 条</span></td>
+    <td>3</td>
+    <td class="assert-ok">0</td>
+    <td>402 ms</td>
+  </tr>
+<tr class="">
+    <td>40</td>
+    <td><a href="#req-40">D10 A4-2 stop 停用</a><div class="row-folder">D · POST 正向 [ok]</div></td>
+    <td><code class="api-code">POST /private/v1/pm/instant-products/1/stop</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>id</b>=1</span><span class="kv important"><b>status</b>=STOPPED</span><span class="kv"><b>name</b>=BTC Up or Down 5m · 5m</span><span class="kv"><b>seriesSlug</b>=btc-up-or-down-5m</span><span class="kv"><b>asset</b>=BTC</span><span class="kv"><b>categoryId</b>=101</span><span class="kv"><b>recurrenceMinutes</b>=5</span><span class="kv"><b>syncEnabled</b>=true</span><span class="kv"><b>iconUrl</b>=</span><span class="kv"><b>resolutionSource</b>=</span></td>
+    <td>3</td>
+    <td class="assert-ok">0</td>
+    <td>1284 ms</td>
+  </tr></tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>接口汇总</h2>
+      <table class="summary-api">
+        <thead><tr><th>接口</th><th>用例</th><th>断言</th><th>失败</th><th>结果</th></tr></thead>
+        <tbody><tr>
+    <td><code>A1 validate slug</code></td>
+    <td>4</td>
+    <td>12</td>
+    <td>0</td>
+    <td class="assert-ok">全通过</td>
+  </tr>
+<tr>
+    <td><code>A2 list（筛选）</code></td>
+    <td>3</td>
+    <td>9</td>
+    <td>0</td>
+    <td class="assert-ok">全通过</td>
+  </tr>
+<tr>
+    <td><code>A2 list</code></td>
+    <td>32</td>
+    <td>81</td>
+    <td><span class="bad">2</span></td>
+    <td class="assert-bad">有失败</td>
+  </tr>
+
+
+
+
+
+
+
+
+<tr>
+    <td><code>Setup categories</code></td>
+    <td>1</td>
+    <td>3</td>
+    <td>0</td>
+    <td class="assert-ok">全通过</td>
+  </tr>
+</tbody>
+      </table>
+    </section>
+
+    <section><h2>失败详情</h2><div class="fail-card"><strong>D03 A5 sync 立即同步</strong><pre class="payload">expected 10001 to deeply equal +0</pre></div><div class="fail-card"><strong>D03 A5 sync 立即同步</strong><pre class="payload">Cannot convert undefined or null to object</pre></div><div class="fail-card"><strong>D03 A5 sync 立即同步</strong><pre class="payload">Cannot read properties of null (reading 'syncRunId')</pre></div></section>
+
+    <section><h2>分节明细</h2><section id="api-validate">
+    <h2>一、A1 validate slug</h2>
+    <p class="hint">（本运行无此类请求）</p>
+  </section>
+
+<section id="api-list">
+    <h2>二、A2 list（筛选）</h2>
+    <p class="hint">（本运行无此类请求）</p>
+  </section>
+
+<section id="api-listRoot">
+    <h2>三、A2 list</h2>
+    <details class="details-folder">
+    <summary><span class="folder-title">C · 边界与异常</span><span class="folder-meta">9 个用例 · <span class="ok-inline">断言全过</span></span></summary>
+    <div class="folder-inner"><details class="details-req" id="req-23">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>C01 A4-1 start 不存在 id</span><span class="sum-meta">POST /private/v1/pm/instant-products/999999999/start · HTTP 200 · 500 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=10001</span><span class="kv important"><b>ret_msg</b>=instant product not found</span></div>
+        </div>
+        <div class="meta">响应体积 113 字节</div>
+        <div class="meta">http://localhost:8080/private/v1/pm/instant-products/999999999/start</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">POST http://localhost:8080/private/v1/pm/instant-products/999999999/start
+Content-Type: application/json
+Accept-Language: zh-CN,zh;q=0.9
+
+{
+  &quot;operator&quot;: &quot;postman-cli&quot;,
+  &quot;remark&quot;: &quot;postman&quot;
+}</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 10001,
+  &quot;ret_msg&quot;: &quot;instant product not found&quot;,
+  &quot;result&quot;: null,
+  &quot;ext_code&quot;: null,
+  &quot;time_now&quot;: &quot;1783482147626&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — instant product not found</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-24">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>C02 A4-2 stop 不存在 id</span><span class="sum-meta">POST /private/v1/pm/instant-products/999999999/stop · HTTP 200 · 495 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=10001</span><span class="kv important"><b>ret_msg</b>=instant product not found</span></div>
+        </div>
+        <div class="meta">响应体积 113 字节</div>
+        <div class="meta">http://localhost:8080/private/v1/pm/instant-products/999999999/stop</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">POST http://localhost:8080/private/v1/pm/instant-products/999999999/stop
+Content-Type: application/json
+Accept-Language: zh-CN,zh;q=0.9
+
+{
+  &quot;operator&quot;: &quot;postman-cli&quot;
+}</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 10001,
+  &quot;ret_msg&quot;: &quot;instant product not found&quot;,
+  &quot;result&quot;: null,
+  &quot;ext_code&quot;: null,
+  &quot;time_now&quot;: &quot;1783482148139&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — instant product not found</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-25">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>C03 A5 sync 不存在 id</span><span class="sum-meta">POST /private/v1/pm/instant-products/999999999/sync · HTTP 200 · 513 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=10001</span><span class="kv important"><b>ret_msg</b>=instant product not found</span></div>
+        </div>
+        <div class="meta">响应体积 113 字节</div>
+        <div class="meta">http://localhost:8080/private/v1/pm/instant-products/999999999/sync</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">POST http://localhost:8080/private/v1/pm/instant-products/999999999/sync
+Content-Type: application/json
+Accept-Language: zh-CN,zh;q=0.9
+
+{
+  &quot;operator&quot;: &quot;postman-cli&quot;
+}</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 10001,
+  &quot;ret_msg&quot;: &quot;instant product not found&quot;,
+  &quot;result&quot;: null,
+  &quot;ext_code&quot;: null,
+  &quot;time_now&quot;: &quot;1783482148672&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — instant product not found</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-26">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>C04 A6-1 list sync-runs 不存在 id</span><span class="sum-meta">GET /private/v1/pm/instant-products/999999999/sync-runs · HTTP 200 · 196 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=10001</span><span class="kv important"><b>ret_msg</b>=instant product not found</span></div>
+        </div>
+        <div class="meta">响应体积 113 字节</div>
+        <div class="meta">http://localhost:8080/private/v1/pm/instant-products/999999999/sync-runs</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET http://localhost:8080/private/v1/pm/instant-products/999999999/sync-runs
+Accept-Language: zh-CN,zh;q=0.9</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 10001,
+  &quot;ret_msg&quot;: &quot;instant product not found&quot;,
+  &quot;result&quot;: null,
+  &quot;ext_code&quot;: null,
+  &quot;time_now&quot;: &quot;1783482148882&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — instant product not found</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-27">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>C05 A6-2 get sync-run 不存在 runId</span><span class="sum-meta">GET /private/v1/pm/instant-products/1/sync-runs/999999999 · HTTP 200 · 400 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=10001</span><span class="kv important"><b>ret_msg</b>=sync run not found</span></div>
+        </div>
+        <div class="meta">响应体积 106 字节</div>
+        <div class="meta">http://localhost:8080/private/v1/pm/instant-products/1/sync-runs/999999999</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET http://localhost:8080/private/v1/pm/instant-products/1/sync-runs/999999999
+Accept-Language: zh-CN,zh;q=0.9</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 10001,
+  &quot;ret_msg&quot;: &quot;sync run not found&quot;,
+  &quot;result&quot;: null,
+  &quot;ext_code&quot;: null,
+  &quot;time_now&quot;: &quot;1783482149297&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — sync run not found</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-28">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>C06 A7-1 list events 不存在 id</span><span class="sum-meta">GET /private/v1/pm/instant-products/999999999/events · HTTP 200 · 201 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=10001</span><span class="kv important"><b>ret_msg</b>=instant product not found</span></div>
+        </div>
+        <div class="meta">响应体积 113 字节</div>
+        <div class="meta">http://localhost:8080/private/v1/pm/instant-products/999999999/events</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET http://localhost:8080/private/v1/pm/instant-products/999999999/events
+Accept-Language: zh-CN,zh;q=0.9</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 10001,
+  &quot;ret_msg&quot;: &quot;instant product not found&quot;,
+  &quot;result&quot;: null,
+  &quot;ext_code&quot;: null,
+  &quot;time_now&quot;: &quot;1783482149519&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — instant product not found</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-29">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>C07 A7-2 list window-prices 不存在 id</span><span class="sum-meta">GET /private/v1/pm/instant-products/999999999/window-prices · HTTP 200 · 203 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=10001</span><span class="kv important"><b>ret_msg</b>=instant product not found</span></div>
+        </div>
+        <div class="meta">响应体积 113 字节</div>
+        <div class="meta">http://localhost:8080/private/v1/pm/instant-products/999999999/window-prices</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET http://localhost:8080/private/v1/pm/instant-products/999999999/window-prices
+Accept-Language: zh-CN,zh;q=0.9</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 10001,
+  &quot;ret_msg&quot;: &quot;instant product not found&quot;,
+  &quot;result&quot;: null,
+  &quot;ext_code&quot;: null,
+  &quot;time_now&quot;: &quot;1783482149734&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — instant product not found</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-30">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>C08 A3 create 重复 seriesSlug</span><span class="sum-meta">POST /private/v1/pm/instant-products · HTTP 200 · 759 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=10001</span><span class="kv important"><b>ret_msg</b>=series slug already exists</span></div>
+        </div>
+        <div class="meta">响应体积 114 字节</div>
+        <div class="meta">http://localhost:8080/private/v1/pm/instant-products</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">POST http://localhost:8080/private/v1/pm/instant-products
+Content-Type: application/json
+Accept-Language: zh-CN,zh;q=0.9
+
+{
+  &quot;seriesSlug&quot;: &quot;btc-up-or-down-5m&quot;,
+  &quot;categoryId&quot;: 101,
+  &quot;operator&quot;: &quot;postman-cli&quot;
+}</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 10001,
+  &quot;ret_msg&quot;: &quot;series slug already exists&quot;,
+  &quot;result&quot;: null,
+  &quot;ext_code&quot;: null,
+  &quot;time_now&quot;: &quot;1783482150510&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — series slug already exists</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-31">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>C09 A3 create 无效 seriesSlug</span><span class="sum-meta">POST /private/v1/pm/instant-products · HTTP 200 · 448 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=10001</span><span class="kv important"><b>ret_msg</b>=invalid series slug</span></div>
+        </div>
+        <div class="meta">响应体积 107 字节</div>
+        <div class="meta">http://localhost:8080/private/v1/pm/instant-products</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">POST http://localhost:8080/private/v1/pm/instant-products
+Content-Type: application/json
+Accept-Language: zh-CN,zh;q=0.9
+
+{
+  &quot;seriesSlug&quot;: &quot;non-existent-series-slug-xyz&quot;,
+  &quot;categoryId&quot;: 101,
+  &quot;operator&quot;: &quot;postman-cli&quot;
+}</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 10001,
+  &quot;ret_msg&quot;: &quot;invalid series slug&quot;,
+  &quot;result&quot;: null,
+  &quot;ext_code&quot;: null,
+  &quot;time_now&quot;: &quot;1783482150977&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — invalid series slug</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details></div>
+  </details>
+<details class="details-folder" open>
+    <summary><span class="folder-title">D · POST 正向 [ok]</span><span class="folder-meta">9 个用例 · <span class="bad">2 条断言失败</span></span></summary>
+    <div class="folder-inner"><details class="details-req" id="req-32">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>D02 A4-1 start 启用</span><span class="sum-meta">POST /private/v1/pm/instant-products/1/start · HTTP 200 · 1289 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>id</b>=1</span><span class="kv important"><b>status</b>=RUNNING</span><span class="kv"><b>name</b>=BTC Up or Down 5m · 5m</span><span class="kv"><b>seriesSlug</b>=btc-up-or-down-5m</span><span class="kv"><b>asset</b>=BTC</span><span class="kv"><b>categoryId</b>=101</span><span class="kv"><b>recurrenceMinutes</b>=5</span><span class="kv"><b>syncEnabled</b>=true</span><span class="kv"><b>iconUrl</b>=</span><span class="kv"><b>resolutionSource</b>=</span></div>
+        </div>
+        <div class="meta">响应体积 532 字节</div>
+        <div class="meta">http://localhost:8080/private/v1/pm/instant-products/1/start</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">POST http://localhost:8080/private/v1/pm/instant-products/1/start
+Content-Type: application/json
+Accept-Language: zh-CN,zh;q=0.9
+
+{
+  &quot;operator&quot;: &quot;postman-cli&quot;,
+  &quot;remark&quot;: &quot;postman start&quot;
+}</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;id&quot;: 1,
+    &quot;name&quot;: &quot;BTC Up or Down 5m · 5m&quot;,
+    &quot;seriesSlug&quot;: &quot;btc-up-or-down-5m&quot;,
+    &quot;asset&quot;: &quot;BTC&quot;,
+    &quot;categoryId&quot;: 101,
+    &quot;recurrenceMinutes&quot;: 5,
+    &quot;status&quot;: &quot;RUNNING&quot;,
+    &quot;syncEnabled&quot;: true,
+    &quot;iconUrl&quot;: &quot;&quot;,
+    &quot;resolutionSource&quot;: &quot;&quot;,
+    &quot;lastSyncAt&quot;: null,
+    &quot;lastSyncStatus&quot;: &quot;&quot;,
+    &quot;lastSyncRunId&quot;: 0,
+    &quot;todaySyncedCount&quot;: 0,
+    &quot;nextSyncAt&quot;: null,
+    &quot;lastError&quot;: &quot;&quot;,
+    &quot;createdBy&quot;: &quot;postman-cli&quot;,
+    &quot;updatedBy&quot;: &quot;postman-cli&quot;,
+    &quot;createdAt&quot;: &quot;2026-07-08T03:37:02.872+00:00&quot;,
+    &quot;updatedAt&quot;: &quot;2026-07-08T03:42:31.946+00:00&quot;
+  },
+  &quot;ext_code&quot;: null,
+  &quot;time_now&quot;: &quot;1783482152285&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code=0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — status=RUNNING</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-33" open>
+      <summary><span class="sum-title"><span class="status-dot failed"></span>D03 A5 sync 立即同步</span><span class="sum-meta">POST /private/v1/pm/instant-products/1/sync · HTTP 200 · 693 ms · <span class="bad">2 失败</span></span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=10001</span><span class="kv important"><b>ret_msg</b>=sync already running</span></div>
+        </div>
+        <div class="meta">响应体积 108 字节</div>
+        <div class="meta">http://localhost:8080/private/v1/pm/instant-products/1/sync</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">POST http://localhost:8080/private/v1/pm/instant-products/1/sync
+Content-Type: application/json
+Accept-Language: zh-CN,zh;q=0.9
+
+{
+  &quot;operator&quot;: &quot;postman-cli&quot;,
+  &quot;remark&quot;: &quot;postman sync&quot;
+}</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 10001,
+  &quot;ret_msg&quot;: &quot;sync already running&quot;,
+  &quot;result&quot;: null,
+  &quot;ext_code&quot;: null,
+  &quot;time_now&quot;: &quot;1783482153001&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — ret_code=0<br/><small>expected 10001 to deeply equal +0</small></td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — InstantProductSyncTriggerResponse<br/><small>Cannot convert undefined or null to object</small></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-34">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>D04 A6-2 get sync-run（提交后查询）</span><span class="sum-meta">GET /private/v1/pm/instant-products/1/sync-runs/1 · HTTP 200 · 399 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>id</b>=1</span><span class="kv important"><b>status</b>=RUNNING</span><span class="kv"><b>failedCount</b>=0</span><span class="kv"><b>triggerType</b>=MANUAL</span><span class="kv"><b>fetchedCount</b>=0</span><span class="kv"><b>insertedCount</b>=0</span><span class="kv"><b>updatedCount</b>=0</span><span class="kv"><b>failedCount</b>=0</span><span class="kv"><b>startedAt</b>=2026-07-08T03:37:05.116+00:00</span><span class="kv"><b>gammaCursorStart</b>=</span></div>
+        </div>
+        <div class="meta">响应体积 339 字节</div>
+        <div class="meta">http://localhost:8080/private/v1/pm/instant-products/1/sync-runs/1</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET http://localhost:8080/private/v1/pm/instant-products/1/sync-runs/1
+Accept-Language: zh-CN,zh;q=0.9</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;id&quot;: 1,
+    &quot;triggerType&quot;: &quot;MANUAL&quot;,
+    &quot;status&quot;: &quot;RUNNING&quot;,
+    &quot;startedAt&quot;: &quot;2026-07-08T03:37:05.116+00:00&quot;,
+    &quot;finishedAt&quot;: null,
+    &quot;gammaCursorStart&quot;: &quot;&quot;,
+    &quot;gammaCursorEnd&quot;: &quot;&quot;,
+    &quot;fetchedCount&quot;: 0,
+    &quot;insertedCount&quot;: 0,
+    &quot;updatedCount&quot;: 0,
+    &quot;skippedCount&quot;: 0,
+    &quot;failedCount&quot;: 0,
+    &quot;errorMessage&quot;: &quot;&quot;
+  },
+  &quot;ext_code&quot;: null,
+  &quot;time_now&quot;: &quot;1783482153428&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code=0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — sync run 状态合法</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-35">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>D05 A5 sync 重复提交（sync already running）</span><span class="sum-meta">POST /private/v1/pm/instant-products/1/sync · HTTP 200 · 726 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=10001</span><span class="kv important"><b>ret_msg</b>=sync already running</span></div>
+        </div>
+        <div class="meta">响应体积 108 字节</div>
+        <div class="meta">http://localhost:8080/private/v1/pm/instant-products/1/sync</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">POST http://localhost:8080/private/v1/pm/instant-products/1/sync
+Content-Type: application/json
+Accept-Language: zh-CN,zh;q=0.9
+
+{
+  &quot;operator&quot;: &quot;postman-cli&quot;
+}</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 10001,
+  &quot;ret_msg&quot;: &quot;sync already running&quot;,
+  &quot;result&quot;: null,
+  &quot;ext_code&quot;: null,
+  &quot;time_now&quot;: &quot;1783482154170&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — sync already running</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-36">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>D06 A6-1 list sync-runs</span><span class="sum-meta">GET /private/v1/pm/instant-products/1/sync-runs?limit=5 · HTTP 200 · 395 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=1 条</span><span class="kv"><b>items[0].id</b>=1</span><span class="kv"><b>items[0].status</b>=RUNNING</span><span class="kv"><b>items[0].failedCount</b>=0</span></div>
+        </div>
+        <div class="meta">响应体积 351 字节</div>
+        <div class="meta">http://localhost:8080/private/v1/pm/instant-products/1/sync-runs?limit=5</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET http://localhost:8080/private/v1/pm/instant-products/1/sync-runs?limit=5
+Accept-Language: zh-CN,zh;q=0.9</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;items&quot;: [
+      {
+        &quot;id&quot;: 1,
+        &quot;triggerType&quot;: &quot;MANUAL&quot;,
+        &quot;status&quot;: &quot;RUNNING&quot;,
+        &quot;startedAt&quot;: &quot;2026-07-08T03:37:05.116+00:00&quot;,
+        &quot;finishedAt&quot;: null,
+        &quot;gammaCursorStart&quot;: &quot;&quot;,
+        &quot;gammaCursorEnd&quot;: &quot;&quot;,
+        &quot;fetchedCount&quot;: 0,
+        &quot;insertedCount&quot;: 0,
+        &quot;updatedCount&quot;: 0,
+        &quot;skippedCount&quot;: 0,
+        &quot;failedCount&quot;: 0,
+        &quot;errorMessage&quot;: &quot;&quot;
+      }
+    ]
+  },
+  &quot;ext_code&quot;: null,
+  &quot;time_now&quot;: &quot;1783482154582&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code=0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 至少有一条 sync run</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-37">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>D07 A7-1 list events local</span><span class="sum-meta">GET /private/v1/pm/instant-products/1/events?source=local&amp;limit=20 · HTTP 200 · 391 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=0 条</span></div>
+        </div>
+        <div class="meta">响应体积 112 字节</div>
+        <div class="meta">http://localhost:8080/private/v1/pm/instant-products/1/events?source=local&amp;limit=20</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET http://localhost:8080/private/v1/pm/instant-products/1/events?source=local&amp;limit=20
+Accept-Language: zh-CN,zh;q=0.9</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;items&quot;: [],
+    &quot;nextCursor&quot;: null
+  },
+  &quot;ext_code&quot;: null,
+  &quot;time_now&quot;: &quot;1783482154990&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code=0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — local events</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-38">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>D08 A7-1 list events gamma 预览</span><span class="sum-meta">GET /private/v1/pm/instant-products/1/events?source=gamma&amp;limit=5 · HTTP 200 · 653 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=0 条</span></div>
+        </div>
+        <div class="meta">响应体积 378 字节</div>
+        <div class="meta">http://localhost:8080/private/v1/pm/instant-products/1/events?source=gamma&amp;limit=5</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET http://localhost:8080/private/v1/pm/instant-products/1/events?source=gamma&amp;limit=5
+Accept-Language: zh-CN,zh;q=0.9</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;items&quot;: [],
+    &quot;nextCursor&quot;: &quot;orxGNd0cS2b_Ox2eiHdnMThHGfYRi4MfclFuKunKDI97InYiOjEsImsiOiJldmVudHMiLCJvaCI6ImFlNjJmZmE1NzcwYmY4YmZmOWViNDYwZGJjNTAyN2I4YjY5MTgyYjMwOTU3N2RjMzhmYjgxNjdlN2I3NWM4YzYiLCJrZXlzIjpbeyJ0IjoidGltZSIsInYiOiIyMDI1LTEyLTE4VDE3OjAxOjU0WiJ9LHsidCI6InN0cmluZyIsInYiOiIxMTAwMDgifV19&quot;
+  },
+  &quot;ext_code&quot;: null,
+  &quot;time_now&quot;: &quot;1783482155655&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code=0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — gamma preview</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-39">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>D09 A7-2 list window-prices</span><span class="sum-meta">GET /private/v1/pm/instant-products/1/window-prices?limit=20 · HTTP 200 · 402 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=0 条</span></div>
+        </div>
+        <div class="meta">响应体积 94 字节</div>
+        <div class="meta">http://localhost:8080/private/v1/pm/instant-products/1/window-prices?limit=20</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET http://localhost:8080/private/v1/pm/instant-products/1/window-prices?limit=20
+Accept-Language: zh-CN,zh;q=0.9</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;items&quot;: []
+  },
+  &quot;ext_code&quot;: null,
+  &quot;time_now&quot;: &quot;1783482156071&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code=0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — window prices</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-40">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>D10 A4-2 stop 停用</span><span class="sum-meta">POST /private/v1/pm/instant-products/1/stop · HTTP 200 · 1284 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>id</b>=1</span><span class="kv important"><b>status</b>=STOPPED</span><span class="kv"><b>name</b>=BTC Up or Down 5m · 5m</span><span class="kv"><b>seriesSlug</b>=btc-up-or-down-5m</span><span class="kv"><b>asset</b>=BTC</span><span class="kv"><b>categoryId</b>=101</span><span class="kv"><b>recurrenceMinutes</b>=5</span><span class="kv"><b>syncEnabled</b>=true</span><span class="kv"><b>iconUrl</b>=</span><span class="kv"><b>resolutionSource</b>=</span></div>
+        </div>
+        <div class="meta">响应体积 532 字节</div>
+        <div class="meta">http://localhost:8080/private/v1/pm/instant-products/1/stop</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">POST http://localhost:8080/private/v1/pm/instant-products/1/stop
+Content-Type: application/json
+Accept-Language: zh-CN,zh;q=0.9
+
+{
+  &quot;operator&quot;: &quot;postman-cli&quot;,
+  &quot;remark&quot;: &quot;postman stop&quot;
+}</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;id&quot;: 1,
+    &quot;name&quot;: &quot;BTC Up or Down 5m · 5m&quot;,
+    &quot;seriesSlug&quot;: &quot;btc-up-or-down-5m&quot;,
+    &quot;asset&quot;: &quot;BTC&quot;,
+    &quot;categoryId&quot;: 101,
+    &quot;recurrenceMinutes&quot;: 5,
+    &quot;status&quot;: &quot;STOPPED&quot;,
+    &quot;syncEnabled&quot;: true,
+    &quot;iconUrl&quot;: &quot;&quot;,
+    &quot;resolutionSource&quot;: &quot;&quot;,
+    &quot;lastSyncAt&quot;: null,
+    &quot;lastSyncStatus&quot;: &quot;&quot;,
+    &quot;lastSyncRunId&quot;: 0,
+    &quot;todaySyncedCount&quot;: 0,
+    &quot;nextSyncAt&quot;: null,
+    &quot;lastError&quot;: &quot;&quot;,
+    &quot;createdBy&quot;: &quot;postman-cli&quot;,
+    &quot;updatedBy&quot;: &quot;postman-cli&quot;,
+    &quot;createdAt&quot;: &quot;2026-07-08T03:37:02.872+00:00&quot;,
+    &quot;updatedAt&quot;: &quot;2026-07-08T03:42:37.029+00:00&quot;
+  },
+  &quot;ext_code&quot;: null,
+  &quot;time_now&quot;: &quot;1783482157372&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code=0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — status=STOPPED</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details></div>
+  </details>
+  </section>
+
+<section id="api-create">
+    <h2>四、A3 create</h2>
+    <p class="hint">（本运行无此类请求）</p>
+  </section>
+
+<section id="api-start">
+    <h2>五、A4-1 start</h2>
+    <p class="hint">（本运行无此类请求）</p>
+  </section>
+
+<section id="api-stop">
+    <h2>六、A4-2 stop</h2>
+    <p class="hint">（本运行无此类请求）</p>
+  </section>
+
+<section id="api-sync">
+    <h2>七、A5 sync</h2>
+    <p class="hint">（本运行无此类请求）</p>
+  </section>
+
+<section id="api-syncRuns">
+    <h2>八、A6-2 sync-run 详情</h2>
+    <p class="hint">（本运行无此类请求）</p>
+  </section>
+
+<section id="api-syncRunsList">
+    <h2>九、A6-1 sync-runs</h2>
+    <p class="hint">（本运行无此类请求）</p>
+  </section>
+
+<section id="api-events">
+    <h2>十、A7-1 events</h2>
+    <p class="hint">（本运行无此类请求）</p>
+  </section>
+
+<section id="api-windowPrices">
+    <h2>11. A7-2 window-prices</h2>
+    <p class="hint">（本运行无此类请求）</p>
+  </section>
+
+<section id="api-categories">
+    <h2>12. Setup categories</h2>
+    <p class="hint">（本运行无此类请求）</p>
+  </section>
+
+<section id="api-other">
+    <h2>其它请求</h2>
+    <details class="details-folder">
+    <summary><span class="folder-title">00 Setup</span><span class="folder-meta">3 个用例 · <span class="ok-inline">断言全过</span></span></summary>
+    <div class="folder-inner"><details class="details-req" id="req-1">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>S01 拉取叶子分类 leafCategoryId</span><span class="sum-meta">GET /private/v1/pm/categories/tree · HTTP 200 · 812 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>result</b>=数组 3 条</span><span class="kv"><b>[0].id</b>=100</span><span class="kv"><b>[0].name</b>=加密资产</span></div>
+        </div>
+        <div class="meta">响应体积 48812 字节</div>
+        <div class="meta">http://localhost:8080/private/v1/pm/categories/tree</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET http://localhost:8080/private/v1/pm/categories/tree
+Accept-Language: zh-CN,zh;q=0.9</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: [
+    {
+      &quot;id&quot;: 100,
+      &quot;parentId&quot;: 0,
+      &quot;name&quot;: &quot;加密资产&quot;,
+      &quot;isLeaf&quot;: false,
+      &quot;children&quot;: [
+        {
+          &quot;id&quot;: 101,
+          &quot;parentId&quot;: 100,
+          &quot;name&quot;: &quot;比特币&quot;,
+          &quot;isLeaf&quot;: true,
+          &quot;children&quot;: []
+        },
+        {
+          &quot;id&quot;: 102,
+          &quot;parentId&quot;: 100,
+          &quot;name&quot;: &quot;以太坊&quot;,
+          &quot;isLeaf&quot;: true,
+          &quot;children&quot;: []
+        },
+        {
+          &quot;id&quot;: 103,
+          &quot;parentId&quot;: 100,
+          &quot;name&quot;: &quot;索拉纳&quot;,
+          &quot;isLeaf&quot;: true,
+          &quot;children&quot;: []
+        },
+        {
+          &quot;id&quot;: 104,
+          &quot;parentId&quot;: 100,
+          &quot;name&quot;: &quot;瑞波&quot;,
+          &quot;isLeaf&quot;: true,
+          &quot;children&quot;: []
+        },
+        {
+          &quot;id&quot;: 105,
+          &quot;parentId&quot;: 100,
+          &quot;name&quot;: &quot;微策略&quot;,
+          &quot;isLeaf&quot;: true,
+          &quot;children&quot;: []
+        }
+      ]
+    },
+    {
+      &quot;id&quot;: 300,
+      &quot;parentId&quot;: 0,
+      &quot;name&quot;: &quot;体育&quot;,
+      &quot;isLeaf&quot;: false,
+      &quot;children&quot;: [
+        {
+          &quot;id&quot;: 301,
+          &quot;parentId&quot;: 300,
+          &quot;name&quot;: &quot;世界杯&quot;,
+          &quot;isLeaf&quot;: false,
+          &quot;children&quot;: [
+            {
+              &quot;id&quot;: 30101,
+              &quot;parentId&quot;: 301,
+              &quot;name&quot;: &quot;比赛&quot;,
+              &quot;isLeaf&quot;: true,
+              &quot;children&quot;: []
+            },
+            {
+              &quot;id&quot;: 30102,
+              &quot;parentId&quot;: 301,
+              &quot;name&quot;: &quot;事件&quot;,
+              &quot;isLeaf&quot;: true,
+              &quot;children&quot;: []
+            }
+          ]
+        },
+        {
+          &quot;id&quot;: 302,
+          &quot;parentId&quot;: 300,
+          &quot;name&quot;: &quot;足球&quot;,
+          &quot;isLeaf&quot;: false,
+          &quot;children&quot;: [
+            {
+              &quot;id&quot;: 30201,
+              &quot;parentId&quot;: 302,
+              &quot;name&quot;: &quot;英超&quot;,
+              &quot;isLeaf&quot;: false,
+              &quot;children&quot;: 
+…（已截断，全文 125002 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code=0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 已写入 leafCategoryId=101</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-2">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>S02 GET /instant-products 解析 instantProductId</span><span class="sum-meta">GET /private/v1/pm/instant-products · HTTP 200 · 203 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=1 条</span><span class="kv"><b>items[0].id</b>=1</span><span class="kv"><b>items[0].status</b>=STOPPED</span><span class="kv"><b>items[0].seriesSlug</b>=btc-up-or-down-5m</span><span class="kv"><b>items[0].asset</b>=BTC</span></div>
+        </div>
+        <div class="meta">响应体积 544 字节</div>
+        <div class="meta">http://localhost:8080/private/v1/pm/instant-products</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET http://localhost:8080/private/v1/pm/instant-products
+Accept-Language: zh-CN,zh;q=0.9</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;items&quot;: [
+      {
+        &quot;id&quot;: 1,
+        &quot;name&quot;: &quot;BTC Up or Down 5m · 5m&quot;,
+        &quot;seriesSlug&quot;: &quot;btc-up-or-down-5m&quot;,
+        &quot;asset&quot;: &quot;BTC&quot;,
+        &quot;categoryId&quot;: 101,
+        &quot;recurrenceMinutes&quot;: 5,
+        &quot;status&quot;: &quot;STOPPED&quot;,
+        &quot;syncEnabled&quot;: true,
+        &quot;iconUrl&quot;: &quot;&quot;,
+        &quot;resolutionSource&quot;: &quot;&quot;,
+        &quot;lastSyncAt&quot;: null,
+        &quot;lastSyncStatus&quot;: &quot;&quot;,
+        &quot;lastSyncRunId&quot;: 0,
+        &quot;todaySyncedCount&quot;: 0,
+        &quot;nextSyncAt&quot;: null,
+        &quot;lastError&quot;: &quot;&quot;,
+        &quot;createdBy&quot;: &quot;postman-cli&quot;,
+        &quot;updatedBy&quot;: &quot;postman-cli&quot;,
+        &quot;createdAt&quot;: &quot;2026-07-08T03:37:02.872+00:00&quot;,
+        &quot;updatedAt&quot;: &quot;2026-07-08T03:37:10.614+00:00&quot;
+      }
+    ]
+  },
+  &quot;ext_code&quot;: null,
+  &quot;time_now&quot;: &quot;1783482141733&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code=0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ItemsResponse 结构</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — instantProductId=1</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-3">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>S03 A1 validate series slug 缓存</span><span class="sum-meta">GET /private/v1/pm/instant-products/polymarket/series/validate?slug=btc-up-or-down-5m · HTTP 200 · 650 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>valid</b>=true</span><span class="kv"><b>sourceSeriesId</b>=10684</span><span class="kv"><b>slug</b>=btc-up-or-down-5m</span><span class="kv"><b>title</b>=BTC Up or Down 5m</span><span class="kv"><b>recurrence</b>=5m</span><span class="kv"><b>suggestedName</b>=BTC Up or Down 5m · 5m</span><span class="kv"><b>suggestedAsset</b>=BTC</span></div>
+        </div>
+        <div class="meta">响应体积 259 字节</div>
+        <div class="meta">http://localhost:8080/private/v1/pm/instant-products/polymarket/series/validate?slug=btc-up-or-down-5m</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET http://localhost:8080/private/v1/pm/instant-products/polymarket/series/validate?slug=btc-up-or-down-5m
+Accept-Language: zh-CN,zh;q=0.9</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;valid&quot;: true,
+    &quot;sourceSeriesId&quot;: &quot;10684&quot;,
+    &quot;slug&quot;: &quot;btc-up-or-down-5m&quot;,
+    &quot;title&quot;: &quot;BTC Up or Down 5m&quot;,
+    &quot;recurrence&quot;: &quot;5m&quot;,
+    &quot;suggestedName&quot;: &quot;BTC Up or Down 5m · 5m&quot;,
+    &quot;suggestedAsset&quot;: &quot;BTC&quot;
+  },
+  &quot;ext_code&quot;: null,
+  &quot;time_now&quot;: &quot;1783482142399&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code=0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — SeriesSlugValidateResponse 结构</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details></div>
+  </details>
+<details class="details-folder">
+    <summary><span class="folder-title">A · GET 正向 [ok]</span><span class="folder-meta">12 个用例 · <span class="ok-inline">断言全过</span></span></summary>
+    <div class="folder-inner"><details class="details-req" id="req-4">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>A01 A1 validate 有效 slug</span><span class="sum-meta">GET /private/v1/pm/instant-products/polymarket/series/validate?slug=btc-up-or-down-5m · HTTP 200 · 189 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>valid</b>=true</span><span class="kv"><b>sourceSeriesId</b>=10684</span><span class="kv"><b>slug</b>=btc-up-or-down-5m</span><span class="kv"><b>title</b>=BTC Up or Down 5m</span><span class="kv"><b>recurrence</b>=5m</span><span class="kv"><b>suggestedName</b>=BTC Up or Down 5m · 5m</span><span class="kv"><b>suggestedAsset</b>=BTC</span></div>
+        </div>
+        <div class="meta">响应体积 259 字节</div>
+        <div class="meta">http://localhost:8080/private/v1/pm/instant-products/polymarket/series/validate?slug=btc-up-or-down-5m</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET http://localhost:8080/private/v1/pm/instant-products/polymarket/series/validate?slug=btc-up-or-down-5m
+Accept-Language: zh-CN,zh;q=0.9</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;valid&quot;: true,
+    &quot;sourceSeriesId&quot;: &quot;10684&quot;,
+    &quot;slug&quot;: &quot;btc-up-or-down-5m&quot;,
+    &quot;title&quot;: &quot;BTC Up or Down 5m&quot;,
+    &quot;recurrence&quot;: &quot;5m&quot;,
+    &quot;suggestedName&quot;: &quot;BTC Up or Down 5m · 5m&quot;,
+    &quot;suggestedAsset&quot;: &quot;BTC&quot;
+  },
+  &quot;ext_code&quot;: null,
+  &quot;time_now&quot;: &quot;1783482142611&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code=0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — validate 响应字段</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-5">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>A02 A1 validate 无效 slug（valid=false）</span><span class="sum-meta">GET /private/v1/pm/instant-products/polymarket/series/validate?slug=non-existent-series-slug-xyz · HTTP 200 · 384 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>valid</b>=false</span><span class="kv"><b>slug</b>=non-existent-series-slug-xyz</span></div>
+        </div>
+        <div class="meta">响应体积 231 字节</div>
+        <div class="meta">http://localhost:8080/private/v1/pm/instant-products/polymarket/series/validate?slug=non-existent-series-slug-xyz</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET http://localhost:8080/private/v1/pm/instant-products/polymarket/series/validate?slug=non-existent-series-slug-xyz
+Accept-Language: zh-CN,zh;q=0.9</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;valid&quot;: false,
+    &quot;sourceSeriesId&quot;: null,
+    &quot;slug&quot;: &quot;non-existent-series-slug-xyz&quot;,
+    &quot;title&quot;: null,
+    &quot;recurrence&quot;: null,
+    &quot;suggestedName&quot;: null,
+    &quot;suggestedAsset&quot;: null
+  },
+  &quot;ext_code&quot;: null,
+  &quot;time_now&quot;: &quot;1783482143014&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code=0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — valid=false</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-6">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>A03 A2 list 全量</span><span class="sum-meta">GET /private/v1/pm/instant-products · HTTP 200 · 298 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=1 条</span><span class="kv"><b>items[0].id</b>=1</span><span class="kv"><b>items[0].status</b>=STOPPED</span><span class="kv"><b>items[0].seriesSlug</b>=btc-up-or-down-5m</span><span class="kv"><b>items[0].asset</b>=BTC</span></div>
+        </div>
+        <div class="meta">响应体积 544 字节</div>
+        <div class="meta">http://localhost:8080/private/v1/pm/instant-products</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET http://localhost:8080/private/v1/pm/instant-products
+Accept-Language: zh-CN,zh;q=0.9</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;items&quot;: [
+      {
+        &quot;id&quot;: 1,
+        &quot;name&quot;: &quot;BTC Up or Down 5m · 5m&quot;,
+        &quot;seriesSlug&quot;: &quot;btc-up-or-down-5m&quot;,
+        &quot;asset&quot;: &quot;BTC&quot;,
+        &quot;categoryId&quot;: 101,
+        &quot;recurrenceMinutes&quot;: 5,
+        &quot;status&quot;: &quot;STOPPED&quot;,
+        &quot;syncEnabled&quot;: true,
+        &quot;iconUrl&quot;: &quot;&quot;,
+        &quot;resolutionSource&quot;: &quot;&quot;,
+        &quot;lastSyncAt&quot;: null,
+        &quot;lastSyncStatus&quot;: &quot;&quot;,
+        &quot;lastSyncRunId&quot;: 0,
+        &quot;todaySyncedCount&quot;: 0,
+        &quot;nextSyncAt&quot;: null,
+        &quot;lastError&quot;: &quot;&quot;,
+        &quot;createdBy&quot;: &quot;postman-cli&quot;,
+        &quot;updatedBy&quot;: &quot;postman-cli&quot;,
+        &quot;createdAt&quot;: &quot;2026-07-08T03:37:02.872+00:00&quot;,
+        &quot;updatedAt&quot;: &quot;2026-07-08T03:37:10.614+00:00&quot;
+      }
+    ]
+  },
+  &quot;ext_code&quot;: null,
+  &quot;time_now&quot;: &quot;1783482143331&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code=0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ItemsResponse&lt;InstantProductResponse&gt;</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-7">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>A04 A2 list status=STOPPED</span><span class="sum-meta">GET /private/v1/pm/instant-products?status=STOPPED · HTTP 200 · 221 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=1 条</span><span class="kv"><b>items[0].id</b>=1</span><span class="kv"><b>items[0].status</b>=STOPPED</span><span class="kv"><b>items[0].seriesSlug</b>=btc-up-or-down-5m</span><span class="kv"><b>items[0].asset</b>=BTC</span></div>
+        </div>
+        <div class="meta">响应体积 544 字节</div>
+        <div class="meta">http://localhost:8080/private/v1/pm/instant-products?status=STOPPED</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET http://localhost:8080/private/v1/pm/instant-products?status=STOPPED
+Accept-Language: zh-CN,zh;q=0.9</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;items&quot;: [
+      {
+        &quot;id&quot;: 1,
+        &quot;name&quot;: &quot;BTC Up or Down 5m · 5m&quot;,
+        &quot;seriesSlug&quot;: &quot;btc-up-or-down-5m&quot;,
+        &quot;asset&quot;: &quot;BTC&quot;,
+        &quot;categoryId&quot;: 101,
+        &quot;recurrenceMinutes&quot;: 5,
+        &quot;status&quot;: &quot;STOPPED&quot;,
+        &quot;syncEnabled&quot;: true,
+        &quot;iconUrl&quot;: &quot;&quot;,
+        &quot;resolutionSource&quot;: &quot;&quot;,
+        &quot;lastSyncAt&quot;: null,
+        &quot;lastSyncStatus&quot;: &quot;&quot;,
+        &quot;lastSyncRunId&quot;: 0,
+        &quot;todaySyncedCount&quot;: 0,
+        &quot;nextSyncAt&quot;: null,
+        &quot;lastError&quot;: &quot;&quot;,
+        &quot;createdBy&quot;: &quot;postman-cli&quot;,
+        &quot;updatedBy&quot;: &quot;postman-cli&quot;,
+        &quot;createdAt&quot;: &quot;2026-07-08T03:37:02.872+00:00&quot;,
+        &quot;updatedAt&quot;: &quot;2026-07-08T03:37:10.614+00:00&quot;
+      }
+    ]
+  },
+  &quot;ext_code&quot;: null,
+  &quot;time_now&quot;: &quot;1783482143574&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code=0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 过滤结果 status=STOPPED</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-8">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>A05 A2 list asset=BTC</span><span class="sum-meta">GET /private/v1/pm/instant-products?asset=BTC · HTTP 200 · 201 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=1 条</span><span class="kv"><b>items[0].id</b>=1</span><span class="kv"><b>items[0].status</b>=STOPPED</span><span class="kv"><b>items[0].seriesSlug</b>=btc-up-or-down-5m</span><span class="kv"><b>items[0].asset</b>=BTC</span></div>
+        </div>
+        <div class="meta">响应体积 544 字节</div>
+        <div class="meta">http://localhost:8080/private/v1/pm/instant-products?asset=BTC</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET http://localhost:8080/private/v1/pm/instant-products?asset=BTC
+Accept-Language: zh-CN,zh;q=0.9</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;items&quot;: [
+      {
+        &quot;id&quot;: 1,
+        &quot;name&quot;: &quot;BTC Up or Down 5m · 5m&quot;,
+        &quot;seriesSlug&quot;: &quot;btc-up-or-down-5m&quot;,
+        &quot;asset&quot;: &quot;BTC&quot;,
+        &quot;categoryId&quot;: 101,
+        &quot;recurrenceMinutes&quot;: 5,
+        &quot;status&quot;: &quot;STOPPED&quot;,
+        &quot;syncEnabled&quot;: true,
+        &quot;iconUrl&quot;: &quot;&quot;,
+        &quot;resolutionSource&quot;: &quot;&quot;,
+        &quot;lastSyncAt&quot;: null,
+        &quot;lastSyncStatus&quot;: &quot;&quot;,
+        &quot;lastSyncRunId&quot;: 0,
+        &quot;todaySyncedCount&quot;: 0,
+        &quot;nextSyncAt&quot;: null,
+        &quot;lastError&quot;: &quot;&quot;,
+        &quot;createdBy&quot;: &quot;postman-cli&quot;,
+        &quot;updatedBy&quot;: &quot;postman-cli&quot;,
+        &quot;createdAt&quot;: &quot;2026-07-08T03:37:02.872+00:00&quot;,
+        &quot;updatedAt&quot;: &quot;2026-07-08T03:37:10.614+00:00&quot;
+      }
+    ]
+  },
+  &quot;ext_code&quot;: null,
+  &quot;time_now&quot;: &quot;1783482143790&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code=0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 过滤结果 asset=BTC</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-9">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>A06 A2 list keyword=btc</span><span class="sum-meta">GET /private/v1/pm/instant-products?keyword=btc · HTTP 200 · 202 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=1 条</span><span class="kv"><b>items[0].id</b>=1</span><span class="kv"><b>items[0].status</b>=STOPPED</span><span class="kv"><b>items[0].seriesSlug</b>=btc-up-or-down-5m</span><span class="kv"><b>items[0].asset</b>=BTC</span></div>
+        </div>
+        <div class="meta">响应体积 544 字节</div>
+        <div class="meta">http://localhost:8080/private/v1/pm/instant-products?keyword=btc</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET http://localhost:8080/private/v1/pm/instant-products?keyword=btc
+Accept-Language: zh-CN,zh;q=0.9</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;items&quot;: [
+      {
+        &quot;id&quot;: 1,
+        &quot;name&quot;: &quot;BTC Up or Down 5m · 5m&quot;,
+        &quot;seriesSlug&quot;: &quot;btc-up-or-down-5m&quot;,
+        &quot;asset&quot;: &quot;BTC&quot;,
+        &quot;categoryId&quot;: 101,
+        &quot;recurrenceMinutes&quot;: 5,
+        &quot;status&quot;: &quot;STOPPED&quot;,
+        &quot;syncEnabled&quot;: true,
+        &quot;iconUrl&quot;: &quot;&quot;,
+        &quot;resolutionSource&quot;: &quot;&quot;,
+        &quot;lastSyncAt&quot;: null,
+        &quot;lastSyncStatus&quot;: &quot;&quot;,
+        &quot;lastSyncRunId&quot;: 0,
+        &quot;todaySyncedCount&quot;: 0,
+        &quot;nextSyncAt&quot;: null,
+        &quot;lastError&quot;: &quot;&quot;,
+        &quot;createdBy&quot;: &quot;postman-cli&quot;,
+        &quot;updatedBy&quot;: &quot;postman-cli&quot;,
+        &quot;createdAt&quot;: &quot;2026-07-08T03:37:02.872+00:00&quot;,
+        &quot;updatedAt&quot;: &quot;2026-07-08T03:37:10.614+00:00&quot;
+      }
+    ]
+  },
+  &quot;ext_code&quot;: null,
+  &quot;time_now&quot;: &quot;1783482144008&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code=0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — keyword 过滤返回数组</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-10">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>A07 A6-1 list sync-runs</span><span class="sum-meta">GET /private/v1/pm/instant-products/1/sync-runs?limit=20 · HTTP 200 · 403 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=1 条</span><span class="kv"><b>items[0].id</b>=1</span><span class="kv"><b>items[0].status</b>=RUNNING</span><span class="kv"><b>items[0].failedCount</b>=0</span></div>
+        </div>
+        <div class="meta">响应体积 351 字节</div>
+        <div class="meta">http://localhost:8080/private/v1/pm/instant-products/1/sync-runs?limit=20</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET http://localhost:8080/private/v1/pm/instant-products/1/sync-runs?limit=20
+Accept-Language: zh-CN,zh;q=0.9</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;items&quot;: [
+      {
+        &quot;id&quot;: 1,
+        &quot;triggerType&quot;: &quot;MANUAL&quot;,
+        &quot;status&quot;: &quot;RUNNING&quot;,
+        &quot;startedAt&quot;: &quot;2026-07-08T03:37:05.116+00:00&quot;,
+        &quot;finishedAt&quot;: null,
+        &quot;gammaCursorStart&quot;: &quot;&quot;,
+        &quot;gammaCursorEnd&quot;: &quot;&quot;,
+        &quot;fetchedCount&quot;: 0,
+        &quot;insertedCount&quot;: 0,
+        &quot;updatedCount&quot;: 0,
+        &quot;skippedCount&quot;: 0,
+        &quot;failedCount&quot;: 0,
+        &quot;errorMessage&quot;: &quot;&quot;
+      }
+    ]
+  },
+  &quot;ext_code&quot;: null,
+  &quot;time_now&quot;: &quot;1783482144427&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code=0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ItemsResponse&lt;InstantProductSyncRunResponse&gt;</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-11">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>A08 A6-2 get sync-run 详情</span><span class="sum-meta">GET /private/v1/pm/instant-products/1/sync-runs/1 · HTTP 200 · 410 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>id</b>=1</span><span class="kv important"><b>status</b>=RUNNING</span><span class="kv"><b>failedCount</b>=0</span><span class="kv"><b>triggerType</b>=MANUAL</span><span class="kv"><b>fetchedCount</b>=0</span><span class="kv"><b>insertedCount</b>=0</span><span class="kv"><b>updatedCount</b>=0</span><span class="kv"><b>failedCount</b>=0</span><span class="kv"><b>startedAt</b>=2026-07-08T03:37:05.116+00:00</span><span class="kv"><b>gammaCursorStart</b>=</span></div>
+        </div>
+        <div class="meta">响应体积 339 字节</div>
+        <div class="meta">http://localhost:8080/private/v1/pm/instant-products/1/sync-runs/1</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET http://localhost:8080/private/v1/pm/instant-products/1/sync-runs/1
+Accept-Language: zh-CN,zh;q=0.9</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;id&quot;: 1,
+    &quot;triggerType&quot;: &quot;MANUAL&quot;,
+    &quot;status&quot;: &quot;RUNNING&quot;,
+    &quot;startedAt&quot;: &quot;2026-07-08T03:37:05.116+00:00&quot;,
+    &quot;finishedAt&quot;: null,
+    &quot;gammaCursorStart&quot;: &quot;&quot;,
+    &quot;gammaCursorEnd&quot;: &quot;&quot;,
+    &quot;fetchedCount&quot;: 0,
+    &quot;insertedCount&quot;: 0,
+    &quot;updatedCount&quot;: 0,
+    &quot;skippedCount&quot;: 0,
+    &quot;failedCount&quot;: 0,
+    &quot;errorMessage&quot;: &quot;&quot;
+  },
+  &quot;ext_code&quot;: null,
+  &quot;time_now&quot;: &quot;1783482144860&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code=0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — InstantProductSyncRunResponse</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-12">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>A09 A7-1 list events source=local</span><span class="sum-meta">GET /private/v1/pm/instant-products/1/events?source=local&amp;limit=50 · HTTP 200 · 401 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=0 条</span></div>
+        </div>
+        <div class="meta">响应体积 112 字节</div>
+        <div class="meta">http://localhost:8080/private/v1/pm/instant-products/1/events?source=local&amp;limit=50</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET http://localhost:8080/private/v1/pm/instant-products/1/events?source=local&amp;limit=50
+Accept-Language: zh-CN,zh;q=0.9</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;items&quot;: [],
+    &quot;nextCursor&quot;: null
+  },
+  &quot;ext_code&quot;: null,
+  &quot;time_now&quot;: &quot;1783482145285&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code=0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — InstantProductEventsResponse</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-13">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>A10 A7-1 list events source=gamma</span><span class="sum-meta">GET /private/v1/pm/instant-products/1/events?source=gamma&amp;limit=10 · HTTP 200 · 724 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=0 条</span></div>
+        </div>
+        <div class="meta">响应体积 378 字节</div>
+        <div class="meta">http://localhost:8080/private/v1/pm/instant-products/1/events?source=gamma&amp;limit=10</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET http://localhost:8080/private/v1/pm/instant-products/1/events?source=gamma&amp;limit=10
+Accept-Language: zh-CN,zh;q=0.9</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;items&quot;: [],
+    &quot;nextCursor&quot;: &quot;fQZz9wNb7F5zTIB50U7KVCk5EvladOk1tA7p78rtqGF7InYiOjEsImsiOiJldmVudHMiLCJvaCI6ImFlNjJmZmE1NzcwYmY4YmZmOWViNDYwZGJjNTAyN2I4YjY5MTgyYjMwOTU3N2RjMzhmYjgxNjdlN2I3NWM4YzYiLCJrZXlzIjpbeyJ0IjoidGltZSIsInYiOiIyMDI2LTAxLTE5VDEyOjMyOjI2WiJ9LHsidCI6InN0cmluZyIsInYiOiIxNzQzNzAifV19&quot;
+  },
+  &quot;ext_code&quot;: null,
+  &quot;time_now&quot;: &quot;1783482146035&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code=0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — gamma 预览结构</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-14">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>A11 A7-2 list window-prices</span><span class="sum-meta">GET /private/v1/pm/instant-products/1/window-prices?limit=50 · HTTP 200 · 525 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=0 条</span></div>
+        </div>
+        <div class="meta">响应体积 94 字节</div>
+        <div class="meta">http://localhost:8080/private/v1/pm/instant-products/1/window-prices?limit=50</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET http://localhost:8080/private/v1/pm/instant-products/1/window-prices?limit=50
+Accept-Language: zh-CN,zh;q=0.9</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;items&quot;: []
+  },
+  &quot;ext_code&quot;: null,
+  &quot;time_now&quot;: &quot;1783482146572&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code=0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ItemsResponse&lt;InstantProductWindowPriceItemResponse&gt;</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-15">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>A12 A7-2 list window-prices captureStatus=PENDING</span><span class="sum-meta">GET /private/v1/pm/instant-products/1/window-prices?captureStatus=PENDING&amp;limit=20 · HTTP 200 · 401 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=0 条</span></div>
+        </div>
+        <div class="meta">响应体积 94 字节</div>
+        <div class="meta">http://localhost:8080/private/v1/pm/instant-products/1/window-prices?captureStatus=PENDING&amp;limit=20</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET http://localhost:8080/private/v1/pm/instant-products/1/window-prices?captureStatus=PENDING&amp;limit=20
+Accept-Language: zh-CN,zh;q=0.9</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;items&quot;: []
+  },
+  &quot;ext_code&quot;: null,
+  &quot;time_now&quot;: &quot;1783482146994&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code=0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — PENDING 过滤</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details></div>
+  </details>
+<details class="details-folder">
+    <summary><span class="folder-title">B · 参数校验 [err]</span><span class="folder-meta">7 个用例 · <span class="ok-inline">断言全过</span></span></summary>
+    <div class="folder-inner"><details class="details-req" id="req-16">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>B01 A1 validate 缺 slug → 10001</span><span class="sum-meta">GET /private/v1/pm/instant-products/polymarket/series/validate · HTTP 200 · 4 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=50000</span><span class="kv important"><b>ret_msg</b>=Required request parameter 'slug' for method parameter type String is not present</span></div>
+        </div>
+        <div class="meta">响应体积 169 字节</div>
+        <div class="meta">http://localhost:8080/private/v1/pm/instant-products/polymarket/series/validate</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET http://localhost:8080/private/v1/pm/instant-products/polymarket/series/validate
+Accept-Language: zh-CN,zh;q=0.9</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 50000,
+  &quot;ret_msg&quot;: &quot;Required request parameter 'slug' for method parameter type String is not present&quot;,
+  &quot;result&quot;: null,
+  &quot;ext_code&quot;: null,
+  &quot;time_now&quot;: &quot;1783482147015&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 缺 slug 业务/框架错误码</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — slug 相关错误信息</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-17">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>B02 A3 create 缺 seriesSlug → HTTP 400</span><span class="sum-meta">POST /private/v1/pm/instant-products · HTTP 400 · 4 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="muted">—</span></div>
+        </div>
+        <div class="meta">响应体积 29 字节</div>
+        <div class="meta">http://localhost:8080/private/v1/pm/instant-products</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">POST http://localhost:8080/private/v1/pm/instant-products
+Content-Type: application/json
+Accept-Language: zh-CN,zh;q=0.9
+
+{
+  &quot;categoryId&quot;: 101,
+  &quot;operator&quot;: &quot;postman-cli&quot;
+}</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 400
+Content-Type: application/json
+
+{
+  &quot;seriesSlug&quot;: &quot;不能为空&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 400</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — seriesSlug 校验</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-18">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>B03 A3 create 缺 categoryId → HTTP 400</span><span class="sum-meta">POST /private/v1/pm/instant-products · HTTP 400 · 3 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="muted">—</span></div>
+        </div>
+        <div class="meta">响应体积 30 字节</div>
+        <div class="meta">http://localhost:8080/private/v1/pm/instant-products</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">POST http://localhost:8080/private/v1/pm/instant-products
+Content-Type: application/json
+Accept-Language: zh-CN,zh;q=0.9
+
+{
+  &quot;seriesSlug&quot;: &quot;btc-up-or-down-5m&quot;,
+  &quot;operator&quot;: &quot;postman-cli&quot;
+}</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 400
+Content-Type: application/json
+
+{
+  &quot;categoryId&quot;: &quot;不能为null&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 400</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — categoryId 校验</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-19">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>B04 A3 create 缺 operator → HTTP 400</span><span class="sum-meta">POST /private/v1/pm/instant-products · HTTP 400 · 2 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="muted">—</span></div>
+        </div>
+        <div class="meta">响应体积 27 字节</div>
+        <div class="meta">http://localhost:8080/private/v1/pm/instant-products</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">POST http://localhost:8080/private/v1/pm/instant-products
+Content-Type: application/json
+Accept-Language: zh-CN,zh;q=0.9
+
+{
+  &quot;seriesSlug&quot;: &quot;btc-up-or-down-5m&quot;,
+  &quot;categoryId&quot;: 101
+}</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 400
+Content-Type: application/json
+
+{
+  &quot;operator&quot;: &quot;不能为空&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 400</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — operator 校验</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-20">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>B05 A4-1 start 缺 operator → HTTP 400</span><span class="sum-meta">POST /private/v1/pm/instant-products/1/start · HTTP 400 · 4 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="muted">—</span></div>
+        </div>
+        <div class="meta">响应体积 27 字节</div>
+        <div class="meta">http://localhost:8080/private/v1/pm/instant-products/1/start</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">POST http://localhost:8080/private/v1/pm/instant-products/1/start
+Content-Type: application/json
+Accept-Language: zh-CN,zh;q=0.9
+
+{
+  &quot;remark&quot;: &quot;postman&quot;
+}</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 400
+Content-Type: application/json
+
+{
+  &quot;operator&quot;: &quot;不能为空&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 400</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — operator 校验</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-21">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>B06 A4-2 stop 缺 operator → HTTP 400</span><span class="sum-meta">POST /private/v1/pm/instant-products/1/stop · HTTP 400 · 4 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="muted">—</span></div>
+        </div>
+        <div class="meta">响应体积 27 字节</div>
+        <div class="meta">http://localhost:8080/private/v1/pm/instant-products/1/stop</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">POST http://localhost:8080/private/v1/pm/instant-products/1/stop
+Content-Type: application/json
+Accept-Language: zh-CN,zh;q=0.9
+
+{}</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 400
+Content-Type: application/json
+
+{
+  &quot;operator&quot;: &quot;不能为空&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 400</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — operator 校验</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-22">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>B07 A5 sync 缺 operator → HTTP 400</span><span class="sum-meta">POST /private/v1/pm/instant-products/1/sync · HTTP 400 · 4 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="muted">—</span></div>
+        </div>
+        <div class="meta">响应体积 27 字节</div>
+        <div class="meta">http://localhost:8080/private/v1/pm/instant-products/1/sync</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">POST http://localhost:8080/private/v1/pm/instant-products/1/sync
+Content-Type: application/json
+Accept-Language: zh-CN,zh;q=0.9
+
+{
+  &quot;remark&quot;: &quot;postman&quot;
+}</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 400
+Content-Type: application/json
+
+{
+  &quot;operator&quot;: &quot;不能为空&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 400</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — operator 校验</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details></div>
+  </details>
+  </section></section>
+
+    <footer>由 <code>newman-json-to-zh-html.mjs</code> 生成 · registry <code>pm-admin-instant-product-local</code></footer>
+  </div>
+</body>
+</html>

@@ -1,0 +1,1378 @@
+{
+  "info": {
+    "_postman_id": "e5f6a7b8-c9d0-1234-ef01-pm-instant-product",
+    "name": "PM Admin · PmInstantProductController · /private/v1/pm/instant-products",
+    "description": "管理端 `PmInstantProductController` 外部契约测试（Wiki §7.2 A1–A7）。\n\n**apiBase**（本地）：`http://localhost:8080/private/v1/pm`\n\n**运行**：`npm run pm:admin-instant-product:local`",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "apiBase", "value": "http://localhost:8080/private/v1/pm" },
+    { "key": "operator", "value": "postman-cli" },
+    { "key": "seriesSlug", "value": "btc-up-or-down-5m" },
+    { "key": "invalidSeriesSlug", "value": "non-existent-series-slug-xyz" },
+    { "key": "leafCategoryId", "value": "101" },
+    { "key": "instantProductId", "value": "" },
+    { "key": "syncRunId", "value": "" },
+    { "key": "existingSeriesSlug", "value": "" },
+    { "key": "fakeInstantProductId", "value": "999999999" },
+    { "key": "fakeSyncRunId", "value": "999999999" },
+    { "key": "_skipCreate", "value": "false" }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const apiBase = pm.environment.get('apiBase') || pm.collectionVariables.get('apiBase') || '';",
+          "const isTestnet = apiBase.includes('thezmx.com');",
+          "const cookie = (pm.environment.get('adminCookie') || pm.collectionVariables.get('adminCookie') || '').trim();",
+          "if (isTestnet && !cookie) {",
+          "  throw new Error('testnet 网关需 Cookie 鉴权：复制 pm-admin-testnet.private.postman_environment.example.json 并填入 adminCookie');",
+          "}",
+          "if (cookie) {",
+          "  pm.request.headers.upsert({ key: 'Cookie', value: cookie });",
+          "}",
+          "const referer = pm.environment.get('referer');",
+          "if (referer) {",
+          "  pm.request.headers.upsert({ key: 'Referer', value: referer });",
+          "}",
+          "if (pm.environment.get('useXhr') === 'true' || isTestnet) {",
+          "  pm.request.headers.upsert({ key: 'X-Requested-With', value: 'XMLHttpRequest' });",
+          "}",
+          "if (isTestnet) {",
+          "  pm.request.headers.upsert({ key: 'User-Agent', value: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36' });",
+          "  pm.request.headers.upsert({ key: 'sec-ch-ua', value: '\"Google Chrome\";v=\"149\", \"Chromium\";v=\"149\", \"Not)A;Brand\";v=\"24\"' });",
+          "  pm.request.headers.upsert({ key: 'sec-ch-ua-mobile', value: '?0' });",
+          "  pm.request.headers.upsert({ key: 'sec-ch-ua-platform', value: '\"macOS\"' });",
+          "  pm.request.headers.upsert({ key: 'Sec-Fetch-Dest', value: 'empty' });",
+          "  pm.request.headers.upsert({ key: 'Sec-Fetch-Mode', value: 'cors' });",
+          "  pm.request.headers.upsert({ key: 'Sec-Fetch-Site', value: 'same-origin' });",
+          "  if (!referer) {",
+          "    pm.request.headers.upsert({ key: 'Referer', value: 'https://ls-management-platform-testnet.thezmx.com/cms/predict/instant-product-management' });",
+          "  }",
+          "}",
+          "pm.request.headers.upsert({ key: 'Accept', value: 'application/json, text/plain, */*' });",
+          "pm.request.headers.upsert({ key: 'Accept-Language', value: 'zh-CN,zh;q=0.9' });"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const apiBase = pm.environment.get('apiBase') || pm.collectionVariables.get('apiBase') || '';",
+          "if (!apiBase.includes('thezmx.com')) return;",
+          "const ct = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+          "const body = pm.response.text() || '';",
+          "const looksHtml = ct.includes('text/html') || body.trimStart().startsWith('<!');",
+          "if (looksHtml) {",
+          "  pm.test('Cookie 鉴权失败（返回 HTML 登录页，请更新 adminCookie）', () => {",
+          "    pm.expect.fail('响应为 HTML 而非 JSON API');",
+          "  });",
+          "  return;",
+          "}",
+          "pm.test('响应为 JSON', () => {",
+          "  pm.response.to.be.json;",
+          "});"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "00 Setup",
+      "description": "叶子分类、已有产品 id、series slug 校验缓存。",
+      "item": [
+        {
+          "name": "S01 拉取叶子分类 leafCategoryId",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "function walk(nodes, fn) { (nodes || []).forEach((n) => { fn(n); walk(n.children, fn); }); }",
+                  "let leafId = null;",
+                  "walk(body.result, (n) => { if (!leafId && n.isLeaf && n.id != null) leafId = String(n.id); });",
+                  "if (leafId) {",
+                  "  pm.collectionVariables.set('leafCategoryId', leafId);",
+                  "  pm.environment.set('leafCategoryId', leafId);",
+                  "  pm.test('已写入 leafCategoryId=' + leafId, () => pm.expect(leafId).to.match(/^\\d+$/));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/categories/tree"
+          }
+        },
+        {
+          "name": "S02 GET /instant-products 解析 instantProductId",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "pm.test('ItemsResponse 结构', () => {",
+                  "  pm.expect(body.result).to.include.keys('items');",
+                  "  pm.expect(body.result.items).to.be.an('array');",
+                  "});",
+                  "const items = body.result.items || [];",
+                  "const targetSlug = pm.collectionVariables.get('seriesSlug');",
+                  "const matched = items.find((i) => i.seriesSlug === targetSlug);",
+                  "const picked = matched || items[0];",
+                  "if (picked?.id != null) {",
+                  "  pm.collectionVariables.set('instantProductId', String(picked.id));",
+                  "  pm.collectionVariables.set('existingSeriesSlug', picked.seriesSlug || '');",
+                  "  pm.environment.set('instantProductId', String(picked.id));",
+                  "  if (matched) pm.collectionVariables.set('_skipCreate', 'true');",
+                  "  pm.test('instantProductId=' + picked.id, () => pm.expect(picked.id).to.be.a('number'));",
+                  "}",
+                  "if (!items.length) {",
+                  "  pm.test('列表为空，D 段将走 create 新建', () => pm.expect(body.result.items).to.eql([]));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/instant-products"
+          }
+        },
+        {
+          "name": "S03 A1 validate series slug 缓存",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "pm.test('SeriesSlugValidateResponse 结构', () => {",
+                  "  pm.expect(body.result).to.include.keys('valid', 'slug');",
+                  "});",
+                  "if (body.result.valid) {",
+                  "  pm.collectionVariables.set('_seriesSlugValid', 'true');",
+                  "  if (body.result.suggestedAsset) {",
+                  "    pm.collectionVariables.set('_suggestedAsset', body.result.suggestedAsset);",
+                  "  }",
+                  "} else {",
+                  "  pm.collectionVariables.set('_seriesSlugValid', 'false');",
+                  "  pm.test('Gamma 未返回有效 series（create 正向将跳过）', () => pm.expect(body.result.valid).to.eql(false));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/instant-products/polymarket/series/validate?slug={{seriesSlug}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "A · GET 正向 [ok]",
+      "description": "A1 validate、A2 list、A6/A7 只读查询。",
+      "item": [
+        {
+          "name": "A01 A1 validate 有效 slug",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "pm.test('validate 响应字段', () => {",
+                  "  pm.expect(body.result).to.include.keys('valid', 'slug');",
+                  "  pm.expect(body.result.slug).to.eql(pm.collectionVariables.get('seriesSlug'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/instant-products/polymarket/series/validate?slug={{seriesSlug}}"
+          }
+        },
+        {
+          "name": "A02 A1 validate 无效 slug（valid=false）",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "pm.test('valid=false', () => {",
+                  "  pm.expect(body.result.valid).to.eql(false);",
+                  "  pm.expect(body.result.slug).to.eql(pm.collectionVariables.get('invalidSeriesSlug'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/instant-products/polymarket/series/validate?slug={{invalidSeriesSlug}}"
+          }
+        },
+        {
+          "name": "A03 A2 list 全量",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "pm.test('ItemsResponse<InstantProductResponse>', () => {",
+                  "  pm.expect(body.result.items).to.be.an('array');",
+                  "  const items = body.result.items;",
+                  "  if (!items.length) return;",
+                  "  pm.expect(items[0]).to.include.keys('id', 'seriesSlug', 'status', 'asset');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/instant-products"
+          }
+        },
+        {
+          "name": "A04 A2 list status=STOPPED",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "pm.test('过滤结果 status=STOPPED', () => {",
+                  "  (body.result.items || []).forEach((i) => pm.expect(i.status).to.eql('STOPPED'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/instant-products?status=STOPPED"
+          }
+        },
+        {
+          "name": "A05 A2 list asset=BTC",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "pm.test('过滤结果 asset=BTC', () => {",
+                  "  (body.result.items || []).forEach((i) => pm.expect(i.asset).to.eql('BTC'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/instant-products?asset=BTC"
+          }
+        },
+        {
+          "name": "A06 A2 list keyword=btc",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "pm.test('keyword 过滤返回数组', () => pm.expect(body.result.items).to.be.an('array'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/instant-products?keyword=btc"
+          }
+        },
+        {
+          "name": "A07 A6-1 list sync-runs",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get('instantProductId')) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "pm.test('ItemsResponse<InstantProductSyncRunResponse>', () => {",
+                  "  pm.expect(body.result.items).to.be.an('array');",
+                  "  const runs = body.result.items;",
+                  "  if (!runs.length) return;",
+                  "  pm.expect(runs[0]).to.include.keys('id', 'status', 'triggerType');",
+                  "  pm.collectionVariables.set('syncRunId', String(runs[0].id));",
+                  "  pm.environment.set('syncRunId', String(runs[0].id));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/instant-products/{{instantProductId}}/sync-runs?limit=20"
+          }
+        },
+        {
+          "name": "A08 A6-2 get sync-run 详情",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const pid = pm.collectionVariables.get('instantProductId');",
+                  "const rid = pm.collectionVariables.get('syncRunId');",
+                  "if (!pid || !rid) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "pm.test('InstantProductSyncRunResponse', () => {",
+                  "  pm.expect(body.result).to.include.keys('id', 'status', 'triggerType', 'startedAt');",
+                  "  pm.expect(body.result.id).to.eql(Number(pm.collectionVariables.get('syncRunId')));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/instant-products/{{instantProductId}}/sync-runs/{{syncRunId}}"
+          }
+        },
+        {
+          "name": "A09 A7-1 list events source=local",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get('instantProductId')) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "pm.test('InstantProductEventsResponse', () => {",
+                  "  pm.expect(body.result).to.include.keys('items');",
+                  "  pm.expect(body.result.items).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/instant-products/{{instantProductId}}/events?source=local&limit=50"
+          }
+        },
+        {
+          "name": "A10 A7-1 list events source=gamma",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get('instantProductId')) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "pm.test('gamma 预览结构', () => {",
+                  "  pm.expect(body.result).to.include.keys('items');",
+                  "  pm.expect(body.result.items).to.be.an('array');",
+                  "  const items = body.result.items;",
+                  "  if (!items.length) return;",
+                  "  pm.expect(items[0]).to.include.keys('sourceEventId', 'workflowStatus');",
+                  "  pm.expect(items[0].workflowStatus).to.eql('PREVIEW');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/instant-products/{{instantProductId}}/events?source=gamma&limit=10"
+          }
+        },
+        {
+          "name": "A11 A7-2 list window-prices",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get('instantProductId')) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "pm.test('ItemsResponse<InstantProductWindowPriceItemResponse>', () => {",
+                  "  pm.expect(body.result.items).to.be.an('array');",
+                  "  const items = body.result.items;",
+                  "  if (!items.length) return;",
+                  "  pm.expect(items[0]).to.include.keys('eventId', 'captureStatus', 'asset');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/instant-products/{{instantProductId}}/window-prices?limit=50"
+          }
+        },
+        {
+          "name": "A12 A7-2 list window-prices captureStatus=PENDING",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get('instantProductId')) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "pm.test('PENDING 过滤', () => {",
+                  "  (body.result.items || []).forEach((i) => pm.expect(i.captureStatus).to.eql('PENDING'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/instant-products/{{instantProductId}}/window-prices?captureStatus=PENDING&limit=20"
+          }
+        }
+      ]
+    },
+    {
+      "name": "B · 参数校验 [err]",
+      "description": "缺参、@Valid 校验。",
+      "item": [
+        {
+          "name": "B01 A1 validate 缺 slug → 10001",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('缺 slug 业务/框架错误码', () => {",
+                  "  pm.expect([10001, 50000]).to.include(body.ret_code);",
+                  "});",
+                  "pm.test('slug 相关错误信息', () => pm.expect(body.ret_msg.toLowerCase()).to.include('slug'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/instant-products/polymarket/series/validate"
+          }
+        },
+        {
+          "name": "B02 A3 create 缺 seriesSlug → HTTP 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+                  "const body = pm.response.json();",
+                  "pm.test('seriesSlug 校验', () => pm.expect(body.seriesSlug).to.be.a('string'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoryId\": {{leafCategoryId}},\n  \"operator\": \"{{operator}}\"\n}"
+            },
+            "url": "{{apiBase}}/instant-products"
+          }
+        },
+        {
+          "name": "B03 A3 create 缺 categoryId → HTTP 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+                  "const body = pm.response.json();",
+                  "pm.test('categoryId 校验', () => pm.expect(body.categoryId).to.be.a('string'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"seriesSlug\": \"{{seriesSlug}}\",\n  \"operator\": \"{{operator}}\"\n}"
+            },
+            "url": "{{apiBase}}/instant-products"
+          }
+        },
+        {
+          "name": "B04 A3 create 缺 operator → HTTP 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+                  "const body = pm.response.json();",
+                  "pm.test('operator 校验', () => pm.expect(body.operator).to.be.a('string'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"seriesSlug\": \"{{seriesSlug}}\",\n  \"categoryId\": {{leafCategoryId}}\n}"
+            },
+            "url": "{{apiBase}}/instant-products"
+          }
+        },
+        {
+          "name": "B05 A4-1 start 缺 operator → HTTP 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+                  "const body = pm.response.json();",
+                  "pm.test('operator 校验', () => pm.expect(body.operator).to.be.a('string'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"remark\": \"postman\"\n}"
+            },
+            "url": "{{apiBase}}/instant-products/1/start"
+          }
+        },
+        {
+          "name": "B06 A4-2 stop 缺 operator → HTTP 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+                  "const body = pm.response.json();",
+                  "pm.test('operator 校验', () => pm.expect(body.operator).to.be.a('string'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": "{{apiBase}}/instant-products/1/stop"
+          }
+        },
+        {
+          "name": "B07 A5 sync 缺 operator → HTTP 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+                  "const body = pm.response.json();",
+                  "pm.test('operator 校验', () => pm.expect(body.operator).to.be.a('string'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"remark\": \"postman\"\n}"
+            },
+            "url": "{{apiBase}}/instant-products/1/sync"
+          }
+        }
+      ]
+    },
+    {
+      "name": "C · 边界与异常",
+      "description": "假 id、重复 slug、sync run 不匹配。",
+      "item": [
+        {
+          "name": "C01 A4-1 start 不存在 id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('instant product not found', () => {",
+                  "  pm.expect(body.ret_code).to.eql(10001);",
+                  "  pm.expect(body.ret_msg).to.include('not found');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"operator\": \"{{operator}}\",\n  \"remark\": \"postman\"\n}"
+            },
+            "url": "{{apiBase}}/instant-products/{{fakeInstantProductId}}/start"
+          }
+        },
+        {
+          "name": "C02 A4-2 stop 不存在 id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('instant product not found', () => {",
+                  "  pm.expect(body.ret_code).to.eql(10001);",
+                  "  pm.expect(body.ret_msg).to.include('not found');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"operator\": \"{{operator}}\"\n}"
+            },
+            "url": "{{apiBase}}/instant-products/{{fakeInstantProductId}}/stop"
+          }
+        },
+        {
+          "name": "C03 A5 sync 不存在 id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('instant product not found', () => {",
+                  "  pm.expect(body.ret_code).to.eql(10001);",
+                  "  pm.expect(body.ret_msg).to.include('not found');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"operator\": \"{{operator}}\"\n}"
+            },
+            "url": "{{apiBase}}/instant-products/{{fakeInstantProductId}}/sync"
+          }
+        },
+        {
+          "name": "C04 A6-1 list sync-runs 不存在 id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('instant product not found', () => {",
+                  "  pm.expect(body.ret_code).to.eql(10001);",
+                  "  pm.expect(body.ret_msg).to.include('not found');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/instant-products/{{fakeInstantProductId}}/sync-runs"
+          }
+        },
+        {
+          "name": "C05 A6-2 get sync-run 不存在 runId",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const pid = pm.collectionVariables.get('instantProductId');",
+                  "if (!pid) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('sync run not found', () => {",
+                  "  pm.expect(body.ret_code).to.eql(10001);",
+                  "  pm.expect(body.ret_msg).to.include('not found');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/instant-products/{{instantProductId}}/sync-runs/{{fakeSyncRunId}}"
+          }
+        },
+        {
+          "name": "C06 A7-1 list events 不存在 id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('instant product not found', () => {",
+                  "  pm.expect(body.ret_code).to.eql(10001);",
+                  "  pm.expect(body.ret_msg).to.include('not found');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/instant-products/{{fakeInstantProductId}}/events"
+          }
+        },
+        {
+          "name": "C07 A7-2 list window-prices 不存在 id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('instant product not found', () => {",
+                  "  pm.expect(body.ret_code).to.eql(10001);",
+                  "  pm.expect(body.ret_msg).to.include('not found');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/instant-products/{{fakeInstantProductId}}/window-prices"
+          }
+        },
+        {
+          "name": "C08 A3 create 重复 seriesSlug",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const slug = pm.collectionVariables.get('existingSeriesSlug');",
+                  "if (!slug) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('series slug already exists', () => {",
+                  "  pm.expect(body.ret_code).to.eql(10001);",
+                  "  pm.expect(body.ret_msg).to.include('already exists');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"seriesSlug\": \"{{existingSeriesSlug}}\",\n  \"categoryId\": {{leafCategoryId}},\n  \"operator\": \"{{operator}}\"\n}"
+            },
+            "url": "{{apiBase}}/instant-products"
+          }
+        },
+        {
+          "name": "C09 A3 create 无效 seriesSlug",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('invalid series slug', () => {",
+                  "  pm.expect(body.ret_code).to.eql(10001);",
+                  "  pm.expect(body.ret_msg).to.include('invalid');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"seriesSlug\": \"{{invalidSeriesSlug}}\",\n  \"categoryId\": {{leafCategoryId}},\n  \"operator\": \"{{operator}}\"\n}"
+            },
+            "url": "{{apiBase}}/instant-products"
+          }
+        }
+      ]
+    },
+    {
+      "name": "D · POST 正向 [ok]",
+      "description": "A3 create → A4 start/stop → A5 sync → A6/A7 查询（生命周期往返）。",
+      "item": [
+        {
+          "name": "D01 A3 create 即时产品",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('_skipCreate') === 'true') pm.execution.skipRequest();",
+                  "if (pm.collectionVariables.get('_seriesSlugValid') === 'false') pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "pm.test('InstantProductResponse', () => {",
+                  "  pm.expect(body.result).to.include.keys('id', 'seriesSlug', 'status', 'asset');",
+                  "  pm.expect(body.result.seriesSlug).to.eql(pm.collectionVariables.get('seriesSlug'));",
+                  "  pm.expect(body.result.status).to.eql('STOPPED');",
+                  "});",
+                  "pm.collectionVariables.set('instantProductId', String(body.result.id));",
+                  "pm.collectionVariables.set('existingSeriesSlug', body.result.seriesSlug);",
+                  "pm.environment.set('instantProductId', String(body.result.id));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"seriesSlug\": \"{{seriesSlug}}\",\n  \"categoryId\": {{leafCategoryId}},\n  \"operator\": \"{{operator}}\"\n}"
+            },
+            "url": "{{apiBase}}/instant-products"
+          }
+        },
+        {
+          "name": "D02 A4-1 start 启用",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get('instantProductId')) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "pm.test('status=RUNNING', () => pm.expect(body.result.status).to.eql('RUNNING'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"operator\": \"{{operator}}\",\n  \"remark\": \"postman start\"\n}"
+            },
+            "url": "{{apiBase}}/instant-products/{{instantProductId}}/start"
+          }
+        },
+        {
+          "name": "D03 A5 sync 立即同步",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get('instantProductId')) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "pm.test('InstantProductSyncTriggerResponse', () => {",
+                  "  pm.expect(body.result).to.include.keys('syncRunId', 'status', 'message');",
+                  "  pm.expect(body.result.status).to.eql('RUNNING');",
+                  "  pm.expect(body.result.syncRunId).to.be.a('number');",
+                  "});",
+                  "pm.collectionVariables.set('syncRunId', String(body.result.syncRunId));",
+                  "pm.environment.set('syncRunId', String(body.result.syncRunId));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"operator\": \"{{operator}}\",\n  \"remark\": \"postman sync\"\n}"
+            },
+            "url": "{{apiBase}}/instant-products/{{instantProductId}}/sync"
+          }
+        },
+        {
+          "name": "D04 A6-2 get sync-run（提交后查询）",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const pid = pm.collectionVariables.get('instantProductId');",
+                  "const rid = pm.collectionVariables.get('syncRunId');",
+                  "if (!pid || !rid) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "pm.test('sync run 状态合法', () => {",
+                  "  pm.expect(['RUNNING', 'SUCCESS', 'PARTIAL', 'FAILED']).to.include(body.result.status);",
+                  "  pm.expect(body.result.id).to.eql(Number(pm.collectionVariables.get('syncRunId')));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/instant-products/{{instantProductId}}/sync-runs/{{syncRunId}}"
+          }
+        },
+        {
+          "name": "D05 A5 sync 重复提交（sync already running）",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const pid = pm.collectionVariables.get('instantProductId');",
+                  "const rid = pm.collectionVariables.get('syncRunId');",
+                  "if (!pid || !rid) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "if (body.ret_code === 0) {",
+                  "  pm.test('上一轮 sync 已结束，允许再次提交', () => {",
+                  "    pm.expect(body.result.syncRunId).to.be.a('number');",
+                  "  });",
+                  "  pm.collectionVariables.set('syncRunId', String(body.result.syncRunId));",
+                  "  pm.environment.set('syncRunId', String(body.result.syncRunId));",
+                  "} else {",
+                  "  pm.test('sync already running', () => {",
+                  "    pm.expect(body.ret_code).to.eql(10001);",
+                  "    pm.expect(body.ret_msg).to.include('running');",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"operator\": \"{{operator}}\"\n}"
+            },
+            "url": "{{apiBase}}/instant-products/{{instantProductId}}/sync"
+          }
+        },
+        {
+          "name": "D06 A6-1 list sync-runs",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get('instantProductId')) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "pm.test('至少有一条 sync run', () => {",
+                  "  pm.expect(body.result.items).to.be.an('array');",
+                  "  if (pm.collectionVariables.get('syncRunId')) {",
+                  "    const rid = Number(pm.collectionVariables.get('syncRunId'));",
+                  "    const found = (body.result.items || []).some((r) => r.id === rid);",
+                  "    pm.expect(found, '包含本次 syncRunId').to.eql(true);",
+                  "  }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/instant-products/{{instantProductId}}/sync-runs?limit=5"
+          }
+        },
+        {
+          "name": "D07 A7-1 list events local",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get('instantProductId')) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "pm.test('local events', () => pm.expect(body.result.items).to.be.an('array'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/instant-products/{{instantProductId}}/events?source=local&limit=20"
+          }
+        },
+        {
+          "name": "D08 A7-1 list events gamma 预览",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get('instantProductId')) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "pm.test('gamma preview', () => {",
+                  "  pm.expect(body.result.items).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/instant-products/{{instantProductId}}/events?source=gamma&limit=5"
+          }
+        },
+        {
+          "name": "D09 A7-2 list window-prices",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get('instantProductId')) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "pm.test('window prices', () => pm.expect(body.result.items).to.be.an('array'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/instant-products/{{instantProductId}}/window-prices?limit=20"
+          }
+        },
+        {
+          "name": "D10 A4-2 stop 停用",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get('instantProductId')) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "pm.test('status=STOPPED', () => pm.expect(body.result.status).to.eql('STOPPED'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"operator\": \"{{operator}}\",\n  \"remark\": \"postman stop\"\n}"
+            },
+            "url": "{{apiBase}}/instant-products/{{instantProductId}}/stop"
+          }
+        }
+      ]
+    }
+  ]
+}

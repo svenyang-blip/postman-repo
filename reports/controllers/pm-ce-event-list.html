@@ -1,0 +1,3344 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PM CE · Event List · Newman 报告</title>
+  <style>
+    :root {
+      --bg: #f2f2f2; --surface: #fff; --border: #e5e5e5; --text: #333; --muted: #888;
+      --header: #1e293b; --passed: #16a34a; --failed: #dc2626; --accent: #2563eb;
+      --shadow: 0 1px 3px rgba(0,0,0,.08); --radius: 6px;
+    }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: ui-sans-serif, system-ui, "PingFang SC", "Microsoft YaHei", sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; font-size: 14px; }
+    .topbar { background: var(--header); color: #fff; padding: 16px clamp(16px,4vw,40px); }
+    .topbar h1 { margin: 0 0 4px; font-size: 1.3rem; }
+    .topbar .sub { color: rgba(255,255,255,.75); font-size: .85rem; }
+    .topbar a { color: #93c5fd; text-decoration: none; font-size: .85rem; }
+    .topbar a:hover { text-decoration: underline; }
+    .page { padding: 20px clamp(16px,4vw,40px) 48px; max-width: 1320px; margin: 0 auto; }
+    .widgets { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin-bottom: 20px; }
+    .widget { background: var(--surface); border-radius: var(--radius); padding: 12px 14px; border-left: 4px solid var(--accent); box-shadow: var(--shadow); }
+    .widget h3 { margin: 0 0 6px; font-size: .7rem; text-transform: uppercase; color: var(--muted); }
+    .widget .val { font-size: 1.5rem; font-weight: 700; }
+    .widget.passed { border-left-color: var(--passed); } .widget.passed .val { color: var(--passed); }
+    .widget.failed { border-left-color: var(--failed); } .widget.failed .val { color: var(--failed); }
+    .badge { display: inline-block; padding: 4px 12px; border-radius: 4px; font-size: .8rem; font-weight: 600; color: #fff; margin-bottom: 20px; }
+    .badge.ok { background: var(--passed); } .badge.bad { background: var(--failed); }
+    section { margin-top: 28px; }
+    section h2 { font-size: .92rem; font-weight: 600; text-transform: uppercase; color: var(--muted); margin: 0 0 12px; padding-bottom: 8px; border-bottom: 2px solid var(--border); }
+    .hint { color: var(--muted); font-size: .82rem; margin: -6px 0 12px; }
+    table { width: 100%; border-collapse: collapse; font-size: .86rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+    th, td { padding: 9px 11px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+    th { background: #fafafa; color: var(--muted); font-size: .72rem; text-transform: uppercase; font-weight: 600; }
+    tr:last-child td { border-bottom: none; }
+    tr.row-fail { background: #fff5f5; }
+    .row-folder { font-size: .75rem; color: var(--muted); }
+    .api-code { font-size: .78rem; word-break: break-all; }
+    .focus-cell .kv { display: inline-block; margin: 2px 6px 2px 0; padding: 2px 6px; background: #f3f4f6; border-radius: 4px; font-size: .78rem; }
+    .focus-cell .kv.important { background: #eff6ff; border: 1px solid #bfdbfe; }
+    .focus-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: var(--radius); padding: 10px 12px; margin-bottom: 10px; }
+    .focus-title { font-size: .72rem; font-weight: 600; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+    .kv-grid .kv { display: inline-block; margin: 3px 8px 3px 0; font-size: .82rem; }
+    .kv-grid .kv.important b { color: var(--accent); }
+    .summary-api code { font-size: .82rem; }
+    details.details-folder, details.details-req { border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 8px; background: var(--surface); box-shadow: var(--shadow); }
+    details > summary { list-style: none; cursor: pointer; padding: 10px 14px; display: flex; flex-wrap: wrap; gap: 8px 14px; user-select: none; background: #fafafa; }
+    details[open] > summary { border-bottom: 1px solid var(--border); }
+    details > summary::-webkit-details-marker { display: none; }
+    details > summary::before { content: "▸"; color: var(--muted); margin-right: 6px; transition: transform .15s; }
+    details[open] > summary::before { transform: rotate(90deg); }
+    .folder-inner { padding: 8px 10px 10px; }
+    details.details-req { margin-left: 10px; }
+    .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+    .status-dot.passed { background: var(--passed); } .status-dot.failed { background: var(--failed); }
+    .sum-meta, .folder-meta, .meta { color: var(--muted); font-size: .8rem; }
+    .sum-title { font-weight: 600; }
+    .details-body { padding: 12px; }
+    .payload { max-height: 280px; overflow: auto; background: #f8f8f8; border: 1px solid var(--border); border-radius: var(--radius); padding: 10px; font-size: .78rem; white-space: pre-wrap; word-break: break-word; }
+    .payload-label { font-size: .7rem; font-weight: 600; color: var(--muted); margin: 10px 0 4px; text-transform: uppercase; }
+    .fail-card { border-left: 4px solid var(--failed); background: #fff5f5; padding: 12px; margin-bottom: 10px; border-radius: var(--radius); }
+    .assert-ok { color: var(--passed); font-weight: 600; }
+    .assert-bad { color: var(--failed); font-weight: 600; }
+    .bad { color: var(--failed); font-weight: 600; }
+    .ok-inline { color: var(--passed); }
+    .muted { color: var(--muted); }
+    footer { margin-top: 28px; padding-top: 14px; border-top: 1px solid var(--border); color: var(--muted); font-size: .78rem; }
+    footer a { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <p><a href="../index.html">← 返回汇总</a></p>
+    <h1>PM CE · Event List</h1>
+    <div class="sub">用户端事件列表 · PM CE · testnet · categories &amp; event/list · 生成 2026/7/8 11:41:25</div>
+  </div>
+  <div class="page">
+    <div class="widgets">
+      <div class="widget"><h3>请求</h3><div class="val">35</div></div>
+      <div class="widget"><h3>断言</h3><div class="val">138</div></div>
+      <div class="widget passed"><h3>失败断言</h3><div class="val">0</div></div>
+      <div class="widget"><h3>平均耗时</h3><div class="val" style="font-size:1rem">278 ms</div></div>
+    </div>
+    <span class="badge ok">全部通过</span>
+
+    <section>
+      <h2>用例一览（测试要点）</h2>
+      <p class="hint">点击用例名跳转明细；<code>ret_code</code> 与 <code>result</code> 关键字段已提取。</p>
+      <table class="case-overview">
+        <thead><tr>
+          <th>#</th><th>用例</th><th>API</th><th>HTTP</th><th>ret_code</th>
+          <th>测试要点</th><th>断言</th><th>失败</th><th>耗时</th>
+        </tr></thead>
+        <tbody><tr class="">
+    <td>1</td>
+    <td><a href="#req-1">拉取分类树并写入 categoryId</a><div class="row-folder">00 Setup</div></td>
+    <td><code class="api-code">GET /ce/pm/v1/api/categories</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span></td>
+    <td>4</td>
+    <td class="assert-ok">0</td>
+    <td>639 ms</td>
+  </tr>
+<tr class="">
+    <td>2</td>
+    <td><a href="#req-2">A01 默认结构（lang=zh-Hant）</a><div class="row-folder">A · GET /categories</div></td>
+    <td><code class="api-code">GET /ce/pm/v1/api/categories</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span></td>
+    <td>7</td>
+    <td class="assert-ok">0</td>
+    <td>254 ms</td>
+  </tr>
+<tr class="">
+    <td>3</td>
+    <td><a href="#req-3">A02 header lang=en（i18nName 取 en key）</a><div class="row-folder">A · GET /categories</div></td>
+    <td><code class="api-code">GET /ce/pm/v1/api/categories</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span></td>
+    <td>6</td>
+    <td class="assert-ok">0</td>
+    <td>227 ms</td>
+  </tr>
+<tr class="">
+    <td>4</td>
+    <td><a href="#req-4">A03 叶子节点字段（有数据时）</a><div class="row-folder">A · GET /categories</div></td>
+    <td><code class="api-code">GET /ce/pm/v1/api/categories</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span></td>
+    <td>6</td>
+    <td class="assert-ok">0</td>
+    <td>258 ms</td>
+  </tr>
+<tr class="">
+    <td>5</td>
+    <td><a href="#req-5">A04 Content-Type 为 JSON</a><div class="row-folder">A · GET /categories</div></td>
+    <td><code class="api-code">GET /ce/pm/v1/api/categories</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span></td>
+    <td>5</td>
+    <td class="assert-ok">0</td>
+    <td>326 ms</td>
+  </tr>
+<tr class="">
+    <td>6</td>
+    <td><a href="#req-6">A05 多余 query 仍成功</a><div class="row-folder">A · GET /categories</div></td>
+    <td><code class="api-code">GET /ce/pm/v1/api/categories?foo=bar&amp;junk=1</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span></td>
+    <td>4</td>
+    <td class="assert-ok">0</td>
+    <td>292 ms</td>
+  </tr>
+<tr class="">
+    <td>7</td>
+    <td><a href="#req-7">仅 page=1（默认 TRADABLE + START_TIME_ASC）</a><div class="row-folder">B01 契约与默认分页</div></td>
+    <td><code class="api-code">GET /ce/pm/v1/api/event/list?page=1</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=222</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>pageSize</b>=20</span></td>
+    <td>5</td>
+    <td class="assert-ok">0</td>
+    <td>358 ms</td>
+  </tr>
+<tr class="">
+    <td>8</td>
+    <td><a href="#req-8">指定 categoryId + pageSize=5</a><div class="row-folder">B01 契约与默认分页</div></td>
+    <td><code class="api-code">GET /ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=42</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>pageSize</b>=5</span></td>
+    <td>9</td>
+    <td class="assert-ok">0</td>
+    <td>316 ms</td>
+  </tr>
+<tr class="">
+    <td>9</td>
+    <td><a href="#req-9">Responses 壳含 ext_code</a><div class="row-folder">B01 契约与默认分页</div></td>
+    <td><code class="api-code">GET /ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=42</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>pageSize</b>=5</span></td>
+    <td>5</td>
+    <td class="assert-ok">0</td>
+    <td>273 ms</td>
+  </tr>
+<tr class="">
+    <td>10</td>
+    <td><a href="#req-10">pageSize=200 截断为 50</a><div class="row-folder">B02 分页规整</div></td>
+    <td><code class="api-code">GET /ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=200</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=42</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>pageSize</b>=50</span></td>
+    <td>4</td>
+    <td class="assert-ok">0</td>
+    <td>525 ms</td>
+  </tr>
+<tr class="">
+    <td>11</td>
+    <td><a href="#req-11">page=0 回退为 1</a><div class="row-folder">B02 分页规整</div></td>
+    <td><code class="api-code">GET /ce/pm/v1/api/event/list?categoryId=101&amp;page=0&amp;pageSize=5</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=42</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>pageSize</b>=5</span></td>
+    <td>4</td>
+    <td class="assert-ok">0</td>
+    <td>226 ms</td>
+  </tr>
+<tr class="">
+    <td>12</td>
+    <td><a href="#req-12">pageSize=0 回退默认 20</a><div class="row-folder">B02 分页规整</div></td>
+    <td><code class="api-code">GET /ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=0</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=42</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>pageSize</b>=20</span></td>
+    <td>4</td>
+    <td class="assert-ok">0</td>
+    <td>323 ms</td>
+  </tr>
+<tr class="">
+    <td>13</td>
+    <td><a href="#req-13">page=999999 超出范围为空列表</a><div class="row-folder">B02 分页规整</div></td>
+    <td><code class="api-code">GET /ce/pm/v1/api/event/list?categoryId=101&amp;page=999999&amp;pageSize=5</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=42</span><span class="kv"><b>page</b>=999999</span><span class="kv"><b>pageSize</b>=5</span></td>
+    <td>5</td>
+    <td class="assert-ok">0</td>
+    <td>215 ms</td>
+  </tr>
+<tr class="">
+    <td>14</td>
+    <td><a href="#req-14">eventStatus=ALL</a><div class="row-folder">B03 eventStatus 与 sortBy</div></td>
+    <td><code class="api-code">GET /ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5&amp;eventStatus=ALL</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=42</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>pageSize</b>=5</span></td>
+    <td>3</td>
+    <td class="assert-ok">0</td>
+    <td>228 ms</td>
+  </tr>
+<tr class="">
+    <td>15</td>
+    <td><a href="#req-15">eventStatus=TRADABLE</a><div class="row-folder">B03 eventStatus 与 sortBy</div></td>
+    <td><code class="api-code">GET /ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5&amp;eventStatus=TRADABLE</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=42</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>pageSize</b>=5</span></td>
+    <td>3</td>
+    <td class="assert-ok">0</td>
+    <td>239 ms</td>
+  </tr>
+<tr class="">
+    <td>16</td>
+    <td><a href="#req-16">eventStatus=SETTLED</a><div class="row-folder">B03 eventStatus 与 sortBy</div></td>
+    <td><code class="api-code">GET /ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5&amp;eventStatus=SETTLED</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=24</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>pageSize</b>=5</span></td>
+    <td>3</td>
+    <td class="assert-ok">0</td>
+    <td>265 ms</td>
+  </tr>
+<tr class="">
+    <td>17</td>
+    <td><a href="#req-17">eventStatus=UPCOMING</a><div class="row-folder">B03 eventStatus 与 sortBy</div></td>
+    <td><code class="api-code">GET /ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5&amp;eventStatus=UPCOMING</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=0</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>pageSize</b>=5</span></td>
+    <td>3</td>
+    <td class="assert-ok">0</td>
+    <td>291 ms</td>
+  </tr>
+<tr class="">
+    <td>18</td>
+    <td><a href="#req-18">eventStatus=LIVE</a><div class="row-folder">B03 eventStatus 与 sortBy</div></td>
+    <td><code class="api-code">GET /ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5&amp;eventStatus=LIVE</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=32</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>pageSize</b>=5</span></td>
+    <td>3</td>
+    <td class="assert-ok">0</td>
+    <td>285 ms</td>
+  </tr>
+<tr class="">
+    <td>19</td>
+    <td><a href="#req-19">eventStatus=LOCKED</a><div class="row-folder">B03 eventStatus 与 sortBy</div></td>
+    <td><code class="api-code">GET /ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5&amp;eventStatus=LOCKED</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=0</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>pageSize</b>=5</span></td>
+    <td>3</td>
+    <td class="assert-ok">0</td>
+    <td>231 ms</td>
+  </tr>
+<tr class="">
+    <td>20</td>
+    <td><a href="#req-20">eventStatus 小写 tradable 规整</a><div class="row-folder">B03 eventStatus 与 sortBy</div></td>
+    <td><code class="api-code">GET /ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=3&amp;eventStatus=tradable</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=42</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>pageSize</b>=3</span></td>
+    <td>3</td>
+    <td class="assert-ok">0</td>
+    <td>257 ms</td>
+  </tr>
+<tr class="">
+    <td>21</td>
+    <td><a href="#req-21">eventStatus 非法值回退 TRADABLE</a><div class="row-folder">B03 eventStatus 与 sortBy</div></td>
+    <td><code class="api-code">GET /ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5&amp;eventStatus=NOT_REAL</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=42</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>pageSize</b>=5</span></td>
+    <td>3</td>
+    <td class="assert-ok">0</td>
+    <td>208 ms</td>
+  </tr>
+<tr class="">
+    <td>22</td>
+    <td><a href="#req-22">sortBy=START_TIME_ASC</a><div class="row-folder">B03 eventStatus 与 sortBy</div></td>
+    <td><code class="api-code">GET /ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5&amp;sortBy=START_TIME_ASC</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=42</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>pageSize</b>=5</span></td>
+    <td>3</td>
+    <td class="assert-ok">0</td>
+    <td>212 ms</td>
+  </tr>
+<tr class="">
+    <td>23</td>
+    <td><a href="#req-23">sortBy=CREATED_DESC</a><div class="row-folder">B03 eventStatus 与 sortBy</div></td>
+    <td><code class="api-code">GET /ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5&amp;sortBy=CREATED_DESC</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=42</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>pageSize</b>=5</span></td>
+    <td>3</td>
+    <td class="assert-ok">0</td>
+    <td>264 ms</td>
+  </tr>
+<tr class="">
+    <td>24</td>
+    <td><a href="#req-24">sortBy=VOLUME_24H_DESC</a><div class="row-folder">B03 eventStatus 与 sortBy</div></td>
+    <td><code class="api-code">GET /ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5&amp;sortBy=VOLUME_24H_DESC</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=42</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>pageSize</b>=5</span></td>
+    <td>3</td>
+    <td class="assert-ok">0</td>
+    <td>254 ms</td>
+  </tr>
+<tr class="">
+    <td>25</td>
+    <td><a href="#req-25">sortBy 非法值回退 START_TIME_ASC</a><div class="row-folder">B03 eventStatus 与 sortBy</div></td>
+    <td><code class="api-code">GET /ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5&amp;sortBy=BAD</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=42</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>pageSize</b>=5</span></td>
+    <td>3</td>
+    <td class="assert-ok">0</td>
+    <td>208 ms</td>
+  </tr>
+<tr class="">
+    <td>26</td>
+    <td><a href="#req-26">categoryId=0 不限分类</a><div class="row-folder">B04 分类筛选</div></td>
+    <td><code class="api-code">GET /ce/pm/v1/api/event/list?categoryId=0&amp;page=1&amp;pageSize=3</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=222</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>pageSize</b>=3</span></td>
+    <td>3</td>
+    <td class="assert-ok">0</td>
+    <td>330 ms</td>
+  </tr>
+<tr class="">
+    <td>27</td>
+    <td><a href="#req-27">categoryIds 重复参数去重</a><div class="row-folder">B04 分类筛选</div></td>
+    <td><code class="api-code">GET /ce/pm/v1/api/event/list?categoryIds=101&amp;categoryIds=101&amp;page=1&amp;pageSize=5</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=42</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>pageSize</b>=5</span></td>
+    <td>3</td>
+    <td class="assert-ok">0</td>
+    <td>270 ms</td>
+  </tr>
+<tr class="">
+    <td>28</td>
+    <td><a href="#req-28">categoryIds 逗号单参数（Wiki 示例）</a><div class="row-folder">B04 分类筛选</div></td>
+    <td><code class="api-code">GET /ce/pm/v1/api/event/list?categoryIds=101%2C102&amp;page=1&amp;pageSize=5&amp;eventStatus=TRADABLE&amp;sortBy=START_TIME_ASC</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=43</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>pageSize</b>=5</span></td>
+    <td>4</td>
+    <td class="assert-ok">0</td>
+    <td>253 ms</td>
+  </tr>
+<tr class="">
+    <td>29</td>
+    <td><a href="#req-29">categoryId 与 categoryIds 同传（Ids 优先）</a><div class="row-folder">B04 分类筛选</div></td>
+    <td><code class="api-code">GET /ce/pm/v1/api/event/list?categoryId=101&amp;categoryIds=102&amp;page=1&amp;pageSize=3</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=1</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>pageSize</b>=3</span></td>
+    <td>4</td>
+    <td class="assert-ok">0</td>
+    <td>220 ms</td>
+  </tr>
+<tr class="">
+    <td>30</td>
+    <td><a href="#req-30">isHot=true</a><div class="row-folder">B05 热门与语言</div></td>
+    <td><code class="api-code">GET /ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5&amp;isHot=true</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=0</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>pageSize</b>=5</span></td>
+    <td>3</td>
+    <td class="assert-ok">0</td>
+    <td>212 ms</td>
+  </tr>
+<tr class="">
+    <td>31</td>
+    <td><a href="#req-31">isHot=false 不生效（等同未传）</a><div class="row-folder">B05 热门与语言</div></td>
+    <td><code class="api-code">GET /ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5&amp;isHot=false</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=42</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>pageSize</b>=5</span></td>
+    <td>3</td>
+    <td class="assert-ok">0</td>
+    <td>267 ms</td>
+  </tr>
+<tr class="">
+    <td>32</td>
+    <td><a href="#req-32">locale=ja（query 优先于 header）</a><div class="row-folder">B05 热门与语言</div></td>
+    <td><code class="api-code">GET /ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5&amp;locale=ja</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=42</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>pageSize</b>=5</span></td>
+    <td>3</td>
+    <td class="assert-ok">0</td>
+    <td>240 ms</td>
+  </tr>
+<tr class="">
+    <td>33</td>
+    <td><a href="#req-33">locale 不在白名单仍成功</a><div class="row-folder">B05 热门与语言</div></td>
+    <td><code class="api-code">GET /ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=2&amp;locale=xx-invalid</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=42</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>pageSize</b>=2</span></td>
+    <td>3</td>
+    <td class="assert-ok">0</td>
+    <td>356 ms</td>
+  </tr>
+<tr class="">
+    <td>34</td>
+    <td><a href="#req-34">[err] categoryId=abc 绑定失败 10001</a><div class="row-folder">B06 异常</div></td>
+    <td><code class="api-code">GET /ce/pm/v1/api/event/list?categoryId=abc&amp;page=1&amp;pageSize=2</code></td>
+    <td>200</td>
+    <td><span class="assert-bad">10001</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=10001</span><span class="kv important"><b>ret_msg</b>=categoryId:Failed to convert property value of type 'java.lang.String' to required type 'java.lang.Long' for property 'categoryId'; nested exception is java.lang.NumberFormatException: For input string: &quot;abc&quot;</span></td>
+    <td>4</td>
+    <td class="assert-ok">0</td>
+    <td>207 ms</td>
+  </tr>
+<tr class="">
+    <td>35</td>
+    <td><a href="#req-35">[err] categoryIds=abc 绑定失败 10001</a><div class="row-folder">B06 异常</div></td>
+    <td><code class="api-code">GET /ce/pm/v1/api/event/list?categoryIds=abc&amp;page=1&amp;pageSize=2</code></td>
+    <td>200</td>
+    <td><span class="assert-bad">10001</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=10001</span><span class="kv important"><b>ret_msg</b>=categoryIds:Failed to convert property value of type 'java.lang.String' to required type 'java.util.List' for property 'categoryIds'; nested exception is java.lang.NumberFormatException: For input string: &quot;abc&quot;</span></td>
+    <td>4</td>
+    <td class="assert-ok">0</td>
+    <td>204 ms</td>
+  </tr></tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>接口汇总</h2>
+      <table class="summary-api">
+        <thead><tr><th>接口</th><th>用例</th><th>断言</th><th>失败</th><th>结果</th></tr></thead>
+        <tbody><tr>
+    <td><code>GET /categories</code></td>
+    <td>6</td>
+    <td>32</td>
+    <td>0</td>
+    <td class="assert-ok">全通过</td>
+  </tr>
+<tr>
+    <td><code>GET /event/list</code></td>
+    <td>29</td>
+    <td>106</td>
+    <td>0</td>
+    <td class="assert-ok">全通过</td>
+  </tr>
+</tbody>
+      </table>
+    </section>
+
+    
+
+    <section><h2>分节明细</h2><section id="api-categories">
+    <h2>一、GET /categories</h2>
+    <details class="details-folder">
+    <summary><span class="folder-title">00 Setup</span><span class="folder-meta">1 个用例 · <span class="ok-inline">断言全过</span></span></summary>
+    <div class="folder-inner"><details class="details-req" id="req-1">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>拉取分类树并写入 categoryId</span><span class="sum-meta">GET /ce/pm/v1/api/categories · HTTP 200 · 639 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span></div>
+        </div>
+        <div class="meta">响应体积 5698 字节</div>
+        <div class="meta">https://api2-testnet.zoomex.com/ce/pm/v1/api/categories</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET https://api2-testnet.zoomex.com/ce/pm/v1/api/categories
+lang: zh-Hant</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;tree&quot;: [
+      {
+        &quot;id&quot;: 100,
+        &quot;parentId&quot;: 0,
+        &quot;name&quot;: &quot;加密资产&quot;,
+        &quot;translateKey&quot;: &quot;pmCryptoAssets&quot;,
+        &quot;slug&quot;: &quot;crypto-assets&quot;,
+        &quot;level&quot;: 1,
+        &quot;isLeaf&quot;: false,
+        &quot;marketCount&quot;: 145,
+        &quot;i18nName&quot;: &quot;加密資產&quot;,
+        &quot;children&quot;: [
+          {
+            &quot;id&quot;: 101,
+            &quot;parentId&quot;: 100,
+            &quot;name&quot;: &quot;比特币&quot;,
+            &quot;translateKey&quot;: &quot;pmBitcoin&quot;,
+            &quot;slug&quot;: &quot;bitcoin&quot;,
+            &quot;level&quot;: 2,
+            &quot;isLeaf&quot;: true,
+            &quot;marketCount&quot;: 42,
+            &quot;i18nName&quot;: &quot;比特幣&quot;
+          },
+          {
+            &quot;id&quot;: 102,
+            &quot;parentId&quot;: 100,
+            &quot;name&quot;: &quot;以太坊&quot;,
+            &quot;translateKey&quot;: &quot;pmEthereum&quot;,
+            &quot;slug&quot;: &quot;ethereum&quot;,
+            &quot;level&quot;: 2,
+            &quot;isLeaf&quot;: true,
+            &quot;marketCount&quot;: 1,
+            &quot;i18nName&quot;: &quot;以太坊&quot;
+          },
+          {
+            &quot;id&quot;: 103,
+            &quot;parentId&quot;: 100,
+            &quot;name&quot;: &quot;索拉纳&quot;,
+            &quot;translateKey&quot;: &quot;pmSolana&quot;,
+            &quot;slug&quot;: &quot;solana&quot;,
+            &quot;level&quot;: 2,
+            &quot;isLeaf&quot;: true,
+            &quot;marketCount&quot;: 5,
+            &quot;i18nName&quot;: &quot;索拉納&quot;
+          },
+          {
+            &quot;id&quot;: 104,
+            &quot;parentId&quot;: 100,
+            &quot;name&quot;: &quot;瑞波&quot;,
+            &quot;translateKey&quot;: &quot;pmRipple&quot;,
+            &quot;slug&quot;: &quot;ripple&quot;,
+            &quot;level&quot;: 2,
+            &quot;isLeaf&quot;: true,
+            &quot;marketCount&quot;: 1,
+            &quot;i18nName&quot;: &quot;瑞波&quot;
+          },
+          {
+            &quot;id&quot;: 105,
+            &quot;parentId&quot;: 100,
+            &quot;name&quot;: &quot;微策略&quot;,
+            &quot;translateKey&quot;: &quot;pmMicroStrategy&quot;,
+            &quot;slug&quot;: &quot;micro-strategy&quot;,
+            &quot;level&quot;: 2,
+            &quot;isLeaf&quot;: true,
+            &quot;marketCount&quot;: 96,
+            &quot;i18nName&quot;: &quot;微策略&quot;
+          }
+        ]
+  
+…（已截断，全文 11149 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code 为 0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — result.tree 为数组</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 已写入 categoryId=101</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details></div>
+  </details>
+<details class="details-folder">
+    <summary><span class="folder-title">A · GET /categories</span><span class="folder-meta">5 个用例 · <span class="ok-inline">断言全过</span></span></summary>
+    <div class="folder-inner"><details class="details-req" id="req-2">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>A01 默认结构（lang=zh-Hant）</span><span class="sum-meta">GET /ce/pm/v1/api/categories · HTTP 200 · 254 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span></div>
+        </div>
+        <div class="meta">响应体积 5698 字节</div>
+        <div class="meta">https://api2-testnet.zoomex.com/ce/pm/v1/api/categories</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET https://api2-testnet.zoomex.com/ce/pm/v1/api/categories
+lang: zh-Hant</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;tree&quot;: [
+      {
+        &quot;id&quot;: 100,
+        &quot;parentId&quot;: 0,
+        &quot;name&quot;: &quot;加密资产&quot;,
+        &quot;translateKey&quot;: &quot;pmCryptoAssets&quot;,
+        &quot;slug&quot;: &quot;crypto-assets&quot;,
+        &quot;level&quot;: 1,
+        &quot;isLeaf&quot;: false,
+        &quot;marketCount&quot;: 145,
+        &quot;i18nName&quot;: &quot;加密資產&quot;,
+        &quot;children&quot;: [
+          {
+            &quot;id&quot;: 101,
+            &quot;parentId&quot;: 100,
+            &quot;name&quot;: &quot;比特币&quot;,
+            &quot;translateKey&quot;: &quot;pmBitcoin&quot;,
+            &quot;slug&quot;: &quot;bitcoin&quot;,
+            &quot;level&quot;: 2,
+            &quot;isLeaf&quot;: true,
+            &quot;marketCount&quot;: 42,
+            &quot;i18nName&quot;: &quot;比特幣&quot;
+          },
+          {
+            &quot;id&quot;: 102,
+            &quot;parentId&quot;: 100,
+            &quot;name&quot;: &quot;以太坊&quot;,
+            &quot;translateKey&quot;: &quot;pmEthereum&quot;,
+            &quot;slug&quot;: &quot;ethereum&quot;,
+            &quot;level&quot;: 2,
+            &quot;isLeaf&quot;: true,
+            &quot;marketCount&quot;: 1,
+            &quot;i18nName&quot;: &quot;以太坊&quot;
+          },
+          {
+            &quot;id&quot;: 103,
+            &quot;parentId&quot;: 100,
+            &quot;name&quot;: &quot;索拉纳&quot;,
+            &quot;translateKey&quot;: &quot;pmSolana&quot;,
+            &quot;slug&quot;: &quot;solana&quot;,
+            &quot;level&quot;: 2,
+            &quot;isLeaf&quot;: true,
+            &quot;marketCount&quot;: 5,
+            &quot;i18nName&quot;: &quot;索拉納&quot;
+          },
+          {
+            &quot;id&quot;: 104,
+            &quot;parentId&quot;: 100,
+            &quot;name&quot;: &quot;瑞波&quot;,
+            &quot;translateKey&quot;: &quot;pmRipple&quot;,
+            &quot;slug&quot;: &quot;ripple&quot;,
+            &quot;level&quot;: 2,
+            &quot;isLeaf&quot;: true,
+            &quot;marketCount&quot;: 1,
+            &quot;i18nName&quot;: &quot;瑞波&quot;
+          },
+          {
+            &quot;id&quot;: 105,
+            &quot;parentId&quot;: 100,
+            &quot;name&quot;: &quot;微策略&quot;,
+            &quot;translateKey&quot;: &quot;pmMicroStrategy&quot;,
+            &quot;slug&quot;: &quot;micro-strategy&quot;,
+            &quot;level&quot;: 2,
+            &quot;isLeaf&quot;: true,
+            &quot;marketCount&quot;: 96,
+            &quot;i18nName&quot;: &quot;微策略&quot;
+          }
+        ]
+  
+…（已截断，全文 11149 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code 为 0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — Responses 壳字段</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — result.tree 为数组</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 有节点时含 id / name</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — children 为数组或缺失</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 繁中叶子返回 i18nName（有翻译时非空）</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-3">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>A02 header lang=en（i18nName 取 en key）</span><span class="sum-meta">GET /ce/pm/v1/api/categories · HTTP 200 · 227 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span></div>
+        </div>
+        <div class="meta">响应体积 5715 字节</div>
+        <div class="meta">https://api2-testnet.zoomex.com/ce/pm/v1/api/categories</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET https://api2-testnet.zoomex.com/ce/pm/v1/api/categories
+lang: en</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;tree&quot;: [
+      {
+        &quot;id&quot;: 100,
+        &quot;parentId&quot;: 0,
+        &quot;name&quot;: &quot;加密资产&quot;,
+        &quot;translateKey&quot;: &quot;pmCryptoAssets&quot;,
+        &quot;slug&quot;: &quot;crypto-assets&quot;,
+        &quot;level&quot;: 1,
+        &quot;isLeaf&quot;: false,
+        &quot;marketCount&quot;: 145,
+        &quot;i18nName&quot;: &quot;Crypto Assets&quot;,
+        &quot;children&quot;: [
+          {
+            &quot;id&quot;: 101,
+            &quot;parentId&quot;: 100,
+            &quot;name&quot;: &quot;比特币&quot;,
+            &quot;translateKey&quot;: &quot;pmBitcoin&quot;,
+            &quot;slug&quot;: &quot;bitcoin&quot;,
+            &quot;level&quot;: 2,
+            &quot;isLeaf&quot;: true,
+            &quot;marketCount&quot;: 42,
+            &quot;i18nName&quot;: &quot;Bitcoin&quot;
+          },
+          {
+            &quot;id&quot;: 102,
+            &quot;parentId&quot;: 100,
+            &quot;name&quot;: &quot;以太坊&quot;,
+            &quot;translateKey&quot;: &quot;pmEthereum&quot;,
+            &quot;slug&quot;: &quot;ethereum&quot;,
+            &quot;level&quot;: 2,
+            &quot;isLeaf&quot;: true,
+            &quot;marketCount&quot;: 1,
+            &quot;i18nName&quot;: &quot;Ethereum&quot;
+          },
+          {
+            &quot;id&quot;: 103,
+            &quot;parentId&quot;: 100,
+            &quot;name&quot;: &quot;索拉纳&quot;,
+            &quot;translateKey&quot;: &quot;pmSolana&quot;,
+            &quot;slug&quot;: &quot;solana&quot;,
+            &quot;level&quot;: 2,
+            &quot;isLeaf&quot;: true,
+            &quot;marketCount&quot;: 5,
+            &quot;i18nName&quot;: &quot;Solana&quot;
+          },
+          {
+            &quot;id&quot;: 104,
+            &quot;parentId&quot;: 100,
+            &quot;name&quot;: &quot;瑞波&quot;,
+            &quot;translateKey&quot;: &quot;pmRipple&quot;,
+            &quot;slug&quot;: &quot;ripple&quot;,
+            &quot;level&quot;: 2,
+            &quot;isLeaf&quot;: true,
+            &quot;marketCount&quot;: 1,
+            &quot;i18nName&quot;: &quot;Ripple&quot;
+          },
+          {
+            &quot;id&quot;: 105,
+            &quot;parentId&quot;: 100,
+            &quot;name&quot;: &quot;微策略&quot;,
+            &quot;translateKey&quot;: &quot;pmMicroStrategy&quot;,
+            &quot;slug&quot;: &quot;micro-strategy&quot;,
+            &quot;level&quot;: 2,
+            &quot;isLeaf&quot;: true,
+            &quot;marketCount&quot;: 96,
+            &quot;i18nName&quot;: &quot;Micr
+…（已截断，全文 11314 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code 为 0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — Responses 壳字段</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — result.tree 为数组</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — lang=en 时叶子仍返回 i18nName（不再省略）</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 英文 i18nName 与 name 字段均存在</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-4">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>A03 叶子节点字段（有数据时）</span><span class="sum-meta">GET /ce/pm/v1/api/categories · HTTP 200 · 258 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span></div>
+        </div>
+        <div class="meta">响应体积 5698 字节</div>
+        <div class="meta">https://api2-testnet.zoomex.com/ce/pm/v1/api/categories</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET https://api2-testnet.zoomex.com/ce/pm/v1/api/categories
+lang: zh-Hant</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;tree&quot;: [
+      {
+        &quot;id&quot;: 100,
+        &quot;parentId&quot;: 0,
+        &quot;name&quot;: &quot;加密资产&quot;,
+        &quot;translateKey&quot;: &quot;pmCryptoAssets&quot;,
+        &quot;slug&quot;: &quot;crypto-assets&quot;,
+        &quot;level&quot;: 1,
+        &quot;isLeaf&quot;: false,
+        &quot;marketCount&quot;: 145,
+        &quot;i18nName&quot;: &quot;加密資產&quot;,
+        &quot;children&quot;: [
+          {
+            &quot;id&quot;: 101,
+            &quot;parentId&quot;: 100,
+            &quot;name&quot;: &quot;比特币&quot;,
+            &quot;translateKey&quot;: &quot;pmBitcoin&quot;,
+            &quot;slug&quot;: &quot;bitcoin&quot;,
+            &quot;level&quot;: 2,
+            &quot;isLeaf&quot;: true,
+            &quot;marketCount&quot;: 42,
+            &quot;i18nName&quot;: &quot;比特幣&quot;
+          },
+          {
+            &quot;id&quot;: 102,
+            &quot;parentId&quot;: 100,
+            &quot;name&quot;: &quot;以太坊&quot;,
+            &quot;translateKey&quot;: &quot;pmEthereum&quot;,
+            &quot;slug&quot;: &quot;ethereum&quot;,
+            &quot;level&quot;: 2,
+            &quot;isLeaf&quot;: true,
+            &quot;marketCount&quot;: 1,
+            &quot;i18nName&quot;: &quot;以太坊&quot;
+          },
+          {
+            &quot;id&quot;: 103,
+            &quot;parentId&quot;: 100,
+            &quot;name&quot;: &quot;索拉纳&quot;,
+            &quot;translateKey&quot;: &quot;pmSolana&quot;,
+            &quot;slug&quot;: &quot;solana&quot;,
+            &quot;level&quot;: 2,
+            &quot;isLeaf&quot;: true,
+            &quot;marketCount&quot;: 5,
+            &quot;i18nName&quot;: &quot;索拉納&quot;
+          },
+          {
+            &quot;id&quot;: 104,
+            &quot;parentId&quot;: 100,
+            &quot;name&quot;: &quot;瑞波&quot;,
+            &quot;translateKey&quot;: &quot;pmRipple&quot;,
+            &quot;slug&quot;: &quot;ripple&quot;,
+            &quot;level&quot;: 2,
+            &quot;isLeaf&quot;: true,
+            &quot;marketCount&quot;: 1,
+            &quot;i18nName&quot;: &quot;瑞波&quot;
+          },
+          {
+            &quot;id&quot;: 105,
+            &quot;parentId&quot;: 100,
+            &quot;name&quot;: &quot;微策略&quot;,
+            &quot;translateKey&quot;: &quot;pmMicroStrategy&quot;,
+            &quot;slug&quot;: &quot;micro-strategy&quot;,
+            &quot;level&quot;: 2,
+            &quot;isLeaf&quot;: true,
+            &quot;marketCount&quot;: 96,
+            &quot;i18nName&quot;: &quot;微策略&quot;
+          }
+        ]
+  
+…（已截断，全文 11149 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code 为 0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — Responses 壳字段</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — result.tree 为数组</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 存在叶子时含 isLeaf / marketCount</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 叶子含 i18nName 字段（可为 null）</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-5">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>A04 Content-Type 为 JSON</span><span class="sum-meta">GET /ce/pm/v1/api/categories · HTTP 200 · 326 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span></div>
+        </div>
+        <div class="meta">响应体积 5698 字节</div>
+        <div class="meta">https://api2-testnet.zoomex.com/ce/pm/v1/api/categories</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET https://api2-testnet.zoomex.com/ce/pm/v1/api/categories
+lang: zh-Hant</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;tree&quot;: [
+      {
+        &quot;id&quot;: 100,
+        &quot;parentId&quot;: 0,
+        &quot;name&quot;: &quot;加密资产&quot;,
+        &quot;translateKey&quot;: &quot;pmCryptoAssets&quot;,
+        &quot;slug&quot;: &quot;crypto-assets&quot;,
+        &quot;level&quot;: 1,
+        &quot;isLeaf&quot;: false,
+        &quot;marketCount&quot;: 145,
+        &quot;i18nName&quot;: &quot;加密資產&quot;,
+        &quot;children&quot;: [
+          {
+            &quot;id&quot;: 101,
+            &quot;parentId&quot;: 100,
+            &quot;name&quot;: &quot;比特币&quot;,
+            &quot;translateKey&quot;: &quot;pmBitcoin&quot;,
+            &quot;slug&quot;: &quot;bitcoin&quot;,
+            &quot;level&quot;: 2,
+            &quot;isLeaf&quot;: true,
+            &quot;marketCount&quot;: 42,
+            &quot;i18nName&quot;: &quot;比特幣&quot;
+          },
+          {
+            &quot;id&quot;: 102,
+            &quot;parentId&quot;: 100,
+            &quot;name&quot;: &quot;以太坊&quot;,
+            &quot;translateKey&quot;: &quot;pmEthereum&quot;,
+            &quot;slug&quot;: &quot;ethereum&quot;,
+            &quot;level&quot;: 2,
+            &quot;isLeaf&quot;: true,
+            &quot;marketCount&quot;: 1,
+            &quot;i18nName&quot;: &quot;以太坊&quot;
+          },
+          {
+            &quot;id&quot;: 103,
+            &quot;parentId&quot;: 100,
+            &quot;name&quot;: &quot;索拉纳&quot;,
+            &quot;translateKey&quot;: &quot;pmSolana&quot;,
+            &quot;slug&quot;: &quot;solana&quot;,
+            &quot;level&quot;: 2,
+            &quot;isLeaf&quot;: true,
+            &quot;marketCount&quot;: 5,
+            &quot;i18nName&quot;: &quot;索拉納&quot;
+          },
+          {
+            &quot;id&quot;: 104,
+            &quot;parentId&quot;: 100,
+            &quot;name&quot;: &quot;瑞波&quot;,
+            &quot;translateKey&quot;: &quot;pmRipple&quot;,
+            &quot;slug&quot;: &quot;ripple&quot;,
+            &quot;level&quot;: 2,
+            &quot;isLeaf&quot;: true,
+            &quot;marketCount&quot;: 1,
+            &quot;i18nName&quot;: &quot;瑞波&quot;
+          },
+          {
+            &quot;id&quot;: 105,
+            &quot;parentId&quot;: 100,
+            &quot;name&quot;: &quot;微策略&quot;,
+            &quot;translateKey&quot;: &quot;pmMicroStrategy&quot;,
+            &quot;slug&quot;: &quot;micro-strategy&quot;,
+            &quot;level&quot;: 2,
+            &quot;isLeaf&quot;: true,
+            &quot;marketCount&quot;: 96,
+            &quot;i18nName&quot;: &quot;微策略&quot;
+          }
+        ]
+  
+…（已截断，全文 11149 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code 为 0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — Responses 壳字段</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — result.tree 为数组</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — Content-Type 含 json</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-6">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>A05 多余 query 仍成功</span><span class="sum-meta">GET /ce/pm/v1/api/categories?foo=bar&amp;junk=1 · HTTP 200 · 292 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span></div>
+        </div>
+        <div class="meta">响应体积 5698 字节</div>
+        <div class="meta">https://api2-testnet.zoomex.com/ce/pm/v1/api/categories?foo=bar&amp;junk=1</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET https://api2-testnet.zoomex.com/ce/pm/v1/api/categories?foo=bar&amp;junk=1
+lang: zh-Hant</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;tree&quot;: [
+      {
+        &quot;id&quot;: 100,
+        &quot;parentId&quot;: 0,
+        &quot;name&quot;: &quot;加密资产&quot;,
+        &quot;translateKey&quot;: &quot;pmCryptoAssets&quot;,
+        &quot;slug&quot;: &quot;crypto-assets&quot;,
+        &quot;level&quot;: 1,
+        &quot;isLeaf&quot;: false,
+        &quot;marketCount&quot;: 145,
+        &quot;i18nName&quot;: &quot;加密資產&quot;,
+        &quot;children&quot;: [
+          {
+            &quot;id&quot;: 101,
+            &quot;parentId&quot;: 100,
+            &quot;name&quot;: &quot;比特币&quot;,
+            &quot;translateKey&quot;: &quot;pmBitcoin&quot;,
+            &quot;slug&quot;: &quot;bitcoin&quot;,
+            &quot;level&quot;: 2,
+            &quot;isLeaf&quot;: true,
+            &quot;marketCount&quot;: 42,
+            &quot;i18nName&quot;: &quot;比特幣&quot;
+          },
+          {
+            &quot;id&quot;: 102,
+            &quot;parentId&quot;: 100,
+            &quot;name&quot;: &quot;以太坊&quot;,
+            &quot;translateKey&quot;: &quot;pmEthereum&quot;,
+            &quot;slug&quot;: &quot;ethereum&quot;,
+            &quot;level&quot;: 2,
+            &quot;isLeaf&quot;: true,
+            &quot;marketCount&quot;: 1,
+            &quot;i18nName&quot;: &quot;以太坊&quot;
+          },
+          {
+            &quot;id&quot;: 103,
+            &quot;parentId&quot;: 100,
+            &quot;name&quot;: &quot;索拉纳&quot;,
+            &quot;translateKey&quot;: &quot;pmSolana&quot;,
+            &quot;slug&quot;: &quot;solana&quot;,
+            &quot;level&quot;: 2,
+            &quot;isLeaf&quot;: true,
+            &quot;marketCount&quot;: 5,
+            &quot;i18nName&quot;: &quot;索拉納&quot;
+          },
+          {
+            &quot;id&quot;: 104,
+            &quot;parentId&quot;: 100,
+            &quot;name&quot;: &quot;瑞波&quot;,
+            &quot;translateKey&quot;: &quot;pmRipple&quot;,
+            &quot;slug&quot;: &quot;ripple&quot;,
+            &quot;level&quot;: 2,
+            &quot;isLeaf&quot;: true,
+            &quot;marketCount&quot;: 1,
+            &quot;i18nName&quot;: &quot;瑞波&quot;
+          },
+          {
+            &quot;id&quot;: 105,
+            &quot;parentId&quot;: 100,
+            &quot;name&quot;: &quot;微策略&quot;,
+            &quot;translateKey&quot;: &quot;pmMicroStrategy&quot;,
+            &quot;slug&quot;: &quot;micro-strategy&quot;,
+            &quot;level&quot;: 2,
+            &quot;isLeaf&quot;: true,
+            &quot;marketCount&quot;: 96,
+            &quot;i18nName&quot;: &quot;微策略&quot;
+          }
+        ]
+  
+…（已截断，全文 11149 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code 为 0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — Responses 壳字段</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — result.tree 为数组</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details></div>
+  </details>
+  </section>
+
+<section id="api-eventList">
+    <h2>二、GET /event/list</h2>
+    <details class="details-folder">
+    <summary><span class="folder-title">B01 契约与默认分页</span><span class="folder-meta">3 个用例 · <span class="ok-inline">断言全过</span></span></summary>
+    <div class="folder-inner"><details class="details-req" id="req-7">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>仅 page=1（默认 TRADABLE + START_TIME_ASC）</span><span class="sum-meta">GET /ce/pm/v1/api/event/list?page=1 · HTTP 200 · 358 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=222</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>pageSize</b>=20</span></div>
+        </div>
+        <div class="meta">响应体积 140643 字节</div>
+        <div class="meta">https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?page=1</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?page=1
+lang: zh-Hant</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;page&quot;: 1,
+    &quot;pageSize&quot;: 20,
+    &quot;total&quot;: 222,
+    &quot;list&quot;: [
+      {
+        &quot;id&quot;: &quot;16183&quot;,
+        &quot;title&quot;: &quot;Kraken首次公開募股截止日期爲___ ？&quot;,
+        &quot;imageUrl&quot;: &quot;https://polymarket-upload.s3.us-east-2.amazonaws.com/will-kraken-ipo-in-2024--_GT-GzKWtUW.jpg&quot;,
+        &quot;endDate&quot;: 1767182400,
+        &quot;totalVolume&quot;: &quot;1580526.66551300&quot;,
+        &quot;live&quot;: null,
+        &quot;markets&quot;: [
+          {
+            &quot;id&quot;: &quot;691547&quot;,
+            &quot;description&quot;: &quot;This market will resolve to \&quot;Yes\&quot; if Kraken completes an Initial Public Offering (IPO) by the listed date ET, as confirmed by official company announcements and credible news sources. Otherwise, this market will resolve to \&quot;No.\&quot;\n\nThe IPO refers to the first sale of stock by the listed company to the public on any recognized stock exchange.\n\nIf Kraken is acquired by another company that is already public, this market will immediately resolve to \&quot;No.\&quot;\n\nThe resolution source for this market is a consensus of credible reporting.&quot;,
+            &quot;question&quot;: &quot;Kraken 會在 2026 年 12 月 31 日前首次公開募股 (IPO) 嗎？&quot;,
+            &quot;miniTitle&quot;: &quot;December 31, 2026&quot;,
+            &quot;sportsMarketType&quot;: null,
+            &quot;sportsDisplayColumn&quot;: null,
+            &quot;groupItemTitle&quot;: &quot;2026 年 12 月 31 日&quot;,
+            &quot;groupItemThreshold&quot;: 2,
+            &quot;wdlSlot&quot;: null,
+            &quot;totalVolume&quot;: &quot;540371.20816200&quot;,
+            &quot;outcomes&quot;: {
+              &quot;No&quot;: {
+                &quot;outcomePrice&quot;: &quot;0.71&quot;,
+                &quot;clobTokenId&quot;: &quot;28557614648090529004584076028720900603196666949274543515794672175624115225556&quot;
+              },
+              &quot;Yes&quot;: {
+                &quot;outcomePrice&quot;: &quot;0.43&quot;,
+                &quot;clobTokenId&quot;: &quot;34626184950254225208692030156208941308358060420950772251072421141618169142241&quot;
+             
+…（已截断，全文 176086 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code 为 0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 分页壳 page/pageSize/total/list</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — page 为 1</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 默认 pageSize 为 20</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-8">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>指定 categoryId + pageSize=5</span><span class="sum-meta">GET /ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5 · HTTP 200 · 316 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=42</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>pageSize</b>=5</span></div>
+        </div>
+        <div class="meta">响应体积 20181 字节</div>
+        <div class="meta">https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5
+lang: zh-Hant</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;page&quot;: 1,
+    &quot;pageSize&quot;: 5,
+    &quot;total&quot;: 42,
+    &quot;list&quot;: [
+      {
+        &quot;id&quot;: &quot;16183&quot;,
+        &quot;title&quot;: &quot;Kraken首次公開募股截止日期爲___ ？&quot;,
+        &quot;imageUrl&quot;: &quot;https://polymarket-upload.s3.us-east-2.amazonaws.com/will-kraken-ipo-in-2024--_GT-GzKWtUW.jpg&quot;,
+        &quot;endDate&quot;: 1767182400,
+        &quot;totalVolume&quot;: &quot;1580526.66551300&quot;,
+        &quot;live&quot;: null,
+        &quot;markets&quot;: [
+          {
+            &quot;id&quot;: &quot;691547&quot;,
+            &quot;description&quot;: &quot;This market will resolve to \&quot;Yes\&quot; if Kraken completes an Initial Public Offering (IPO) by the listed date ET, as confirmed by official company announcements and credible news sources. Otherwise, this market will resolve to \&quot;No.\&quot;\n\nThe IPO refers to the first sale of stock by the listed company to the public on any recognized stock exchange.\n\nIf Kraken is acquired by another company that is already public, this market will immediately resolve to \&quot;No.\&quot;\n\nThe resolution source for this market is a consensus of credible reporting.&quot;,
+            &quot;question&quot;: &quot;Kraken 會在 2026 年 12 月 31 日前首次公開募股 (IPO) 嗎？&quot;,
+            &quot;miniTitle&quot;: &quot;December 31, 2026&quot;,
+            &quot;sportsMarketType&quot;: null,
+            &quot;sportsDisplayColumn&quot;: null,
+            &quot;groupItemTitle&quot;: &quot;2026 年 12 月 31 日&quot;,
+            &quot;groupItemThreshold&quot;: 2,
+            &quot;wdlSlot&quot;: null,
+            &quot;totalVolume&quot;: &quot;540371.20816200&quot;,
+            &quot;outcomes&quot;: {
+              &quot;No&quot;: {
+                &quot;outcomePrice&quot;: &quot;0.71&quot;,
+                &quot;clobTokenId&quot;: &quot;28557614648090529004584076028720900603196666949274543515794672175624115225556&quot;
+              },
+              &quot;Yes&quot;: {
+                &quot;outcomePrice&quot;: &quot;0.43&quot;,
+                &quot;clobTokenId&quot;: &quot;34626184950254225208692030156208941308358060420950772251072421141618169142241&quot;
+              }
+…（已截断，全文 23529 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code 为 0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 分页壳 page/pageSize/total/list</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — pageSize 与请求一致</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — list 长度不超过 pageSize</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — EventVo 结构（有数据时）</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 列表模式 markets[].rules 为 null</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — outcomes key 不含空格（下划线规整）</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — sportsDisplayColumn 合法枚举（有值时）</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-9">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>Responses 壳含 ext_code</span><span class="sum-meta">GET /ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5 · HTTP 200 · 273 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=42</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>pageSize</b>=5</span></div>
+        </div>
+        <div class="meta">响应体积 20181 字节</div>
+        <div class="meta">https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5
+lang: zh-Hant</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;page&quot;: 1,
+    &quot;pageSize&quot;: 5,
+    &quot;total&quot;: 42,
+    &quot;list&quot;: [
+      {
+        &quot;id&quot;: &quot;16183&quot;,
+        &quot;title&quot;: &quot;Kraken首次公開募股截止日期爲___ ？&quot;,
+        &quot;imageUrl&quot;: &quot;https://polymarket-upload.s3.us-east-2.amazonaws.com/will-kraken-ipo-in-2024--_GT-GzKWtUW.jpg&quot;,
+        &quot;endDate&quot;: 1767182400,
+        &quot;totalVolume&quot;: &quot;1580526.66551300&quot;,
+        &quot;live&quot;: null,
+        &quot;markets&quot;: [
+          {
+            &quot;id&quot;: &quot;691547&quot;,
+            &quot;description&quot;: &quot;This market will resolve to \&quot;Yes\&quot; if Kraken completes an Initial Public Offering (IPO) by the listed date ET, as confirmed by official company announcements and credible news sources. Otherwise, this market will resolve to \&quot;No.\&quot;\n\nThe IPO refers to the first sale of stock by the listed company to the public on any recognized stock exchange.\n\nIf Kraken is acquired by another company that is already public, this market will immediately resolve to \&quot;No.\&quot;\n\nThe resolution source for this market is a consensus of credible reporting.&quot;,
+            &quot;question&quot;: &quot;Kraken 會在 2026 年 12 月 31 日前首次公開募股 (IPO) 嗎？&quot;,
+            &quot;miniTitle&quot;: &quot;December 31, 2026&quot;,
+            &quot;sportsMarketType&quot;: null,
+            &quot;sportsDisplayColumn&quot;: null,
+            &quot;groupItemTitle&quot;: &quot;2026 年 12 月 31 日&quot;,
+            &quot;groupItemThreshold&quot;: 2,
+            &quot;wdlSlot&quot;: null,
+            &quot;totalVolume&quot;: &quot;540371.20816200&quot;,
+            &quot;outcomes&quot;: {
+              &quot;No&quot;: {
+                &quot;outcomePrice&quot;: &quot;0.71&quot;,
+                &quot;clobTokenId&quot;: &quot;28557614648090529004584076028720900603196666949274543515794672175624115225556&quot;
+              },
+              &quot;Yes&quot;: {
+                &quot;outcomePrice&quot;: &quot;0.43&quot;,
+                &quot;clobTokenId&quot;: &quot;34626184950254225208692030156208941308358060420950772251072421141618169142241&quot;
+              }
+…（已截断，全文 23529 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code 为 0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 分页壳 page/pageSize/total/list</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 顶层壳字段</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — Content-Type 含 json</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details></div>
+  </details>
+<details class="details-folder">
+    <summary><span class="folder-title">B02 分页规整</span><span class="folder-meta">4 个用例 · <span class="ok-inline">断言全过</span></span></summary>
+    <div class="folder-inner"><details class="details-req" id="req-10">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>pageSize=200 截断为 50</span><span class="sum-meta">GET /ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=200 · HTTP 200 · 525 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=42</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>pageSize</b>=50</span></div>
+        </div>
+        <div class="meta">响应体积 295297 字节</div>
+        <div class="meta">https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=200</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=200
+lang: zh-Hant</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;page&quot;: 1,
+    &quot;pageSize&quot;: 50,
+    &quot;total&quot;: 42,
+    &quot;list&quot;: [
+      {
+        &quot;id&quot;: &quot;16183&quot;,
+        &quot;title&quot;: &quot;Kraken首次公開募股截止日期爲___ ？&quot;,
+        &quot;imageUrl&quot;: &quot;https://polymarket-upload.s3.us-east-2.amazonaws.com/will-kraken-ipo-in-2024--_GT-GzKWtUW.jpg&quot;,
+        &quot;endDate&quot;: 1767182400,
+        &quot;totalVolume&quot;: &quot;1580526.66551300&quot;,
+        &quot;live&quot;: null,
+        &quot;markets&quot;: [
+          {
+            &quot;id&quot;: &quot;691547&quot;,
+            &quot;description&quot;: &quot;This market will resolve to \&quot;Yes\&quot; if Kraken completes an Initial Public Offering (IPO) by the listed date ET, as confirmed by official company announcements and credible news sources. Otherwise, this market will resolve to \&quot;No.\&quot;\n\nThe IPO refers to the first sale of stock by the listed company to the public on any recognized stock exchange.\n\nIf Kraken is acquired by another company that is already public, this market will immediately resolve to \&quot;No.\&quot;\n\nThe resolution source for this market is a consensus of credible reporting.&quot;,
+            &quot;question&quot;: &quot;Kraken 會在 2026 年 12 月 31 日前首次公開募股 (IPO) 嗎？&quot;,
+            &quot;miniTitle&quot;: &quot;December 31, 2026&quot;,
+            &quot;sportsMarketType&quot;: null,
+            &quot;sportsDisplayColumn&quot;: null,
+            &quot;groupItemTitle&quot;: &quot;2026 年 12 月 31 日&quot;,
+            &quot;groupItemThreshold&quot;: 2,
+            &quot;wdlSlot&quot;: null,
+            &quot;totalVolume&quot;: &quot;540371.20816200&quot;,
+            &quot;outcomes&quot;: {
+              &quot;No&quot;: {
+                &quot;outcomePrice&quot;: &quot;0.71&quot;,
+                &quot;clobTokenId&quot;: &quot;28557614648090529004584076028720900603196666949274543515794672175624115225556&quot;
+              },
+              &quot;Yes&quot;: {
+                &quot;outcomePrice&quot;: &quot;0.43&quot;,
+                &quot;clobTokenId&quot;: &quot;34626184950254225208692030156208941308358060420950772251072421141618169142241&quot;
+              
+…（已截断，全文 358675 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code 为 0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 分页壳 page/pageSize/total/list</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — effectivePageSize=50</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-11">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>page=0 回退为 1</span><span class="sum-meta">GET /ce/pm/v1/api/event/list?categoryId=101&amp;page=0&amp;pageSize=5 · HTTP 200 · 226 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=42</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>pageSize</b>=5</span></div>
+        </div>
+        <div class="meta">响应体积 20181 字节</div>
+        <div class="meta">https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?categoryId=101&amp;page=0&amp;pageSize=5</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?categoryId=101&amp;page=0&amp;pageSize=5
+lang: zh-Hant</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;page&quot;: 1,
+    &quot;pageSize&quot;: 5,
+    &quot;total&quot;: 42,
+    &quot;list&quot;: [
+      {
+        &quot;id&quot;: &quot;16183&quot;,
+        &quot;title&quot;: &quot;Kraken首次公開募股截止日期爲___ ？&quot;,
+        &quot;imageUrl&quot;: &quot;https://polymarket-upload.s3.us-east-2.amazonaws.com/will-kraken-ipo-in-2024--_GT-GzKWtUW.jpg&quot;,
+        &quot;endDate&quot;: 1767182400,
+        &quot;totalVolume&quot;: &quot;1580526.66551300&quot;,
+        &quot;live&quot;: null,
+        &quot;markets&quot;: [
+          {
+            &quot;id&quot;: &quot;691547&quot;,
+            &quot;description&quot;: &quot;This market will resolve to \&quot;Yes\&quot; if Kraken completes an Initial Public Offering (IPO) by the listed date ET, as confirmed by official company announcements and credible news sources. Otherwise, this market will resolve to \&quot;No.\&quot;\n\nThe IPO refers to the first sale of stock by the listed company to the public on any recognized stock exchange.\n\nIf Kraken is acquired by another company that is already public, this market will immediately resolve to \&quot;No.\&quot;\n\nThe resolution source for this market is a consensus of credible reporting.&quot;,
+            &quot;question&quot;: &quot;Kraken 會在 2026 年 12 月 31 日前首次公開募股 (IPO) 嗎？&quot;,
+            &quot;miniTitle&quot;: &quot;December 31, 2026&quot;,
+            &quot;sportsMarketType&quot;: null,
+            &quot;sportsDisplayColumn&quot;: null,
+            &quot;groupItemTitle&quot;: &quot;2026 年 12 月 31 日&quot;,
+            &quot;groupItemThreshold&quot;: 2,
+            &quot;wdlSlot&quot;: null,
+            &quot;totalVolume&quot;: &quot;540371.20816200&quot;,
+            &quot;outcomes&quot;: {
+              &quot;No&quot;: {
+                &quot;outcomePrice&quot;: &quot;0.71&quot;,
+                &quot;clobTokenId&quot;: &quot;28557614648090529004584076028720900603196666949274543515794672175624115225556&quot;
+              },
+              &quot;Yes&quot;: {
+                &quot;outcomePrice&quot;: &quot;0.43&quot;,
+                &quot;clobTokenId&quot;: &quot;34626184950254225208692030156208941308358060420950772251072421141618169142241&quot;
+              }
+…（已截断，全文 23529 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code 为 0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 分页壳 page/pageSize/total/list</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — effectivePage=1</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-12">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>pageSize=0 回退默认 20</span><span class="sum-meta">GET /ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=0 · HTTP 200 · 323 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=42</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>pageSize</b>=20</span></div>
+        </div>
+        <div class="meta">响应体积 102375 字节</div>
+        <div class="meta">https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=0</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=0
+lang: zh-Hant</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;page&quot;: 1,
+    &quot;pageSize&quot;: 20,
+    &quot;total&quot;: 42,
+    &quot;list&quot;: [
+      {
+        &quot;id&quot;: &quot;16183&quot;,
+        &quot;title&quot;: &quot;Kraken首次公開募股截止日期爲___ ？&quot;,
+        &quot;imageUrl&quot;: &quot;https://polymarket-upload.s3.us-east-2.amazonaws.com/will-kraken-ipo-in-2024--_GT-GzKWtUW.jpg&quot;,
+        &quot;endDate&quot;: 1767182400,
+        &quot;totalVolume&quot;: &quot;1580526.66551300&quot;,
+        &quot;live&quot;: null,
+        &quot;markets&quot;: [
+          {
+            &quot;id&quot;: &quot;691547&quot;,
+            &quot;description&quot;: &quot;This market will resolve to \&quot;Yes\&quot; if Kraken completes an Initial Public Offering (IPO) by the listed date ET, as confirmed by official company announcements and credible news sources. Otherwise, this market will resolve to \&quot;No.\&quot;\n\nThe IPO refers to the first sale of stock by the listed company to the public on any recognized stock exchange.\n\nIf Kraken is acquired by another company that is already public, this market will immediately resolve to \&quot;No.\&quot;\n\nThe resolution source for this market is a consensus of credible reporting.&quot;,
+            &quot;question&quot;: &quot;Kraken 會在 2026 年 12 月 31 日前首次公開募股 (IPO) 嗎？&quot;,
+            &quot;miniTitle&quot;: &quot;December 31, 2026&quot;,
+            &quot;sportsMarketType&quot;: null,
+            &quot;sportsDisplayColumn&quot;: null,
+            &quot;groupItemTitle&quot;: &quot;2026 年 12 月 31 日&quot;,
+            &quot;groupItemThreshold&quot;: 2,
+            &quot;wdlSlot&quot;: null,
+            &quot;totalVolume&quot;: &quot;540371.20816200&quot;,
+            &quot;outcomes&quot;: {
+              &quot;No&quot;: {
+                &quot;outcomePrice&quot;: &quot;0.71&quot;,
+                &quot;clobTokenId&quot;: &quot;28557614648090529004584076028720900603196666949274543515794672175624115225556&quot;
+              },
+              &quot;Yes&quot;: {
+                &quot;outcomePrice&quot;: &quot;0.43&quot;,
+                &quot;clobTokenId&quot;: &quot;34626184950254225208692030156208941308358060420950772251072421141618169142241&quot;
+              
+…（已截断，全文 123419 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code 为 0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 分页壳 page/pageSize/total/list</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — effectivePageSize=20</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-13">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>page=999999 超出范围为空列表</span><span class="sum-meta">GET /ce/pm/v1/api/event/list?categoryId=101&amp;page=999999&amp;pageSize=5 · HTTP 200 · 215 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=42</span><span class="kv"><b>page</b>=999999</span><span class="kv"><b>pageSize</b>=5</span></div>
+        </div>
+        <div class="meta">响应体积 131 字节</div>
+        <div class="meta">https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?categoryId=101&amp;page=999999&amp;pageSize=5</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?categoryId=101&amp;page=999999&amp;pageSize=5
+lang: zh-Hant</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;page&quot;: 999999,
+    &quot;pageSize&quot;: 5,
+    &quot;total&quot;: 42,
+    &quot;list&quot;: []
+  },
+  &quot;ext_code&quot;: null,
+  &quot;time_now&quot;: &quot;1782197939457&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code 为 0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 分页壳 page/pageSize/total/list</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — list 为空</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — total 仍为非负</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details></div>
+  </details>
+<details class="details-folder">
+    <summary><span class="folder-title">B03 eventStatus 与 sortBy</span><span class="folder-meta">12 个用例 · <span class="ok-inline">断言全过</span></span></summary>
+    <div class="folder-inner"><details class="details-req" id="req-14">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>eventStatus=ALL</span><span class="sum-meta">GET /ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5&amp;eventStatus=ALL · HTTP 200 · 228 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=42</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>pageSize</b>=5</span></div>
+        </div>
+        <div class="meta">响应体积 20181 字节</div>
+        <div class="meta">https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5&amp;eventStatus=ALL</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5&amp;eventStatus=ALL
+lang: zh-Hant</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;page&quot;: 1,
+    &quot;pageSize&quot;: 5,
+    &quot;total&quot;: 42,
+    &quot;list&quot;: [
+      {
+        &quot;id&quot;: &quot;16183&quot;,
+        &quot;title&quot;: &quot;Kraken首次公開募股截止日期爲___ ？&quot;,
+        &quot;imageUrl&quot;: &quot;https://polymarket-upload.s3.us-east-2.amazonaws.com/will-kraken-ipo-in-2024--_GT-GzKWtUW.jpg&quot;,
+        &quot;endDate&quot;: 1767182400,
+        &quot;totalVolume&quot;: &quot;1580526.66551300&quot;,
+        &quot;live&quot;: null,
+        &quot;markets&quot;: [
+          {
+            &quot;id&quot;: &quot;691547&quot;,
+            &quot;description&quot;: &quot;This market will resolve to \&quot;Yes\&quot; if Kraken completes an Initial Public Offering (IPO) by the listed date ET, as confirmed by official company announcements and credible news sources. Otherwise, this market will resolve to \&quot;No.\&quot;\n\nThe IPO refers to the first sale of stock by the listed company to the public on any recognized stock exchange.\n\nIf Kraken is acquired by another company that is already public, this market will immediately resolve to \&quot;No.\&quot;\n\nThe resolution source for this market is a consensus of credible reporting.&quot;,
+            &quot;question&quot;: &quot;Kraken 會在 2026 年 12 月 31 日前首次公開募股 (IPO) 嗎？&quot;,
+            &quot;miniTitle&quot;: &quot;December 31, 2026&quot;,
+            &quot;sportsMarketType&quot;: null,
+            &quot;sportsDisplayColumn&quot;: null,
+            &quot;groupItemTitle&quot;: &quot;2026 年 12 月 31 日&quot;,
+            &quot;groupItemThreshold&quot;: 2,
+            &quot;wdlSlot&quot;: null,
+            &quot;totalVolume&quot;: &quot;540371.20816200&quot;,
+            &quot;outcomes&quot;: {
+              &quot;No&quot;: {
+                &quot;outcomePrice&quot;: &quot;0.71&quot;,
+                &quot;clobTokenId&quot;: &quot;28557614648090529004584076028720900603196666949274543515794672175624115225556&quot;
+              },
+              &quot;Yes&quot;: {
+                &quot;outcomePrice&quot;: &quot;0.43&quot;,
+                &quot;clobTokenId&quot;: &quot;34626184950254225208692030156208941308358060420950772251072421141618169142241&quot;
+              }
+…（已截断，全文 23529 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code 为 0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 分页壳 page/pageSize/total/list</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-15">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>eventStatus=TRADABLE</span><span class="sum-meta">GET /ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5&amp;eventStatus=TRADABLE · HTTP 200 · 239 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=42</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>pageSize</b>=5</span></div>
+        </div>
+        <div class="meta">响应体积 20181 字节</div>
+        <div class="meta">https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5&amp;eventStatus=TRADABLE</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5&amp;eventStatus=TRADABLE
+lang: zh-Hant</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;page&quot;: 1,
+    &quot;pageSize&quot;: 5,
+    &quot;total&quot;: 42,
+    &quot;list&quot;: [
+      {
+        &quot;id&quot;: &quot;16183&quot;,
+        &quot;title&quot;: &quot;Kraken首次公開募股截止日期爲___ ？&quot;,
+        &quot;imageUrl&quot;: &quot;https://polymarket-upload.s3.us-east-2.amazonaws.com/will-kraken-ipo-in-2024--_GT-GzKWtUW.jpg&quot;,
+        &quot;endDate&quot;: 1767182400,
+        &quot;totalVolume&quot;: &quot;1580526.66551300&quot;,
+        &quot;live&quot;: null,
+        &quot;markets&quot;: [
+          {
+            &quot;id&quot;: &quot;691547&quot;,
+            &quot;description&quot;: &quot;This market will resolve to \&quot;Yes\&quot; if Kraken completes an Initial Public Offering (IPO) by the listed date ET, as confirmed by official company announcements and credible news sources. Otherwise, this market will resolve to \&quot;No.\&quot;\n\nThe IPO refers to the first sale of stock by the listed company to the public on any recognized stock exchange.\n\nIf Kraken is acquired by another company that is already public, this market will immediately resolve to \&quot;No.\&quot;\n\nThe resolution source for this market is a consensus of credible reporting.&quot;,
+            &quot;question&quot;: &quot;Kraken 會在 2026 年 12 月 31 日前首次公開募股 (IPO) 嗎？&quot;,
+            &quot;miniTitle&quot;: &quot;December 31, 2026&quot;,
+            &quot;sportsMarketType&quot;: null,
+            &quot;sportsDisplayColumn&quot;: null,
+            &quot;groupItemTitle&quot;: &quot;2026 年 12 月 31 日&quot;,
+            &quot;groupItemThreshold&quot;: 2,
+            &quot;wdlSlot&quot;: null,
+            &quot;totalVolume&quot;: &quot;540371.20816200&quot;,
+            &quot;outcomes&quot;: {
+              &quot;No&quot;: {
+                &quot;outcomePrice&quot;: &quot;0.71&quot;,
+                &quot;clobTokenId&quot;: &quot;28557614648090529004584076028720900603196666949274543515794672175624115225556&quot;
+              },
+              &quot;Yes&quot;: {
+                &quot;outcomePrice&quot;: &quot;0.43&quot;,
+                &quot;clobTokenId&quot;: &quot;34626184950254225208692030156208941308358060420950772251072421141618169142241&quot;
+              }
+…（已截断，全文 23529 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code 为 0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 分页壳 page/pageSize/total/list</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-16">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>eventStatus=SETTLED</span><span class="sum-meta">GET /ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5&amp;eventStatus=SETTLED · HTTP 200 · 265 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=24</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>pageSize</b>=5</span></div>
+        </div>
+        <div class="meta">响应体积 18270 字节</div>
+        <div class="meta">https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5&amp;eventStatus=SETTLED</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5&amp;eventStatus=SETTLED
+lang: zh-Hant</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;page&quot;: 1,
+    &quot;pageSize&quot;: 5,
+    &quot;total&quot;: 24,
+    &quot;list&quot;: [
+      {
+        &quot;id&quot;: &quot;16183&quot;,
+        &quot;title&quot;: &quot;Kraken首次公開募股截止日期爲___ ？&quot;,
+        &quot;imageUrl&quot;: &quot;https://polymarket-upload.s3.us-east-2.amazonaws.com/will-kraken-ipo-in-2024--_GT-GzKWtUW.jpg&quot;,
+        &quot;endDate&quot;: 1767182400,
+        &quot;totalVolume&quot;: &quot;1580526.66551300&quot;,
+        &quot;live&quot;: null,
+        &quot;markets&quot;: [
+          {
+            &quot;id&quot;: &quot;691547&quot;,
+            &quot;description&quot;: &quot;This market will resolve to \&quot;Yes\&quot; if Kraken completes an Initial Public Offering (IPO) by the listed date ET, as confirmed by official company announcements and credible news sources. Otherwise, this market will resolve to \&quot;No.\&quot;\n\nThe IPO refers to the first sale of stock by the listed company to the public on any recognized stock exchange.\n\nIf Kraken is acquired by another company that is already public, this market will immediately resolve to \&quot;No.\&quot;\n\nThe resolution source for this market is a consensus of credible reporting.&quot;,
+            &quot;question&quot;: &quot;Kraken 會在 2026 年 12 月 31 日前首次公開募股 (IPO) 嗎？&quot;,
+            &quot;miniTitle&quot;: &quot;December 31, 2026&quot;,
+            &quot;sportsMarketType&quot;: null,
+            &quot;sportsDisplayColumn&quot;: null,
+            &quot;groupItemTitle&quot;: &quot;2026 年 12 月 31 日&quot;,
+            &quot;groupItemThreshold&quot;: 2,
+            &quot;wdlSlot&quot;: null,
+            &quot;totalVolume&quot;: &quot;540371.20816200&quot;,
+            &quot;outcomes&quot;: {
+              &quot;No&quot;: {
+                &quot;outcomePrice&quot;: &quot;0.71&quot;,
+                &quot;clobTokenId&quot;: &quot;28557614648090529004584076028720900603196666949274543515794672175624115225556&quot;
+              },
+              &quot;Yes&quot;: {
+                &quot;outcomePrice&quot;: &quot;0.43&quot;,
+                &quot;clobTokenId&quot;: &quot;34626184950254225208692030156208941308358060420950772251072421141618169142241&quot;
+              }
+…（已截断，全文 21327 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code 为 0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 分页壳 page/pageSize/total/list</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-17">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>eventStatus=UPCOMING</span><span class="sum-meta">GET /ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5&amp;eventStatus=UPCOMING · HTTP 200 · 291 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=0</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>pageSize</b>=5</span></div>
+        </div>
+        <div class="meta">响应体积 125 字节</div>
+        <div class="meta">https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5&amp;eventStatus=UPCOMING</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5&amp;eventStatus=UPCOMING
+lang: zh-Hant</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;page&quot;: 1,
+    &quot;pageSize&quot;: 5,
+    &quot;total&quot;: 0,
+    &quot;list&quot;: []
+  },
+  &quot;ext_code&quot;: null,
+  &quot;time_now&quot;: &quot;1782197940503&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code 为 0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 分页壳 page/pageSize/total/list</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-18">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>eventStatus=LIVE</span><span class="sum-meta">GET /ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5&amp;eventStatus=LIVE · HTTP 200 · 285 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=32</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>pageSize</b>=5</span></div>
+        </div>
+        <div class="meta">响应体积 11725 字节</div>
+        <div class="meta">https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5&amp;eventStatus=LIVE</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5&amp;eventStatus=LIVE
+lang: zh-Hant</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;page&quot;: 1,
+    &quot;pageSize&quot;: 5,
+    &quot;total&quot;: 32,
+    &quot;list&quot;: [
+      {
+        &quot;id&quot;: &quot;31195&quot;,
+        &quot;title&quot;: &quot;普京在2026年12月31日之前就任俄羅斯總統？&quot;,
+        &quot;imageUrl&quot;: &quot;https://polymarket-upload.s3.us-east-2.amazonaws.com/putin-out-as-president-of-russia-in-2025-nWuurkC8qfbi.jpg&quot;,
+        &quot;endDate&quot;: 1798741800,
+        &quot;totalVolume&quot;: &quot;7883291.74323602&quot;,
+        &quot;live&quot;: null,
+        &quot;markets&quot;: [
+          {
+            &quot;id&quot;: &quot;560317&quot;,
+            &quot;description&quot;: &quot;This market will resolve to “Yes” if Vladimir Putin ceases to be President of Russia for any period of time between market creation and the specified date (ET). Otherwise, this market will resolve to “No”.\n\nAn announcement of Vladimir Putin's resignation/removal before this market's end date will immediately resolve this market to \&quot;Yes\&quot;, regardless of when the announced resignation/removal goes into effect.\n\nIf the specified individual is detained, effectively removed from the specified position, or otherwise permanently prevented from fulfilling the duties of the specified position within this market’s timeframe, it will qualify for a “Yes” resolution.\n\nThe resolution source for this market will be official information from Vladimir Putin and the government of Russia; however, a consensus of credible reporting may also be used.&quot;,
+            &quot;question&quot;: &quot;普丁會在2026年12月31日前卸任俄羅斯總統嗎？&quot;,
+            &quot;miniTitle&quot;: &quot;&quot;,
+            &quot;sportsMarketType&quot;: null,
+            &quot;sportsDisplayColumn&quot;: null,
+            &quot;groupItemTitle&quot;: null,
+            &quot;groupItemThreshold&quot;: 0,
+            &quot;wdlSlot&quot;: null,
+            &quot;totalVolume&quot;: &quot;7883291.74323602&quot;,
+            &quot;outcomes&quot;: {
+              &quot;No&quot;: {
+                &quot;outcomePrice&quot;: &quot;0.92&quot;,
+                &quot;clobTokenId&quot;: &quot;8707389
+…（已截断，全文 14538 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code 为 0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 分页壳 page/pageSize/total/list</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-19">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>eventStatus=LOCKED</span><span class="sum-meta">GET /ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5&amp;eventStatus=LOCKED · HTTP 200 · 231 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=0</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>pageSize</b>=5</span></div>
+        </div>
+        <div class="meta">响应体积 125 字节</div>
+        <div class="meta">https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5&amp;eventStatus=LOCKED</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5&amp;eventStatus=LOCKED
+lang: zh-Hant</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;page&quot;: 1,
+    &quot;pageSize&quot;: 5,
+    &quot;total&quot;: 0,
+    &quot;list&quot;: []
+  },
+  &quot;ext_code&quot;: null,
+  &quot;time_now&quot;: &quot;1782197941090&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code 为 0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 分页壳 page/pageSize/total/list</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-20">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>eventStatus 小写 tradable 规整</span><span class="sum-meta">GET /ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=3&amp;eventStatus=tradable · HTTP 200 · 257 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=42</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>pageSize</b>=3</span></div>
+        </div>
+        <div class="meta">响应体积 14913 字节</div>
+        <div class="meta">https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=3&amp;eventStatus=tradable</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=3&amp;eventStatus=tradable
+lang: zh-Hant</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;page&quot;: 1,
+    &quot;pageSize&quot;: 3,
+    &quot;total&quot;: 42,
+    &quot;list&quot;: [
+      {
+        &quot;id&quot;: &quot;16183&quot;,
+        &quot;title&quot;: &quot;Kraken首次公開募股截止日期爲___ ？&quot;,
+        &quot;imageUrl&quot;: &quot;https://polymarket-upload.s3.us-east-2.amazonaws.com/will-kraken-ipo-in-2024--_GT-GzKWtUW.jpg&quot;,
+        &quot;endDate&quot;: 1767182400,
+        &quot;totalVolume&quot;: &quot;1580526.66551300&quot;,
+        &quot;live&quot;: null,
+        &quot;markets&quot;: [
+          {
+            &quot;id&quot;: &quot;691547&quot;,
+            &quot;description&quot;: &quot;This market will resolve to \&quot;Yes\&quot; if Kraken completes an Initial Public Offering (IPO) by the listed date ET, as confirmed by official company announcements and credible news sources. Otherwise, this market will resolve to \&quot;No.\&quot;\n\nThe IPO refers to the first sale of stock by the listed company to the public on any recognized stock exchange.\n\nIf Kraken is acquired by another company that is already public, this market will immediately resolve to \&quot;No.\&quot;\n\nThe resolution source for this market is a consensus of credible reporting.&quot;,
+            &quot;question&quot;: &quot;Kraken 會在 2026 年 12 月 31 日前首次公開募股 (IPO) 嗎？&quot;,
+            &quot;miniTitle&quot;: &quot;December 31, 2026&quot;,
+            &quot;sportsMarketType&quot;: null,
+            &quot;sportsDisplayColumn&quot;: null,
+            &quot;groupItemTitle&quot;: &quot;2026 年 12 月 31 日&quot;,
+            &quot;groupItemThreshold&quot;: 2,
+            &quot;wdlSlot&quot;: null,
+            &quot;totalVolume&quot;: &quot;540371.20816200&quot;,
+            &quot;outcomes&quot;: {
+              &quot;No&quot;: {
+                &quot;outcomePrice&quot;: &quot;0.71&quot;,
+                &quot;clobTokenId&quot;: &quot;28557614648090529004584076028720900603196666949274543515794672175624115225556&quot;
+              },
+              &quot;Yes&quot;: {
+                &quot;outcomePrice&quot;: &quot;0.43&quot;,
+                &quot;clobTokenId&quot;: &quot;34626184950254225208692030156208941308358060420950772251072421141618169142241&quot;
+              }
+…（已截断，全文 17113 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code 为 0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 分页壳 page/pageSize/total/list</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-21">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>eventStatus 非法值回退 TRADABLE</span><span class="sum-meta">GET /ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5&amp;eventStatus=NOT_REAL · HTTP 200 · 208 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=42</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>pageSize</b>=5</span></div>
+        </div>
+        <div class="meta">响应体积 20181 字节</div>
+        <div class="meta">https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5&amp;eventStatus=NOT_REAL</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5&amp;eventStatus=NOT_REAL
+lang: zh-Hant</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;page&quot;: 1,
+    &quot;pageSize&quot;: 5,
+    &quot;total&quot;: 42,
+    &quot;list&quot;: [
+      {
+        &quot;id&quot;: &quot;16183&quot;,
+        &quot;title&quot;: &quot;Kraken首次公開募股截止日期爲___ ？&quot;,
+        &quot;imageUrl&quot;: &quot;https://polymarket-upload.s3.us-east-2.amazonaws.com/will-kraken-ipo-in-2024--_GT-GzKWtUW.jpg&quot;,
+        &quot;endDate&quot;: 1767182400,
+        &quot;totalVolume&quot;: &quot;1580526.66551300&quot;,
+        &quot;live&quot;: null,
+        &quot;markets&quot;: [
+          {
+            &quot;id&quot;: &quot;691547&quot;,
+            &quot;description&quot;: &quot;This market will resolve to \&quot;Yes\&quot; if Kraken completes an Initial Public Offering (IPO) by the listed date ET, as confirmed by official company announcements and credible news sources. Otherwise, this market will resolve to \&quot;No.\&quot;\n\nThe IPO refers to the first sale of stock by the listed company to the public on any recognized stock exchange.\n\nIf Kraken is acquired by another company that is already public, this market will immediately resolve to \&quot;No.\&quot;\n\nThe resolution source for this market is a consensus of credible reporting.&quot;,
+            &quot;question&quot;: &quot;Kraken 會在 2026 年 12 月 31 日前首次公開募股 (IPO) 嗎？&quot;,
+            &quot;miniTitle&quot;: &quot;December 31, 2026&quot;,
+            &quot;sportsMarketType&quot;: null,
+            &quot;sportsDisplayColumn&quot;: null,
+            &quot;groupItemTitle&quot;: &quot;2026 年 12 月 31 日&quot;,
+            &quot;groupItemThreshold&quot;: 2,
+            &quot;wdlSlot&quot;: null,
+            &quot;totalVolume&quot;: &quot;540371.20816200&quot;,
+            &quot;outcomes&quot;: {
+              &quot;No&quot;: {
+                &quot;outcomePrice&quot;: &quot;0.71&quot;,
+                &quot;clobTokenId&quot;: &quot;28557614648090529004584076028720900603196666949274543515794672175624115225556&quot;
+              },
+              &quot;Yes&quot;: {
+                &quot;outcomePrice&quot;: &quot;0.43&quot;,
+                &quot;clobTokenId&quot;: &quot;34626184950254225208692030156208941308358060420950772251072421141618169142241&quot;
+              }
+…（已截断，全文 23529 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code 为 0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 分页壳 page/pageSize/total/list</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-22">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>sortBy=START_TIME_ASC</span><span class="sum-meta">GET /ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5&amp;sortBy=START_TIME_ASC · HTTP 200 · 212 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=42</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>pageSize</b>=5</span></div>
+        </div>
+        <div class="meta">响应体积 20181 字节</div>
+        <div class="meta">https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5&amp;sortBy=START_TIME_ASC</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5&amp;sortBy=START_TIME_ASC
+lang: zh-Hant</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;page&quot;: 1,
+    &quot;pageSize&quot;: 5,
+    &quot;total&quot;: 42,
+    &quot;list&quot;: [
+      {
+        &quot;id&quot;: &quot;16183&quot;,
+        &quot;title&quot;: &quot;Kraken首次公開募股截止日期爲___ ？&quot;,
+        &quot;imageUrl&quot;: &quot;https://polymarket-upload.s3.us-east-2.amazonaws.com/will-kraken-ipo-in-2024--_GT-GzKWtUW.jpg&quot;,
+        &quot;endDate&quot;: 1767182400,
+        &quot;totalVolume&quot;: &quot;1580526.66551300&quot;,
+        &quot;live&quot;: null,
+        &quot;markets&quot;: [
+          {
+            &quot;id&quot;: &quot;691547&quot;,
+            &quot;description&quot;: &quot;This market will resolve to \&quot;Yes\&quot; if Kraken completes an Initial Public Offering (IPO) by the listed date ET, as confirmed by official company announcements and credible news sources. Otherwise, this market will resolve to \&quot;No.\&quot;\n\nThe IPO refers to the first sale of stock by the listed company to the public on any recognized stock exchange.\n\nIf Kraken is acquired by another company that is already public, this market will immediately resolve to \&quot;No.\&quot;\n\nThe resolution source for this market is a consensus of credible reporting.&quot;,
+            &quot;question&quot;: &quot;Kraken 會在 2026 年 12 月 31 日前首次公開募股 (IPO) 嗎？&quot;,
+            &quot;miniTitle&quot;: &quot;December 31, 2026&quot;,
+            &quot;sportsMarketType&quot;: null,
+            &quot;sportsDisplayColumn&quot;: null,
+            &quot;groupItemTitle&quot;: &quot;2026 年 12 月 31 日&quot;,
+            &quot;groupItemThreshold&quot;: 2,
+            &quot;wdlSlot&quot;: null,
+            &quot;totalVolume&quot;: &quot;540371.20816200&quot;,
+            &quot;outcomes&quot;: {
+              &quot;No&quot;: {
+                &quot;outcomePrice&quot;: &quot;0.71&quot;,
+                &quot;clobTokenId&quot;: &quot;28557614648090529004584076028720900603196666949274543515794672175624115225556&quot;
+              },
+              &quot;Yes&quot;: {
+                &quot;outcomePrice&quot;: &quot;0.43&quot;,
+                &quot;clobTokenId&quot;: &quot;34626184950254225208692030156208941308358060420950772251072421141618169142241&quot;
+              }
+…（已截断，全文 23529 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code 为 0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 分页壳 page/pageSize/total/list</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-23">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>sortBy=CREATED_DESC</span><span class="sum-meta">GET /ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5&amp;sortBy=CREATED_DESC · HTTP 200 · 264 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=42</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>pageSize</b>=5</span></div>
+        </div>
+        <div class="meta">响应体积 18944 字节</div>
+        <div class="meta">https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5&amp;sortBy=CREATED_DESC</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5&amp;sortBy=CREATED_DESC
+lang: zh-Hant</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;page&quot;: 1,
+    &quot;pageSize&quot;: 5,
+    &quot;total&quot;: 42,
+    &quot;list&quot;: [
+      {
+        &quot;id&quot;: &quot;52166&quot;,
+        &quot;title&quot;: &quot;特朗普和普京接下來會在哪裏會面？&quot;,
+        &quot;imageUrl&quot;: &quot;https://polymarket-upload.s3.us-east-2.amazonaws.com/where-will-the-next-meeting-between-trump-and-putin-take-plce-ksaAP8PAZSZb.jpg&quot;,
+        &quot;endDate&quot;: 1782777600,
+        &quot;totalVolume&quot;: &quot;8724940.16837601&quot;,
+        &quot;live&quot;: null,
+        &quot;markets&quot;: [
+          {
+            &quot;id&quot;: &quot;618509&quot;,
+            &quot;description&quot;: &quot;This market will resolve according to the location of the next meeting between Donald Trump and Vladimir Putin between September 30 and June 30, 2026, 11:59 PM ET.\n\nThis market will resolve to \&quot;No meeting by June 30\&quot; if no qualifying meeting occurs during this market's timeframe.\n\nA meeting is defined as any encounter where Putin and Trump are all present and interact with each other in person.\n\nAn exchange of words, handshake, direct conversation, or other clear personal interaction between the named individuals will qualify as a meeting. Merely standing in proximity, making eye contact, or being present in the same room or event without direct interaction will not qualify.\n\nFor this market, Gulf states are defined as the six members of the Gulf Cooperation Council (Bahrain, Kuwait, Oman, Qatar, Saudi Arabia, United Arab Emirates).\n\nThe primary resolution source for this market will be a consensus of credible reporting.&quot;,
+            &quot;question&quot;: &quot;特朗普和普京會不會不會面？&quot;,
+            &quot;miniTitle&quot;: &quot;No meeting by June 30&quot;,
+            &quot;sportsMarketType&quot;: null,
+            &quot;sportsDisplayColumn&quot;: null,
+            &quot;groupItemTitle&quot;: &quot;6月30日之前沒有會面&quot;,
+            &quot;groupItemThreshold&quot;: 14,
+            &quot;wdlSlot&quot;: null,
+            &quot;totalVolume&quot;: &quot;971275.56847400&quot;
+…（已截断，全文 22006 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code 为 0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 分页壳 page/pageSize/total/list</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-24">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>sortBy=VOLUME_24H_DESC</span><span class="sum-meta">GET /ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5&amp;sortBy=VOLUME_24H_DESC · HTTP 200 · 254 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=42</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>pageSize</b>=5</span></div>
+        </div>
+        <div class="meta">响应体积 53448 字节</div>
+        <div class="meta">https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5&amp;sortBy=VOLUME_24H_DESC</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5&amp;sortBy=VOLUME_24H_DESC
+lang: zh-Hant</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;page&quot;: 1,
+    &quot;pageSize&quot;: 5,
+    &quot;total&quot;: 42,
+    &quot;list&quot;: [
+      {
+        &quot;id&quot;: &quot;89502&quot;,
+        &quot;title&quot;: &quot;比特幣在2026年會達到什麼價格？&quot;,
+        &quot;imageUrl&quot;: &quot;https://polymarket-upload.s3.us-east-2.amazonaws.com/BTC+fullsize.png&quot;,
+        &quot;endDate&quot;: 1798779600,
+        &quot;totalVolume&quot;: &quot;43954780.26156888&quot;,
+        &quot;live&quot;: null,
+        &quot;markets&quot;: [
+          {
+            &quot;id&quot;: &quot;1393070&quot;,
+            &quot;description&quot;: &quot;This market will immediately resolve to \&quot;Yes\&quot; if any Binance 1 minute candle for Bitcoin (BTC/USDT) between November 24, 2025, 14:00 and December 31, 2026, 23:59 in the ET timezone has a final \&quot;High\&quot; price equal to or greater than the price specified in the title. Otherwise, this market will resolve to \&quot;No.\&quot;\n\nThe resolution source for this market is Binance, specifically the BTC/USDT \&quot;High\&quot; prices available at https://www.binance.com/en/trade/BTC_USDT, with the chart settings on \&quot;1m\&quot; for one-minute candles selected on the top bar.\n\nPlease note that the outcome of this market depends solely on the price data from the Binance BTC/USDT trading pair. Prices from other exchanges, different trading pairs, or spot markets will not be considered for the resolution of this market.&quot;,
+            &quot;question&quot;: &quot;比特幣會在2026年12月31日前漲到1,000,000美元嗎？&quot;,
+            &quot;miniTitle&quot;: &quot;↑ 1,000,000&quot;,
+            &quot;sportsMarketType&quot;: null,
+            &quot;sportsDisplayColumn&quot;: null,
+            &quot;groupItemTitle&quot;: &quot;↑ 1,000,000&quot;,
+            &quot;groupItemThreshold&quot;: 0,
+            &quot;wdlSlot&quot;: null,
+            &quot;totalVolume&quot;: &quot;1693970.06018402&quot;,
+            &quot;outcomes&quot;: {
+              &quot;No&quot;: {
+                &quot;outcomePrice&quot;: &quot;0.985&quot;,
+                &quot;clobTokenId&quot;: &quot;7142024470612936735428754056387382685168052776672130900761925227324373567635&quot;
+…（已截断，全文 66350 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code 为 0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 分页壳 page/pageSize/total/list</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-25">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>sortBy 非法值回退 START_TIME_ASC</span><span class="sum-meta">GET /ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5&amp;sortBy=BAD · HTTP 200 · 208 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=42</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>pageSize</b>=5</span></div>
+        </div>
+        <div class="meta">响应体积 20181 字节</div>
+        <div class="meta">https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5&amp;sortBy=BAD</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5&amp;sortBy=BAD
+lang: zh-Hant</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;page&quot;: 1,
+    &quot;pageSize&quot;: 5,
+    &quot;total&quot;: 42,
+    &quot;list&quot;: [
+      {
+        &quot;id&quot;: &quot;16183&quot;,
+        &quot;title&quot;: &quot;Kraken首次公開募股截止日期爲___ ？&quot;,
+        &quot;imageUrl&quot;: &quot;https://polymarket-upload.s3.us-east-2.amazonaws.com/will-kraken-ipo-in-2024--_GT-GzKWtUW.jpg&quot;,
+        &quot;endDate&quot;: 1767182400,
+        &quot;totalVolume&quot;: &quot;1580526.66551300&quot;,
+        &quot;live&quot;: null,
+        &quot;markets&quot;: [
+          {
+            &quot;id&quot;: &quot;691547&quot;,
+            &quot;description&quot;: &quot;This market will resolve to \&quot;Yes\&quot; if Kraken completes an Initial Public Offering (IPO) by the listed date ET, as confirmed by official company announcements and credible news sources. Otherwise, this market will resolve to \&quot;No.\&quot;\n\nThe IPO refers to the first sale of stock by the listed company to the public on any recognized stock exchange.\n\nIf Kraken is acquired by another company that is already public, this market will immediately resolve to \&quot;No.\&quot;\n\nThe resolution source for this market is a consensus of credible reporting.&quot;,
+            &quot;question&quot;: &quot;Kraken 會在 2026 年 12 月 31 日前首次公開募股 (IPO) 嗎？&quot;,
+            &quot;miniTitle&quot;: &quot;December 31, 2026&quot;,
+            &quot;sportsMarketType&quot;: null,
+            &quot;sportsDisplayColumn&quot;: null,
+            &quot;groupItemTitle&quot;: &quot;2026 年 12 月 31 日&quot;,
+            &quot;groupItemThreshold&quot;: 2,
+            &quot;wdlSlot&quot;: null,
+            &quot;totalVolume&quot;: &quot;540371.20816200&quot;,
+            &quot;outcomes&quot;: {
+              &quot;No&quot;: {
+                &quot;outcomePrice&quot;: &quot;0.71&quot;,
+                &quot;clobTokenId&quot;: &quot;28557614648090529004584076028720900603196666949274543515794672175624115225556&quot;
+              },
+              &quot;Yes&quot;: {
+                &quot;outcomePrice&quot;: &quot;0.43&quot;,
+                &quot;clobTokenId&quot;: &quot;34626184950254225208692030156208941308358060420950772251072421141618169142241&quot;
+              }
+…（已截断，全文 23529 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code 为 0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 分页壳 page/pageSize/total/list</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details></div>
+  </details>
+<details class="details-folder">
+    <summary><span class="folder-title">B04 分类筛选</span><span class="folder-meta">4 个用例 · <span class="ok-inline">断言全过</span></span></summary>
+    <div class="folder-inner"><details class="details-req" id="req-26">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>categoryId=0 不限分类</span><span class="sum-meta">GET /ce/pm/v1/api/event/list?categoryId=0&amp;page=1&amp;pageSize=3 · HTTP 200 · 330 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=222</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>pageSize</b>=3</span></div>
+        </div>
+        <div class="meta">响应体积 27386 字节</div>
+        <div class="meta">https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?categoryId=0&amp;page=1&amp;pageSize=3</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?categoryId=0&amp;page=1&amp;pageSize=3
+lang: zh-Hant</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;page&quot;: 1,
+    &quot;pageSize&quot;: 3,
+    &quot;total&quot;: 222,
+    &quot;list&quot;: [
+      {
+        &quot;id&quot;: &quot;16183&quot;,
+        &quot;title&quot;: &quot;Kraken首次公開募股截止日期爲___ ？&quot;,
+        &quot;imageUrl&quot;: &quot;https://polymarket-upload.s3.us-east-2.amazonaws.com/will-kraken-ipo-in-2024--_GT-GzKWtUW.jpg&quot;,
+        &quot;endDate&quot;: 1767182400,
+        &quot;totalVolume&quot;: &quot;1580526.66551300&quot;,
+        &quot;live&quot;: null,
+        &quot;markets&quot;: [
+          {
+            &quot;id&quot;: &quot;691547&quot;,
+            &quot;description&quot;: &quot;This market will resolve to \&quot;Yes\&quot; if Kraken completes an Initial Public Offering (IPO) by the listed date ET, as confirmed by official company announcements and credible news sources. Otherwise, this market will resolve to \&quot;No.\&quot;\n\nThe IPO refers to the first sale of stock by the listed company to the public on any recognized stock exchange.\n\nIf Kraken is acquired by another company that is already public, this market will immediately resolve to \&quot;No.\&quot;\n\nThe resolution source for this market is a consensus of credible reporting.&quot;,
+            &quot;question&quot;: &quot;Kraken 會在 2026 年 12 月 31 日前首次公開募股 (IPO) 嗎？&quot;,
+            &quot;miniTitle&quot;: &quot;December 31, 2026&quot;,
+            &quot;sportsMarketType&quot;: null,
+            &quot;sportsDisplayColumn&quot;: null,
+            &quot;groupItemTitle&quot;: &quot;2026 年 12 月 31 日&quot;,
+            &quot;groupItemThreshold&quot;: 2,
+            &quot;wdlSlot&quot;: null,
+            &quot;totalVolume&quot;: &quot;540371.20816200&quot;,
+            &quot;outcomes&quot;: {
+              &quot;No&quot;: {
+                &quot;outcomePrice&quot;: &quot;0.71&quot;,
+                &quot;clobTokenId&quot;: &quot;28557614648090529004584076028720900603196666949274543515794672175624115225556&quot;
+              },
+              &quot;Yes&quot;: {
+                &quot;outcomePrice&quot;: &quot;0.43&quot;,
+                &quot;clobTokenId&quot;: &quot;34626184950254225208692030156208941308358060420950772251072421141618169142241&quot;
+              
+…（已截断，全文 32679 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code 为 0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 分页壳 page/pageSize/total/list</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-27">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>categoryIds 重复参数去重</span><span class="sum-meta">GET /ce/pm/v1/api/event/list?categoryIds=101&amp;categoryIds=101&amp;page=1&amp;pageSize=5 · HTTP 200 · 270 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=42</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>pageSize</b>=5</span></div>
+        </div>
+        <div class="meta">响应体积 20181 字节</div>
+        <div class="meta">https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?categoryIds=101&amp;categoryIds=101&amp;page=1&amp;pageSize=5</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?categoryIds=101&amp;categoryIds=101&amp;page=1&amp;pageSize=5
+lang: zh-Hant</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;page&quot;: 1,
+    &quot;pageSize&quot;: 5,
+    &quot;total&quot;: 42,
+    &quot;list&quot;: [
+      {
+        &quot;id&quot;: &quot;16183&quot;,
+        &quot;title&quot;: &quot;Kraken首次公開募股截止日期爲___ ？&quot;,
+        &quot;imageUrl&quot;: &quot;https://polymarket-upload.s3.us-east-2.amazonaws.com/will-kraken-ipo-in-2024--_GT-GzKWtUW.jpg&quot;,
+        &quot;endDate&quot;: 1767182400,
+        &quot;totalVolume&quot;: &quot;1580526.66551300&quot;,
+        &quot;live&quot;: null,
+        &quot;markets&quot;: [
+          {
+            &quot;id&quot;: &quot;691547&quot;,
+            &quot;description&quot;: &quot;This market will resolve to \&quot;Yes\&quot; if Kraken completes an Initial Public Offering (IPO) by the listed date ET, as confirmed by official company announcements and credible news sources. Otherwise, this market will resolve to \&quot;No.\&quot;\n\nThe IPO refers to the first sale of stock by the listed company to the public on any recognized stock exchange.\n\nIf Kraken is acquired by another company that is already public, this market will immediately resolve to \&quot;No.\&quot;\n\nThe resolution source for this market is a consensus of credible reporting.&quot;,
+            &quot;question&quot;: &quot;Kraken 會在 2026 年 12 月 31 日前首次公開募股 (IPO) 嗎？&quot;,
+            &quot;miniTitle&quot;: &quot;December 31, 2026&quot;,
+            &quot;sportsMarketType&quot;: null,
+            &quot;sportsDisplayColumn&quot;: null,
+            &quot;groupItemTitle&quot;: &quot;2026 年 12 月 31 日&quot;,
+            &quot;groupItemThreshold&quot;: 2,
+            &quot;wdlSlot&quot;: null,
+            &quot;totalVolume&quot;: &quot;540371.20816200&quot;,
+            &quot;outcomes&quot;: {
+              &quot;No&quot;: {
+                &quot;outcomePrice&quot;: &quot;0.71&quot;,
+                &quot;clobTokenId&quot;: &quot;28557614648090529004584076028720900603196666949274543515794672175624115225556&quot;
+              },
+              &quot;Yes&quot;: {
+                &quot;outcomePrice&quot;: &quot;0.43&quot;,
+                &quot;clobTokenId&quot;: &quot;34626184950254225208692030156208941308358060420950772251072421141618169142241&quot;
+              }
+…（已截断，全文 23529 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code 为 0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 分页壳 page/pageSize/total/list</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-28">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>categoryIds 逗号单参数（Wiki 示例）</span><span class="sum-meta">GET /ce/pm/v1/api/event/list?categoryIds=101%2C102&amp;page=1&amp;pageSize=5&amp;eventStatus=TRADABLE&amp;sortBy=START_TIME_ASC · HTTP 200 · 253 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=43</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>pageSize</b>=5</span></div>
+        </div>
+        <div class="meta">响应体积 20181 字节</div>
+        <div class="meta">https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?categoryIds=101%2C102&amp;page=1&amp;pageSize=5&amp;eventStatus=TRADABLE&amp;sortBy=START_TIME_ASC</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?categoryIds=101%2C102&amp;page=1&amp;pageSize=5&amp;eventStatus=TRADABLE&amp;sortBy=START_TIME_ASC
+lang: zh-Hant</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;page&quot;: 1,
+    &quot;pageSize&quot;: 5,
+    &quot;total&quot;: 43,
+    &quot;list&quot;: [
+      {
+        &quot;id&quot;: &quot;16183&quot;,
+        &quot;title&quot;: &quot;Kraken首次公開募股截止日期爲___ ？&quot;,
+        &quot;imageUrl&quot;: &quot;https://polymarket-upload.s3.us-east-2.amazonaws.com/will-kraken-ipo-in-2024--_GT-GzKWtUW.jpg&quot;,
+        &quot;endDate&quot;: 1767182400,
+        &quot;totalVolume&quot;: &quot;1580526.66551300&quot;,
+        &quot;live&quot;: null,
+        &quot;markets&quot;: [
+          {
+            &quot;id&quot;: &quot;691547&quot;,
+            &quot;description&quot;: &quot;This market will resolve to \&quot;Yes\&quot; if Kraken completes an Initial Public Offering (IPO) by the listed date ET, as confirmed by official company announcements and credible news sources. Otherwise, this market will resolve to \&quot;No.\&quot;\n\nThe IPO refers to the first sale of stock by the listed company to the public on any recognized stock exchange.\n\nIf Kraken is acquired by another company that is already public, this market will immediately resolve to \&quot;No.\&quot;\n\nThe resolution source for this market is a consensus of credible reporting.&quot;,
+            &quot;question&quot;: &quot;Kraken 會在 2026 年 12 月 31 日前首次公開募股 (IPO) 嗎？&quot;,
+            &quot;miniTitle&quot;: &quot;December 31, 2026&quot;,
+            &quot;sportsMarketType&quot;: null,
+            &quot;sportsDisplayColumn&quot;: null,
+            &quot;groupItemTitle&quot;: &quot;2026 年 12 月 31 日&quot;,
+            &quot;groupItemThreshold&quot;: 2,
+            &quot;wdlSlot&quot;: null,
+            &quot;totalVolume&quot;: &quot;540371.20816200&quot;,
+            &quot;outcomes&quot;: {
+              &quot;No&quot;: {
+                &quot;outcomePrice&quot;: &quot;0.71&quot;,
+                &quot;clobTokenId&quot;: &quot;28557614648090529004584076028720900603196666949274543515794672175624115225556&quot;
+              },
+              &quot;Yes&quot;: {
+                &quot;outcomePrice&quot;: &quot;0.43&quot;,
+                &quot;clobTokenId&quot;: &quot;34626184950254225208692030156208941308358060420950772251072421141618169142241&quot;
+              }
+…（已截断，全文 23529 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code 为 0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 分页壳 page/pageSize/total/list</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 分页合法</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-29">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>categoryId 与 categoryIds 同传（Ids 优先）</span><span class="sum-meta">GET /ce/pm/v1/api/event/list?categoryId=101&amp;categoryIds=102&amp;page=1&amp;pageSize=3 · HTTP 200 · 220 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=1</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>pageSize</b>=3</span></div>
+        </div>
+        <div class="meta">响应体积 1522 字节</div>
+        <div class="meta">https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?categoryId=101&amp;categoryIds=102&amp;page=1&amp;pageSize=3</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?categoryId=101&amp;categoryIds=102&amp;page=1&amp;pageSize=3
+lang: zh-Hant</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;page&quot;: 1,
+    &quot;pageSize&quot;: 3,
+    &quot;total&quot;: 1,
+    &quot;list&quot;: [
+      {
+        &quot;id&quot;: &quot;73131&quot;,
+        &quot;title&quot;: &quot;2027年之前的美國國家以太坊儲備？&quot;,
+        &quot;imageUrl&quot;: &quot;https://polymarket-upload.s3.us-east-2.amazonaws.com/us-national-ethereum-reserve-in-2025-bMK7qpXLSRq5.jpg&quot;,
+        &quot;endDate&quot;: 1798675200,
+        &quot;totalVolume&quot;: &quot;17090.20407900&quot;,
+        &quot;live&quot;: null,
+        &quot;markets&quot;: [
+          {
+            &quot;id&quot;: &quot;665375&quot;,
+            &quot;description&quot;: &quot;This market will resolve to \&quot;Yes\&quot; if the US government holds any amount of Ethereum in its reserves at any point by December 31, 2026, 11:59 PM ET. Otherwise, this market will resolve to \&quot;No\&quot;.\n\nNote that the US government confiscating Ethereum does not count as holding Ethereum reserves.\n\nThe primary resolution source for this market will be official information from the US government and/or the US federal reserve, however a consensus of credible reporting will also be used.&quot;,
+            &quot;question&quot;: &quot;美國國家以太坊儲備在2027年前的情況？&quot;,
+            &quot;miniTitle&quot;: &quot;&quot;,
+            &quot;sportsMarketType&quot;: null,
+            &quot;sportsDisplayColumn&quot;: null,
+            &quot;groupItemTitle&quot;: null,
+            &quot;groupItemThreshold&quot;: 0,
+            &quot;wdlSlot&quot;: null,
+            &quot;totalVolume&quot;: &quot;17090.20407900&quot;,
+            &quot;outcomes&quot;: {
+              &quot;No&quot;: {
+                &quot;outcomePrice&quot;: &quot;0.94&quot;,
+                &quot;clobTokenId&quot;: &quot;10993756221115584430610104733617156789325352858000864153034080802915612037160&quot;
+              },
+              &quot;Yes&quot;: {
+                &quot;outcomePrice&quot;: &quot;0.07&quot;,
+                &quot;clobTokenId&quot;: &quot;35956462801381541703920959039254420625170916317975800264738163113000187196038&quot;
+              }
+            },
+            &quot;tickSize&quot;: &quot;0.01&quot;,
+            &quot;maxOrderAmount&quot;: &quot;1000&quot;,
+            &quot;rule
+…（已截断，全文 2013 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code 为 0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 分页壳 page/pageSize/total/list</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — pageSize=3</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details></div>
+  </details>
+<details class="details-folder">
+    <summary><span class="folder-title">B05 热门与语言</span><span class="folder-meta">4 个用例 · <span class="ok-inline">断言全过</span></span></summary>
+    <div class="folder-inner"><details class="details-req" id="req-30">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>isHot=true</span><span class="sum-meta">GET /ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5&amp;isHot=true · HTTP 200 · 212 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=0</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>pageSize</b>=5</span></div>
+        </div>
+        <div class="meta">响应体积 125 字节</div>
+        <div class="meta">https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5&amp;isHot=true</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5&amp;isHot=true
+lang: zh-Hant</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;page&quot;: 1,
+    &quot;pageSize&quot;: 5,
+    &quot;total&quot;: 0,
+    &quot;list&quot;: []
+  },
+  &quot;ext_code&quot;: null,
+  &quot;time_now&quot;: &quot;1782197944018&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code 为 0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 分页壳 page/pageSize/total/list</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-31">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>isHot=false 不生效（等同未传）</span><span class="sum-meta">GET /ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5&amp;isHot=false · HTTP 200 · 267 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=42</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>pageSize</b>=5</span></div>
+        </div>
+        <div class="meta">响应体积 20181 字节</div>
+        <div class="meta">https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5&amp;isHot=false</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5&amp;isHot=false
+lang: zh-Hant</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;page&quot;: 1,
+    &quot;pageSize&quot;: 5,
+    &quot;total&quot;: 42,
+    &quot;list&quot;: [
+      {
+        &quot;id&quot;: &quot;16183&quot;,
+        &quot;title&quot;: &quot;Kraken首次公開募股截止日期爲___ ？&quot;,
+        &quot;imageUrl&quot;: &quot;https://polymarket-upload.s3.us-east-2.amazonaws.com/will-kraken-ipo-in-2024--_GT-GzKWtUW.jpg&quot;,
+        &quot;endDate&quot;: 1767182400,
+        &quot;totalVolume&quot;: &quot;1580526.66551300&quot;,
+        &quot;live&quot;: null,
+        &quot;markets&quot;: [
+          {
+            &quot;id&quot;: &quot;691547&quot;,
+            &quot;description&quot;: &quot;This market will resolve to \&quot;Yes\&quot; if Kraken completes an Initial Public Offering (IPO) by the listed date ET, as confirmed by official company announcements and credible news sources. Otherwise, this market will resolve to \&quot;No.\&quot;\n\nThe IPO refers to the first sale of stock by the listed company to the public on any recognized stock exchange.\n\nIf Kraken is acquired by another company that is already public, this market will immediately resolve to \&quot;No.\&quot;\n\nThe resolution source for this market is a consensus of credible reporting.&quot;,
+            &quot;question&quot;: &quot;Kraken 會在 2026 年 12 月 31 日前首次公開募股 (IPO) 嗎？&quot;,
+            &quot;miniTitle&quot;: &quot;December 31, 2026&quot;,
+            &quot;sportsMarketType&quot;: null,
+            &quot;sportsDisplayColumn&quot;: null,
+            &quot;groupItemTitle&quot;: &quot;2026 年 12 月 31 日&quot;,
+            &quot;groupItemThreshold&quot;: 2,
+            &quot;wdlSlot&quot;: null,
+            &quot;totalVolume&quot;: &quot;540371.20816200&quot;,
+            &quot;outcomes&quot;: {
+              &quot;No&quot;: {
+                &quot;outcomePrice&quot;: &quot;0.71&quot;,
+                &quot;clobTokenId&quot;: &quot;28557614648090529004584076028720900603196666949274543515794672175624115225556&quot;
+              },
+              &quot;Yes&quot;: {
+                &quot;outcomePrice&quot;: &quot;0.43&quot;,
+                &quot;clobTokenId&quot;: &quot;34626184950254225208692030156208941308358060420950772251072421141618169142241&quot;
+              }
+…（已截断，全文 23529 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code 为 0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 分页壳 page/pageSize/total/list</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-32">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>locale=ja（query 优先于 header）</span><span class="sum-meta">GET /ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5&amp;locale=ja · HTTP 200 · 240 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=42</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>pageSize</b>=5</span></div>
+        </div>
+        <div class="meta">响应体积 20476 字节</div>
+        <div class="meta">https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5&amp;locale=ja</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=5&amp;locale=ja
+lang: zh-Hant</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;page&quot;: 1,
+    &quot;pageSize&quot;: 5,
+    &quot;total&quot;: 42,
+    &quot;list&quot;: [
+      {
+        &quot;id&quot;: &quot;16183&quot;,
+        &quot;title&quot;: &quot;___までにKrakenのIPOを行いますか？&quot;,
+        &quot;imageUrl&quot;: &quot;https://polymarket-upload.s3.us-east-2.amazonaws.com/will-kraken-ipo-in-2024--_GT-GzKWtUW.jpg&quot;,
+        &quot;endDate&quot;: 1767182400,
+        &quot;totalVolume&quot;: &quot;1580526.66551300&quot;,
+        &quot;live&quot;: null,
+        &quot;markets&quot;: [
+          {
+            &quot;id&quot;: &quot;691547&quot;,
+            &quot;description&quot;: &quot;This market will resolve to \&quot;Yes\&quot; if Kraken completes an Initial Public Offering (IPO) by the listed date ET, as confirmed by official company announcements and credible news sources. Otherwise, this market will resolve to \&quot;No.\&quot;\n\nThe IPO refers to the first sale of stock by the listed company to the public on any recognized stock exchange.\n\nIf Kraken is acquired by another company that is already public, this market will immediately resolve to \&quot;No.\&quot;\n\nThe resolution source for this market is a consensus of credible reporting.&quot;,
+            &quot;question&quot;: &quot;2026年12月31日までにクラーケンの新規株式公開（IPO）は行われますか？&quot;,
+            &quot;miniTitle&quot;: &quot;December 31, 2026&quot;,
+            &quot;sportsMarketType&quot;: null,
+            &quot;sportsDisplayColumn&quot;: null,
+            &quot;groupItemTitle&quot;: &quot;2026年12月31日&quot;,
+            &quot;groupItemThreshold&quot;: 2,
+            &quot;wdlSlot&quot;: null,
+            &quot;totalVolume&quot;: &quot;540371.20816200&quot;,
+            &quot;outcomes&quot;: {
+              &quot;No&quot;: {
+                &quot;outcomePrice&quot;: &quot;0.71&quot;,
+                &quot;clobTokenId&quot;: &quot;28557614648090529004584076028720900603196666949274543515794672175624115225556&quot;
+              },
+              &quot;Yes&quot;: {
+                &quot;outcomePrice&quot;: &quot;0.43&quot;,
+                &quot;clobTokenId&quot;: &quot;34626184950254225208692030156208941308358060420950772251072421141618169142241&quot;
+              }
+      
+…（已截断，全文 23624 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code 为 0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 分页壳 page/pageSize/total/list</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-33">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>locale 不在白名单仍成功</span><span class="sum-meta">GET /ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=2&amp;locale=xx-invalid · HTTP 200 · 356 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=42</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>pageSize</b>=2</span></div>
+        </div>
+        <div class="meta">响应体积 12975 字节</div>
+        <div class="meta">https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=2&amp;locale=xx-invalid</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=2&amp;locale=xx-invalid
+lang: zh-Hant</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;page&quot;: 1,
+    &quot;pageSize&quot;: 2,
+    &quot;total&quot;: 42,
+    &quot;list&quot;: [
+      {
+        &quot;id&quot;: &quot;16183&quot;,
+        &quot;title&quot;: &quot;Kraken IPO by ___ ?&quot;,
+        &quot;imageUrl&quot;: &quot;https://polymarket-upload.s3.us-east-2.amazonaws.com/will-kraken-ipo-in-2024--_GT-GzKWtUW.jpg&quot;,
+        &quot;endDate&quot;: 1767182400,
+        &quot;totalVolume&quot;: &quot;1580526.66551300&quot;,
+        &quot;live&quot;: null,
+        &quot;markets&quot;: [
+          {
+            &quot;id&quot;: &quot;691547&quot;,
+            &quot;description&quot;: &quot;This market will resolve to \&quot;Yes\&quot; if Kraken completes an Initial Public Offering (IPO) by the listed date ET, as confirmed by official company announcements and credible news sources. Otherwise, this market will resolve to \&quot;No.\&quot;\n\nThe IPO refers to the first sale of stock by the listed company to the public on any recognized stock exchange.\n\nIf Kraken is acquired by another company that is already public, this market will immediately resolve to \&quot;No.\&quot;\n\nThe resolution source for this market is a consensus of credible reporting.&quot;,
+            &quot;question&quot;: &quot;Kraken IPO by December 31, 2026?&quot;,
+            &quot;miniTitle&quot;: &quot;December 31, 2026&quot;,
+            &quot;sportsMarketType&quot;: null,
+            &quot;sportsDisplayColumn&quot;: null,
+            &quot;groupItemTitle&quot;: &quot;December 31, 2026&quot;,
+            &quot;groupItemThreshold&quot;: 2,
+            &quot;wdlSlot&quot;: null,
+            &quot;totalVolume&quot;: &quot;540371.20816200&quot;,
+            &quot;outcomes&quot;: {
+              &quot;No&quot;: {
+                &quot;outcomePrice&quot;: &quot;0.71&quot;,
+                &quot;clobTokenId&quot;: &quot;28557614648090529004584076028720900603196666949274543515794672175624115225556&quot;
+              },
+              &quot;Yes&quot;: {
+                &quot;outcomePrice&quot;: &quot;0.43&quot;,
+                &quot;clobTokenId&quot;: &quot;34626184950254225208692030156208941308358060420950772251072421141618169142241&quot;
+              }
+           
+…（已截断，全文 15033 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code 为 0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 分页壳 page/pageSize/total/list</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details></div>
+  </details>
+<details class="details-folder">
+    <summary><span class="folder-title">B06 异常</span><span class="folder-meta">2 个用例 · <span class="ok-inline">断言全过</span></span></summary>
+    <div class="folder-inner"><details class="details-req" id="req-34">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>[err] categoryId=abc 绑定失败 10001</span><span class="sum-meta">GET /ce/pm/v1/api/event/list?categoryId=abc&amp;page=1&amp;pageSize=2 · HTTP 200 · 207 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=10001</span><span class="kv important"><b>ret_msg</b>=categoryId:Failed to convert property value of type 'java.lang.String' to required type 'java.lang.Long' for property 'categoryId'; nested exception is java.lang.NumberFormatException: For input string: &quot;abc&quot;</span></div>
+        </div>
+        <div class="meta">响应体积 298 字节</div>
+        <div class="meta">https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?categoryId=abc&amp;page=1&amp;pageSize=2</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?categoryId=abc&amp;page=1&amp;pageSize=2
+lang: zh-Hant</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 10001,
+  &quot;ret_msg&quot;: &quot;categoryId:Failed to convert property value of type 'java.lang.String' to required type 'java.lang.Long' for property 'categoryId'; nested exception is java.lang.NumberFormatException: For input string: \&quot;abc\&quot;&quot;,
+  &quot;result&quot;: null,
+  &quot;ext_code&quot;: null,
+  &quot;time_now&quot;: &quot;1782197945159&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code=10001</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — result=null</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_msg 提及 categoryId</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-35">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>[err] categoryIds=abc 绑定失败 10001</span><span class="sum-meta">GET /ce/pm/v1/api/event/list?categoryIds=abc&amp;page=1&amp;pageSize=2 · HTTP 200 · 204 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=10001</span><span class="kv important"><b>ret_msg</b>=categoryIds:Failed to convert property value of type 'java.lang.String' to required type 'java.util.List' for property 'categoryIds'; nested exception is java.lang.NumberFormatException: For input string: &quot;abc&quot;</span></div>
+        </div>
+        <div class="meta">响应体积 300 字节</div>
+        <div class="meta">https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?categoryIds=abc&amp;page=1&amp;pageSize=2</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?categoryIds=abc&amp;page=1&amp;pageSize=2
+lang: zh-Hant</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 10001,
+  &quot;ret_msg&quot;: &quot;categoryIds:Failed to convert property value of type 'java.lang.String' to required type 'java.util.List' for property 'categoryIds'; nested exception is java.lang.NumberFormatException: For input string: \&quot;abc\&quot;&quot;,
+  &quot;result&quot;: null,
+  &quot;ext_code&quot;: null,
+  &quot;time_now&quot;: &quot;1782197945394&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code=10001</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — result=null</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_msg 提及 categoryIds</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details></div>
+  </details>
+  </section></section>
+
+    <footer>由 <code>newman-json-to-zh-html.mjs</code> 生成 · registry <code>pm-ce-event-list</code></footer>
+  </div>
+</body>
+</html>

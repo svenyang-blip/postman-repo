@@ -1,0 +1,2280 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PM Admin Instant Product Newman</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --allure-bg: #f2f2f2;
+      --allure-surface: #fff;
+      --allure-border: #e5e5e5;
+      --allure-text: #333;
+      --allure-muted: #999;
+      --allure-header: #343434;
+      --allure-passed: #97cc64;
+      --allure-failed: #fd5a3e;
+      --allure-broken: #ffd050;
+      --allure-skipped: #aaa;
+      --allure-unknown: #d35ebe;
+      --allure-accent: #4a90e2;
+      --shadow: 0 1px 3px rgba(0,0,0,.08);
+      --radius: 4px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--allure-bg);
+      color: var(--allure-text);
+      line-height: 1.5;
+      font-size: 14px;
+    }
+    a { color: var(--allure-accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .topbar {
+      background: var(--allure-header);
+      color: #fff;
+      padding: 18px clamp(16px, 4vw, 40px);
+      box-shadow: 0 2px 8px rgba(0,0,0,.15);
+    }
+    .topbar h1 { margin: 0 0 6px; font-size: 1.35rem; font-weight: 600; letter-spacing: -.01em; }
+    .topbar .sub { color: rgba(255,255,255,.72); font-size: .85rem; }
+    .topbar .sub code { background: rgba(255,255,255,.12); padding: 1px 6px; border-radius: 3px; font-size: .8rem; }
+
+    .page { padding: 24px clamp(16px, 4vw, 40px) 48px; max-width: 1280px; margin: 0 auto; }
+
+    .overview {
+      display: grid;
+      grid-template-columns: 1fr minmax(220px, 280px);
+      gap: 20px;
+      margin-bottom: 28px;
+      align-items: start;
+    }
+    @media (max-width: 860px) { .overview { grid-template-columns: 1fr; } }
+
+    .widgets {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 14px;
+    }
+    .widget {
+      background: var(--allure-surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 14px 16px;
+      border-left: 4px solid var(--allure-unknown);
+      min-height: 76px;
+    }
+    .widget h3 {
+      margin: 0 0 8px;
+      font-size: .72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      color: var(--allure-muted);
+    }
+    .widget .val { font-size: 1.65rem; font-weight: 700; line-height: 1.1; }
+    .widget.passed { border-left-color: var(--allure-passed); }
+    .widget.passed .val { color: var(--allure-passed); }
+    .widget.failed { border-left-color: var(--allure-failed); }
+    .widget.failed .val { color: var(--allure-failed); }
+    .widget.neutral { border-left-color: var(--allure-accent); }
+    .widget.neutral .val { color: var(--allure-text); }
+
+    .chart-card {
+      background: var(--allure-surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .chart-card h3 {
+      margin: 0 0 8px;
+      font-size: .78rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      color: var(--allure-muted);
+      align-self: flex-start;
+    }
+    .chart-wrap { width: 180px; height: 180px; position: relative; }
+
+    .status-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 24px; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      border-radius: 3px;
+      font-size: .8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .03em;
+    }
+    .badge-pass { background: var(--allure-passed); color: #fff; }
+    .badge-fail { background: var(--allure-failed); color: #fff; }
+    .collection-name { color: var(--allure-muted); font-size: .9rem; }
+
+    .section-title {
+      font-size: .95rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      color: var(--allure-muted);
+      margin: 0 0 14px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--allure-border);
+    }
+
+    details.folder, details.req {
+      background: var(--allure-surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      margin-bottom: 10px;
+      overflow: hidden;
+      border: 1px solid var(--allure-border);
+    }
+    details.folder > summary, details.req > summary {
+      cursor: pointer;
+      list-style: none;
+      padding: 12px 16px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      user-select: none;
+      background: #fafafa;
+      border-bottom: 1px solid transparent;
+      transition: background .15s;
+    }
+    details.folder[open] > summary,
+    details.req[open] > summary { border-bottom-color: var(--allure-border); background: #f5f5f5; }
+    details.folder > summary:hover,
+    details.req > summary:hover { background: #f0f0f0; }
+    details.folder > summary::-webkit-details-marker,
+    details.req > summary::-webkit-details-marker { display: none; }
+    .chevron {
+      color: var(--allure-muted);
+      font-size: .75rem;
+      transition: transform .15s ease;
+      flex-shrink: 0;
+    }
+    details[open] > summary .chevron { transform: rotate(90deg); }
+    details.folder .inner { padding: 8px 12px 12px 16px; }
+    details.req { margin: 8px 0 8px 12px; }
+    details.req > summary { font-size: .9rem; font-weight: 500; }
+    .req-meta { color: var(--allure-muted); font-weight: 400; font-size: .8rem; white-space: nowrap; }
+    .req-body { padding: 14px 16px 16px; font-size: .88rem; background: #fff; }
+
+    .status-dot {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 8px;
+      flex-shrink: 0;
+      vertical-align: middle;
+    }
+    .status-dot.passed { background: var(--allure-passed); }
+    .status-dot.failed { background: var(--allure-failed); }
+    .status-dot.skipped { background: var(--allure-skipped); }
+
+    .method {
+      display: inline-block;
+      min-width: 3rem;
+      padding: 2px 7px;
+      border-radius: 3px;
+      font-size: .68rem;
+      font-weight: 700;
+      letter-spacing: .04em;
+      background: #eef3f8;
+      color: var(--allure-accent);
+      margin-right: 8px;
+      border: 1px solid #d8e6f5;
+    }
+    .method-get { color: #2e7d32; background: #e8f5e9; border-color: #c8e6c9; }
+    .method-post { color: #1565c0; background: #e3f2fd; border-color: #bbdefb; }
+
+    table.assert {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .82rem;
+      margin: 12px 0;
+      border: 1px solid var(--allure-border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    table.assert th, table.assert td {
+      padding: 9px 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--allure-border);
+    }
+    table.assert th { background: #fafafa; color: var(--allure-muted); font-weight: 600; font-size: .75rem; text-transform: uppercase; }
+    table.assert tr:last-child td { border-bottom: none; }
+    table.assert td.num { text-align: center; width: 4rem; font-weight: 600; }
+    .cell-pass { color: var(--allure-passed); background: rgba(151,204,100,.12); }
+    .cell-fail { color: var(--allure-failed); background: rgba(253,90,62,.1); }
+    .cell-skip { color: var(--allure-skipped); background: rgba(170,170,170,.12); }
+
+    pre {
+      margin: 10px 0 0;
+      padding: 12px 14px;
+      background: #f8f8f8;
+      border: 1px solid var(--allure-border);
+      border-radius: var(--radius);
+      overflow: auto;
+      max-height: 320px;
+      font-size: .78rem;
+      line-height: 1.45;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      color: #444;
+    }
+    .fail-block {
+      background: #fff5f3;
+      border: 1px solid rgba(253,90,62,.35);
+      border-left: 4px solid var(--allure-failed);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      margin-bottom: 12px;
+      box-shadow: var(--shadow);
+    }
+    .fail-block h4 { margin: 0 0 8px; font-size: .92rem; color: var(--allure-failed); font-weight: 600; }
+    footer {
+      margin-top: 36px;
+      padding-top: 16px;
+      border-top: 1px solid var(--allure-border);
+      color: var(--allure-muted);
+      font-size: .78rem;
+    }
+    .url-line { margin-top: 4px; word-break: break-all; color: #555; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .82rem; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <h1>PM Admin · instant-products · local</h1>
+    <div class="sub">Wednesday, 08 July 2026 11:42:37 · Newman 6.2.2 · Allure 风格模板 · <code>htmlextra-inline-dashboard.hbs</code></div>
+  </div>
+
+  <div class="page">
+    <div class="overview">
+      <div class="widgets">
+        <div class="widget neutral">
+          <h3>迭代</h3>
+          <div class="val">1</div>
+        </div>
+        <div class="widget neutral">
+          <h3>请求</h3>
+          <div class="val">40</div>
+        </div>
+        <div class="widget neutral">
+          <h3>断言（总）</h3>
+          <div class="val">105</div>
+        </div>
+        <div class="widget failed">
+          <h3>断言失败</h3>
+          <div class="val">2</div>
+        </div>
+        <div class="widget neutral">
+          <h3>平均响应</h3>
+          <div class="val" style="font-size:1.15rem">399ms</div>
+        </div>
+        <div class="widget neutral">
+          <h3>总耗时</h3>
+          <div class="val" style="font-size:1.15rem">16.7s</div>
+        </div>
+      </div>
+      <div class="chart-card">
+        <h3>断言分布</h3>
+        <div class="chart-wrap"><canvas id="assertChart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="status-row">
+        <span class="badge badge-fail">Failed</span>
+      <span class="collection-name">集合：<strong>PM Admin · PmInstantProductController · /private/v1/pm/instant-products</strong></span>
+    </div>
+
+    <script>
+      window.__ALLURE_CHART__ = {
+        passed: Math.max(0, 105 - 2),
+        failed: 2
+      };
+    </script>
+
+    <h2 class="section-title">Suites · 执行明细</h2>
+
+    <details class="folder" >
+      <summary>
+        <span><span class="status-dot passed"></span>00 Setup</span>
+        <span class="req-meta">3 条 <span class="chevron">▸</span></span>
+      </summary>
+      <div class="inner">
+        <details class="req" >
+          <summary>
+            <span>
+              <span class="status-dot passed"></span>
+              <span class="method method-get">GET</span>
+              S01 拉取叶子分类 leafCategoryId
+            </span>
+            <span class="req-meta">
+              HTTP 200 · 812ms · 47.67KB
+              
+              <span class="chevron">▸</span>
+            </span>
+          </summary>
+          <div class="req-body">
+            <div><strong>URL</strong></div>
+            <div class="url-line">
+              {&quot;protocol&quot;:&quot;http&quot;,&quot;port&quot;:&quot;8080&quot;,&quot;path&quot;:[&quot;private&quot;,&quot;v1&quot;,&quot;pm&quot;,&quot;categories&quot;,&quot;tree&quot;],&quot;host&quot;:[&quot;localhost&quot;],&quot;query&quot;:[],&quot;variable&quot;:[]}
+            </div>
+
+            <table class="assert">
+              <thead>
+                <tr><th>断言</th><th class="num">通过</th><th class="num">失败</th><th class="num">跳过</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>HTTP 200</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>ret_code&#x3D;0</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>已写入 leafCategoryId&#x3D;101</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div><strong>响应体</strong></div>
+            <pre>{&quot;ret_code&quot;:0,&quot;ret_msg&quot;:&quot;OK&quot;,&quot;result&quot;:[{&quot;id&quot;:100,&quot;parentId&quot;:0,&quot;name&quot;:&quot;加密资产&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:101,&quot;parentId&quot;:100,&quot;name&quot;:&quot;比特币&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:102,&quot;parentId&quot;:100,&quot;name&quot;:&quot;以太坊&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:103,&quot;parentId&quot;:100,&quot;name&quot;:&quot;索拉纳&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:104,&quot;parentId&quot;:100,&quot;name&quot;:&quot;瑞波&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:105,&quot;parentId&quot;:100,&quot;name&quot;:&quot;微策略&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:300,&quot;parentId&quot;:0,&quot;name&quot;:&quot;体育&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:301,&quot;parentId&quot;:300,&quot;name&quot;:&quot;世界杯&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:30101,&quot;parentId&quot;:301,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:30102,&quot;parentId&quot;:301,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:302,&quot;parentId&quot;:300,&quot;name&quot;:&quot;足球&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:30201,&quot;parentId&quot;:302,&quot;name&quot;:&quot;英超&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:3020101,&quot;parentId&quot;:30201,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:3020102,&quot;parentId&quot;:30201,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:30202,&quot;parentId&quot;:302,&quot;name&quot;:&quot;欧冠&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:3020201,&quot;parentId&quot;:30202,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:3020202,&quot;parentId&quot;:30202,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:30203,&quot;parentId&quot;:302,&quot;name&quot;:&quot;西甲&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:3020301,&quot;parentId&quot;:30203,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:30204,&quot;parentId&quot;:302,&quot;name&quot;:&quot;法甲&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:3020401,&quot;parentId&quot;:30204,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:3020402,&quot;parentId&quot;:30204,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:30205,&quot;parentId&quot;:302,&quot;name&quot;:&quot;意甲&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:3020501,&quot;parentId&quot;:30205,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:3020502,&quot;parentId&quot;:30205,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:30206,&quot;parentId&quot;:302,&quot;name&quot;:&quot;美职联&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:3020601,&quot;parentId&quot;:30206,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:3020602,&quot;parentId&quot;:30206,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:30207,&quot;parentId&quot;:302,&quot;name&quot;:&quot;德甲&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:3020701,&quot;parentId&quot;:30207,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:3020702,&quot;parentId&quot;:30207,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000151,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Africa Cup of Nations&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500015101,&quot;parentId&quot;:5000151,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500015102,&quot;parentId&quot;:5000151,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000152,&quot;parentId&quot;:302,&quot;name&quot;:&quot;AFC&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500015201,&quot;parentId&quot;:5000152,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500015202,&quot;parentId&quot;:5000152,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000153,&quot;parentId&quot;:302,&quot;name&quot;:&quot;CAF&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500015301,&quot;parentId&quot;:5000153,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500015302,&quot;parentId&quot;:5000153,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000154,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Argentina Primera División 2025&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500015401,&quot;parentId&quot;:5000154,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500015402,&quot;parentId&quot;:5000154,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000155,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Primera Nacional&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500015501,&quot;parentId&quot;:5000155,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500015502,&quot;parentId&quot;:5000155,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000156,&quot;parentId&quot;:302,&quot;name&quot;:&quot;AFC&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500015601,&quot;parentId&quot;:5000156,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500015602,&quot;parentId&quot;:5000156,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000157,&quot;parentId&quot;:302,&quot;name&quot;:&quot;OFB Cup&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500015701,&quot;parentId&quot;:5000157,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500015702,&quot;parentId&quot;:5000157,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000158,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Australia Cup&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500015801,&quot;parentId&quot;:5000158,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500015802,&quot;parentId&quot;:5000158,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000159,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Australia A-League&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500015901,&quot;parentId&quot;:5000159,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500015902,&quot;parentId&quot;:5000159,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000160,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Austria Bundesliga&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500016001,&quot;parentId&quot;:5000160,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500016002,&quot;parentId&quot;:5000160,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000161,&quot;parentId&quot;:302,&quot;name&quot;:&quot;2. Bundesliga&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500016101,&quot;parentId&quot;:5000161,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500016102,&quot;parentId&quot;:5000161,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000162,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Vysshaya Liga (Belarus)&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500016201,&quot;parentId&quot;:5000162,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500016202,&quot;parentId&quot;:5000162,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000163,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Bolivia LFPB&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500016301,&quot;parentId&quot;:5000163,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500016302,&quot;parentId&quot;:5000163,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000164,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Brazil Série A&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500016401,&quot;parentId&quot;:5000164,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500016402,&quot;parentId&quot;:5000164,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000165,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Brazil Serie B&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500016501,&quot;parentId&quot;:5000165,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500016502,&quot;parentId&quot;:5000165,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000166,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Brasileiro Série C&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500016601,&quot;parentId&quot;:5000166,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500016602,&quot;parentId&quot;:5000166,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000167,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Campeonato Mineiro&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500016701,&quot;parentId&quot;:5000167,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500016702,&quot;parentId&quot;:5000167,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000168,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Copa do Brasil&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500016801,&quot;parentId&quot;:5000168,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500016802,&quot;parentId&quot;:5000168,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000169,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Bulgaria Parva Liga&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500016901,&quot;parentId&quot;:5000169,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500016902,&quot;parentId&quot;:5000169,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000170,&quot;parentId&quot;:302,&quot;name&quot;:&quot;CAF&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500017001,&quot;parentId&quot;:5000170,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500017002,&quot;parentId&quot;:5000170,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000171,&quot;parentId&quot;:302,&quot;name&quot;:&quot;CONCACAF Champions Cup&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500017101,&quot;parentId&quot;:5000171,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500017102,&quot;parentId&quot;:5000171,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000172,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Coupe de France&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500017201,&quot;parentId&quot;:5000172,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500017202,&quot;parentId&quot;:5000172,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000173,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Copa del Rey&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500017301,&quot;parentId&quot;:5000173,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500017302,&quot;parentId&quot;:5000173,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000174,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Chinese Super League&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500017401,&quot;parentId&quot;:5000174,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500017402,&quot;parentId&quot;:5000174,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000175,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Chile Primera&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500017501,&quot;parentId&quot;:5000175,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500017502,&quot;parentId&quot;:5000175,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000176,&quot;parentId&quot;:302,&quot;name&quot;:&quot;China League 1&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500017601,&quot;parentId&quot;:5000176,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500017602,&quot;parentId&quot;:5000176,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000177,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Primera B (Chile)&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500017701,&quot;parentId&quot;:5000177,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500017702,&quot;parentId&quot;:5000177,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000178,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Concacaf&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500017801,&quot;parentId&quot;:5000178,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500017802,&quot;parentId&quot;:5000178,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000179,&quot;parentId&quot;:302,&quot;name&quot;:&quot;UEFA Europa Conference League&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500017901,&quot;parentId&quot;:5000179,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500017902,&quot;parentId&quot;:5000179,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000180,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Colombia Primera A&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500018001,&quot;parentId&quot;:5000180,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500018002,&quot;parentId&quot;:5000180,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000181,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Primera B (Colombia)&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500018101,&quot;parentId&quot;:5000181,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500018102,&quot;parentId&quot;:5000181,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000182,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Conmebol&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500018201,&quot;parentId&quot;:5000182,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500018202,&quot;parentId&quot;:5000182,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000183,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Concacaf Nations League&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500018301,&quot;parentId&quot;:5000183,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500018302,&quot;parentId&quot;:5000183,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000184,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Copa Liga&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500018401,&quot;parentId&quot;:5000184,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500018402,&quot;parentId&quot;:5000184,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000185,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Copa America&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500018501,&quot;parentId&quot;:5000185,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500018502,&quot;parentId&quot;:5000185,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000186,&quot;parentId&quot;:302,&quot;name&quot;:&quot;FIFA Club World Cup&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500018601,&quot;parentId&quot;:5000186,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500018602,&quot;parentId&quot;:5000186,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000187,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Czechia Fortuna Liga&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500018701,&quot;parentId&quot;:5000187,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500018702,&quot;parentId&quot;:5000187,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000188,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Denmark Superliga&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500018801,&quot;parentId&quot;:5000188,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500018802,&quot;parentId&quot;:5000188,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000189,&quot;parentId&quot;:302,&quot;name&quot;:&quot;DFB-Pokal&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500018901,&quot;parentId&quot;:5000189,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500018902,&quot;parentId&quot;:5000189,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000190,&quot;parentId&quot;:302,&quot;name&quot;:&quot;LigaPro Primera A&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500019001,&quot;parentId&quot;:5000190,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500019002,&quot;parentId&quot;:5000190,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000191,&quot;parentId&quot;:302,&quot;name&quot;:&quot;English Football Association Cup 2025&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500019101,&quot;parentId&quot;:5000191,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500019102,&quot;parentId&quot;:5000191,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000192,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Carabao Cup&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500019201,&quot;parentId&quot;:5000192,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500019202,&quot;parentId&quot;:5000192,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000193,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Egypt Egyptian Premier League&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500019301,&quot;parentId&quot;:5000193,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500019302,&quot;parentId&quot;:5000193,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000194,&quot;parentId&quot;:302,&quot;name&quot;:&quot;League One&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500019401,&quot;parentId&quot;:5000194,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500019402,&quot;parentId&quot;:5000194,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000195,&quot;parentId&quot;:302,&quot;name&quot;:&quot;League Two&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500019501,&quot;parentId&quot;:5000195,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500019502,&quot;parentId&quot;:5000195,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000196,&quot;parentId&quot;:302,&quot;name&quot;:&quot;EFL Championship&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500019601,&quot;parentId&quot;:5000196,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500019602,&quot;parentId&quot;:5000196,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000197,&quot;parentId&quot;:302,&quot;name&quot;:&quot;National League&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500019701,&quot;parentId&quot;:5000197,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500019702,&quot;parentId&quot;:5000197,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000198,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Eredivisie&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500019801,&quot;parentId&quot;:5000198,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500019802,&quot;parentId&quot;:5000198,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000199,&quot;parentId&quot;:302,&quot;name&quot;:&quot;La Liga 2&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500019901,&quot;parentId&quot;:5000199,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500019902,&quot;parentId&quot;:5000199,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000200,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Premium Liiga&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500020001,&quot;parentId&quot;:5000200,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500020002,&quot;parentId&quot;:5000200,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000201,&quot;parentId&quot;:302,&quot;name&quot;:&quot;European Championship&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500020101,&quot;parentId&quot;:5000201,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500020102,&quot;parentId&quot;:5000201,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000202,&quot;parentId&quot;:302,&quot;name&quot;:&quot;UEF Qualifiers&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500020201,&quot;parentId&quot;:5000202,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500020202,&quot;parentId&quot;:5000202,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000203,&quot;parentId&quot;:302,&quot;name&quot;:&quot;FIFA International Friendlies&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500020301,&quot;parentId&quot;:5000203,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500020302,&quot;parentId&quot;:5000203,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000204,&quot;parentId&quot;:302,&quot;name&quot;:&quot;FIFA Women&#x27;s World Cup&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500020401,&quot;parentId&quot;:5000204,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500020402,&quot;parentId&quot;:5000204,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000206,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Veikkausliiga&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500020601,&quot;parentId&quot;:5000206,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500020602,&quot;parentId&quot;:5000206,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000207,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Liga Promerica&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500020701,&quot;parentId&quot;:5000207,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500020702,&quot;parentId&quot;:5000207,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000208,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Ligue 2&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500020801,&quot;parentId&quot;:5000208,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500020802,&quot;parentId&quot;:5000208,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000209,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Betri deildin&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500020901,&quot;parentId&quot;:5000209,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500020902,&quot;parentId&quot;:5000209,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000210,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Erovnuli Liga&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500021001,&quot;parentId&quot;:5000210,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500021002,&quot;parentId&quot;:5000210,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000211,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Greek Cup&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500021101,&quot;parentId&quot;:5000211,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500021102,&quot;parentId&quot;:5000211,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000212,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Liga Nacional Guatemala&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500021201,&quot;parentId&quot;:5000212,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500021202,&quot;parentId&quot;:5000212,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000213,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Prva Liga&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500021301,&quot;parentId&quot;:5000213,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500021302,&quot;parentId&quot;:5000213,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000214,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Hungary NB I&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500021401,&quot;parentId&quot;:5000214,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500021402,&quot;parentId&quot;:5000214,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000215,&quot;parentId&quot;:302,&quot;name&quot;:&quot;WCQ Inter-Confederation Playoffs&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500021501,&quot;parentId&quot;:5000215,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500021502,&quot;parentId&quot;:5000215,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000216,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Indian Super League&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500021601,&quot;parentId&quot;:5000216,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500021602,&quot;parentId&quot;:5000216,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000217,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Ireland Premier Division&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500021701,&quot;parentId&quot;:5000217,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500021702,&quot;parentId&quot;:5000217,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000218,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Premier Division (Ireland)&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500021801,&quot;parentId&quot;:5000218,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500021802,&quot;parentId&quot;:5000218,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000219,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Besta deild&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500021901,&quot;parentId&quot;:5000219,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500021902,&quot;parentId&quot;:5000219,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000220,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Indian Super League&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500022001,&quot;parentId&quot;:5000220,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500022002,&quot;parentId&quot;:5000220,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000221,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Israel Premier League&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500022101,&quot;parentId&quot;:5000221,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500022102,&quot;parentId&quot;:5000221,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000222,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Coppa Italia&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500022201,&quot;parentId&quot;:5000222,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500022202,&quot;parentId&quot;:5000222,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000223,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Serie B&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500022301,&quot;parentId&quot;:5000223,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500022302,&quot;parentId&quot;:5000223,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000224,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Japan J League&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500022401,&quot;parentId&quot;:5000224,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500022402,&quot;parentId&quot;:5000224,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000225,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Japan J2 League&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500022501,&quot;parentId&quot;:5000225,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500022502,&quot;parentId&quot;:5000225,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000226,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Japan J2 League&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500022601,&quot;parentId&quot;:5000226,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500022602,&quot;parentId&quot;:5000226,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000227,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Japan J League&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500022701,&quot;parentId&quot;:5000227,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500022702,&quot;parentId&quot;:5000227,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000228,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Premier League (Kazakhstan)&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500022801,&quot;parentId&quot;:5000228,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500022802,&quot;parentId&quot;:5000228,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000229,&quot;parentId&quot;:302,&quot;name&quot;:&quot;K-League&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500022901,&quot;parentId&quot;:5000229,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500022902,&quot;parentId&quot;:5000229,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000230,&quot;parentId&quot;:302,&quot;name&quot;:&quot;K League 2&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500023001,&quot;parentId&quot;:5000230,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500023002,&quot;parentId&quot;:5000230,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000231,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Leagues Cup 2025&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500023101,&quot;parentId&quot;:5000231,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500023102,&quot;parentId&quot;:5000231,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000232,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Leagues Cup&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500023201,&quot;parentId&quot;:5000232,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500023202,&quot;parentId&quot;:5000232,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000233,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Copa Libertadores&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500023301,&quot;parentId&quot;:5000233,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500023302,&quot;parentId&quot;:5000233,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000234,&quot;parentId&quot;:302,&quot;name&quot;:&quot;A Lyga&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500023401,&quot;parentId&quot;:5000234,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500023402,&quot;parentId&quot;:5000234,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000235,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Virslīga&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500023501,&quot;parentId&quot;:5000235,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500023502,&quot;parentId&quot;:5000235,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000236,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Morocco Botola Pro&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500023601,&quot;parentId&quot;:5000236,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500023602,&quot;parentId&quot;:5000236,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000237,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Liga MX&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500023701,&quot;parentId&quot;:5000237,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500023702,&quot;parentId&quot;:5000237,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000238,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Concacaf&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500023801,&quot;parentId&quot;:5000238,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500023802,&quot;parentId&quot;:5000238,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000239,&quot;parentId&quot;:302,&quot;name&quot;:&quot;CONCACAF Gold Cup&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500023901,&quot;parentId&quot;:5000239,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500023902,&quot;parentId&quot;:5000239,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000240,&quot;parentId&quot;:302,&quot;name&quot;:&quot;KNVB Beker&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500024001,&quot;parentId&quot;:5000240,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500024002,&quot;parentId&quot;:5000240,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000241,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Norway Eliteserien&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500024101,&quot;parentId&quot;:5000241,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500024102,&quot;parentId&quot;:5000241,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000242,&quot;parentId&quot;:302,&quot;name&quot;:&quot;OBOS-ligaen&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500024201,&quot;parentId&quot;:5000242,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500024202,&quot;parentId&quot;:5000242,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000243,&quot;parentId&quot;:302,&quot;name&quot;:&quot;NWSL&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500024301,&quot;parentId&quot;:5000243,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500024302,&quot;parentId&quot;:5000243,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000244,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Oceania Football Confederation&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500024401,&quot;parentId&quot;:5000244,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500024402,&quot;parentId&quot;:5000244,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000245,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Oceania Football Confederation&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500024501,&quot;parentId&quot;:5000245,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500024502,&quot;parentId&quot;:5000245,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000246,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Peru Liga 1&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500024601,&quot;parentId&quot;:5000246,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500024602,&quot;parentId&quot;:5000246,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000247,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Primeira Liga&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500024701,&quot;parentId&quot;:5000247,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500024702,&quot;parentId&quot;:5000247,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000248,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Taca de Portugal&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500024801,&quot;parentId&quot;:5000248,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500024802,&quot;parentId&quot;:5000248,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000249,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Romania SuperLiga&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500024901,&quot;parentId&quot;:5000249,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500024902,&quot;parentId&quot;:5000249,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000250,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Russian Premier League 2025&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500025001,&quot;parentId&quot;:5000250,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500025002,&quot;parentId&quot;:5000250,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000251,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Conmebol&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500025101,&quot;parentId&quot;:5000251,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500025102,&quot;parentId&quot;:5000251,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000252,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Scottish Cup&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500025201,&quot;parentId&quot;:5000252,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500025202,&quot;parentId&quot;:5000252,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000253,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Scottish Premiership&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500025301,&quot;parentId&quot;:5000253,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500025302,&quot;parentId&quot;:5000253,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000254,&quot;parentId&quot;:302,&quot;name&quot;:&quot;King Cup&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500025401,&quot;parentId&quot;:5000254,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500025402,&quot;parentId&quot;:5000254,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000255,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Slovenia PrvaLiga&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500025501,&quot;parentId&quot;:5000255,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500025502,&quot;parentId&quot;:5000255,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000256,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Saudi Professional League&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500025601,&quot;parentId&quot;:5000256,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500025602,&quot;parentId&quot;:5000256,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000257,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Serbian SuperLiga&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500025701,&quot;parentId&quot;:5000257,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500025702,&quot;parentId&quot;:5000257,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000258,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Spanish Super Cup&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500025801,&quot;parentId&quot;:5000258,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500025802,&quot;parentId&quot;:5000258,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000259,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Copa Sudamericana&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500025901,&quot;parentId&quot;:5000259,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500025902,&quot;parentId&quot;:5000259,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000260,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Nike Liga&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500026001,&quot;parentId&quot;:5000260,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500026002,&quot;parentId&quot;:5000260,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000261,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Allsvenskan&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500026101,&quot;parentId&quot;:5000261,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500026102,&quot;parentId&quot;:5000261,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000262,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Superettan&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500026201,&quot;parentId&quot;:5000262,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500026202,&quot;parentId&quot;:5000262,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000263,&quot;parentId&quot;:302,&quot;name&quot;:&quot;TFF Super Kupa&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500026301,&quot;parentId&quot;:5000263,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500026302,&quot;parentId&quot;:5000263,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000264,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Süper Lig&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500026401,&quot;parentId&quot;:5000264,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500026402,&quot;parentId&quot;:5000264,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000265,&quot;parentId&quot;:302,&quot;name&quot;:&quot;UEF Qualifiers&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500026501,&quot;parentId&quot;:5000265,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500026502,&quot;parentId&quot;:5000265,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000266,&quot;parentId&quot;:302,&quot;name&quot;:&quot;UEFA Europa League&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500026601,&quot;parentId&quot;:5000266,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500026602,&quot;parentId&quot;:5000266,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000267,&quot;parentId&quot;:302,&quot;name&quot;:&quot;UEFA Euro Qualification&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500026701,&quot;parentId&quot;:5000267,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500026702,&quot;parentId&quot;:5000267,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000268,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Ukraine Premier Liha&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500026801,&quot;parentId&quot;:5000268,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500026802,&quot;parentId&quot;:5000268,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000269,&quot;parentId&quot;:302,&quot;name&quot;:&quot;UEFA Nations League&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500026901,&quot;parentId&quot;:5000269,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500026902,&quot;parentId&quot;:5000269,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000270,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Primera División (Uruguay)&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500027001,&quot;parentId&quot;:5000270,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500027002,&quot;parentId&quot;:5000270,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000271,&quot;parentId&quot;:302,&quot;name&quot;:&quot;UEFA Women&#x27;s Champions League&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500027101,&quot;parentId&quot;:5000271,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500027102,&quot;parentId&quot;:5000271,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000272,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Superliga (Uzbekistan)&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500027201,&quot;parentId&quot;:5000272,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500027202,&quot;parentId&quot;:5000272,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000273,&quot;parentId&quot;:302,&quot;name&quot;:&quot;Primera División (Venezuela)&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500027301,&quot;parentId&quot;:5000273,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500027302,&quot;parentId&quot;:5000273,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000274,&quot;parentId&quot;:302,&quot;name&quot;:&quot;UEFA Women&#x27;s EURO&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500027401,&quot;parentId&quot;:5000274,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500027402,&quot;parentId&quot;:5000274,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000275,&quot;parentId&quot;:302,&quot;name&quot;:&quot;UEFA Women&#x27;s World Cup Qualification&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500027501,&quot;parentId&quot;:5000275,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500027502,&quot;parentId&quot;:5000275,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]}]},{&quot;id&quot;:303,&quot;parentId&quot;:300,&quot;name&quot;:&quot;网球&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:30302,&quot;parentId&quot;:303,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:30303,&quot;parentId&quot;:303,&quot;name&quot;:&quot;Wimbledon 2026&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:3030301,&quot;parentId&quot;:30303,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:3030302,&quot;parentId&quot;:30303,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000276,&quot;parentId&quot;:303,&quot;name&quot;:&quot;ATP&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500027601,&quot;parentId&quot;:5000276,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500027602,&quot;parentId&quot;:5000276,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000277,&quot;parentId&quot;:303,&quot;name&quot;:&quot;ATP Doubles&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500027701,&quot;parentId&quot;:5000277,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500027702,&quot;parentId&quot;:5000277,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000278,&quot;parentId&quot;:303,&quot;name&quot;:&quot;ITF&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500027801,&quot;parentId&quot;:5000278,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500027802,&quot;parentId&quot;:5000278,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000279,&quot;parentId&quot;:303,&quot;name&quot;:&quot;WTA&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500027901,&quot;parentId&quot;:5000279,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500027902,&quot;parentId&quot;:5000279,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000280,&quot;parentId&quot;:303,&quot;name&quot;:&quot;WTA Doubles&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500028001,&quot;parentId&quot;:5000280,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500028002,&quot;parentId&quot;:5000280,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]}]},{&quot;id&quot;:304,&quot;parentId&quot;:300,&quot;name&quot;:&quot;篮球&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:5000105,&quot;parentId&quot;:304,&quot;name&quot;:&quot;ABA League&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500010501,&quot;parentId&quot;:5000105,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500010502,&quot;parentId&quot;:5000105,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000106,&quot;parentId&quot;:304,&quot;name&quot;:&quot;LNB&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500010601,&quot;parentId&quot;:5000106,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500010602,&quot;parentId&quot;:5000106,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000107,&quot;parentId&quot;:304,&quot;name&quot;:&quot;Germany BBL&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500010701,&quot;parentId&quot;:5000107,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500010702,&quot;parentId&quot;:5000107,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000108,&quot;parentId&quot;:304,&quot;name&quot;:&quot;Turkey BSL&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500010801,&quot;parentId&quot;:5000108,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500010802,&quot;parentId&quot;:5000108,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000109,&quot;parentId&quot;:304,&quot;name&quot;:&quot;BSN&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500010901,&quot;parentId&quot;:5000109,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500010902,&quot;parentId&quot;:5000109,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000110,&quot;parentId&quot;:304,&quot;name&quot;:&quot;CBA&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500011001,&quot;parentId&quot;:5000110,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500011002,&quot;parentId&quot;:5000110,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000111,&quot;parentId&quot;:304,&quot;name&quot;:&quot;CEBL&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500011101,&quot;parentId&quot;:5000111,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500011102,&quot;parentId&quot;:5000111,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000112,&quot;parentId&quot;:304,&quot;name&quot;:&quot;Basketball Champions League&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500011201,&quot;parentId&quot;:5000112,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500011202,&quot;parentId&quot;:5000112,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000113,&quot;parentId&quot;:304,&quot;name&quot;:&quot;EuroCup&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500011301,&quot;parentId&quot;:5000113,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500011302,&quot;parentId&quot;:5000113,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000114,&quot;parentId&quot;:304,&quot;name&quot;:&quot;FIBA WCQ Africa&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500011401,&quot;parentId&quot;:5000114,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500011402,&quot;parentId&quot;:5000114,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000115,&quot;parentId&quot;:304,&quot;name&quot;:&quot;FIBA WCQ Americas&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500011501,&quot;parentId&quot;:5000115,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500011502,&quot;parentId&quot;:5000115,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000116,&quot;parentId&quot;:304,&quot;name&quot;:&quot;FIBA WCQ Asia&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500011601,&quot;parentId&quot;:5000116,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500011602,&quot;parentId&quot;:5000116,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000117,&quot;parentId&quot;:304,&quot;name&quot;:&quot;FIBA WCQ Europe&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500011701,&quot;parentId&quot;:5000117,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500011702,&quot;parentId&quot;:5000117,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000118,&quot;parentId&quot;:304,&quot;name&quot;:&quot;Pro A&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500011801,&quot;parentId&quot;:5000118,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500011802,&quot;parentId&quot;:5000118,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000119,&quot;parentId&quot;:304,&quot;name&quot;:&quot;Greek Basketball League&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500011901,&quot;parentId&quot;:5000119,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500011902,&quot;parentId&quot;:5000119,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000120,&quot;parentId&quot;:304,&quot;name&quot;:&quot;IBL&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500012001,&quot;parentId&quot;:5000120,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500012002,&quot;parentId&quot;:5000120,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000121,&quot;parentId&quot;:304,&quot;name&quot;:&quot;Super League (Israel)&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500012101,&quot;parentId&quot;:5000121,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500012102,&quot;parentId&quot;:5000121,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000122,&quot;parentId&quot;:304,&quot;name&quot;:&quot;Japan B League&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500012201,&quot;parentId&quot;:5000122,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500012202,&quot;parentId&quot;:5000122,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000123,&quot;parentId&quot;:304,&quot;name&quot;:&quot;KBL&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500012301,&quot;parentId&quot;:5000123,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500012302,&quot;parentId&quot;:5000123,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000124,&quot;parentId&quot;:304,&quot;name&quot;:&quot;KLS&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500012401,&quot;parentId&quot;:5000124,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500012402,&quot;parentId&quot;:5000124,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000125,&quot;parentId&quot;:304,&quot;name&quot;:&quot;Liga Argentina&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500012501,&quot;parentId&quot;:5000125,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500012502,&quot;parentId&quot;:5000125,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000126,&quot;parentId&quot;:304,&quot;name&quot;:&quot;Liga Endesa&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500012601,&quot;parentId&quot;:5000126,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500012602,&quot;parentId&quot;:5000126,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000127,&quot;parentId&quot;:304,&quot;name&quot;:&quot;LKL&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500012701,&quot;parentId&quot;:5000127,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500012702,&quot;parentId&quot;:5000127,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000128,&quot;parentId&quot;:304,&quot;name&quot;:&quot;NBB&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500012801,&quot;parentId&quot;:5000128,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500012802,&quot;parentId&quot;:5000128,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000129,&quot;parentId&quot;:304,&quot;name&quot;:&quot;NBL&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500012901,&quot;parentId&quot;:5000129,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500012902,&quot;parentId&quot;:5000129,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000130,&quot;parentId&quot;:304,&quot;name&quot;:&quot;PLK&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500013001,&quot;parentId&quot;:5000130,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500013002,&quot;parentId&quot;:5000130,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000131,&quot;parentId&quot;:304,&quot;name&quot;:&quot;Serie A&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500013101,&quot;parentId&quot;:5000131,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500013102,&quot;parentId&quot;:5000131,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000132,&quot;parentId&quot;:304,&quot;name&quot;:&quot;SuperLiga (Venezuela)&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500013201,&quot;parentId&quot;:5000132,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500013202,&quot;parentId&quot;:5000132,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000133,&quot;parentId&quot;:304,&quot;name&quot;:&quot;VTB United League&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500013301,&quot;parentId&quot;:5000133,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500013302,&quot;parentId&quot;:5000133,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000134,&quot;parentId&quot;:304,&quot;name&quot;:&quot;CBB&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500013401,&quot;parentId&quot;:5000134,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500013402,&quot;parentId&quot;:5000134,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000135,&quot;parentId&quot;:304,&quot;name&quot;:&quot;WBB&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500013501,&quot;parentId&quot;:5000135,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500013502,&quot;parentId&quot;:5000135,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000136,&quot;parentId&quot;:304,&quot;name&quot;:&quot;Euroleague basketball&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500013601,&quot;parentId&quot;:5000136,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500013602,&quot;parentId&quot;:5000136,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000137,&quot;parentId&quot;:304,&quot;name&quot;:&quot;NBA&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500013701,&quot;parentId&quot;:5000137,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500013702,&quot;parentId&quot;:5000137,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000138,&quot;parentId&quot;:304,&quot;name&quot;:&quot;March Madness Games&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500013801,&quot;parentId&quot;:5000138,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500013802,&quot;parentId&quot;:5000138,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000283,&quot;parentId&quot;:304,&quot;name&quot;:&quot;WNBA&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500028301,&quot;parentId&quot;:5000283,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500028302,&quot;parentId&quot;:5000283,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]}]},{&quot;id&quot;:305,&quot;parentId&quot;:300,&quot;name&quot;:&quot;棒球&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:5000103,&quot;parentId&quot;:305,&quot;name&quot;:&quot;KBO&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500010301,&quot;parentId&quot;:5000103,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500010302,&quot;parentId&quot;:5000103,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000104,&quot;parentId&quot;:305,&quot;name&quot;:&quot;MLB&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500010401,&quot;parentId&quot;:5000104,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500010402,&quot;parentId&quot;:5000104,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]}]},{&quot;id&quot;:306,&quot;parentId&quot;:300,&quot;name&quot;:&quot;冰球&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:5000141,&quot;parentId&quot;:306,&quot;name&quot;:&quot;AHL&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500014101,&quot;parentId&quot;:5000141,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500014102,&quot;parentId&quot;:5000141,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000142,&quot;parentId&quot;:306,&quot;name&quot;:&quot;ELH&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500014201,&quot;parentId&quot;:5000142,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500014202,&quot;parentId&quot;:5000142,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000143,&quot;parentId&quot;:306,&quot;name&quot;:&quot;DEL&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500014301,&quot;parentId&quot;:5000143,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500014302,&quot;parentId&quot;:5000143,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000144,&quot;parentId&quot;:306,&quot;name&quot;:&quot;KHL&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500014401,&quot;parentId&quot;:5000144,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500014402,&quot;parentId&quot;:5000144,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000145,&quot;parentId&quot;:306,&quot;name&quot;:&quot;Men&#x27;s Winter Olympics Hockey&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500014501,&quot;parentId&quot;:5000145,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500014502,&quot;parentId&quot;:5000145,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000146,&quot;parentId&quot;:306,&quot;name&quot;:&quot;NHL&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500014601,&quot;parentId&quot;:5000146,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500014602,&quot;parentId&quot;:5000146,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000147,&quot;parentId&quot;:306,&quot;name&quot;:&quot;SHL&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500014701,&quot;parentId&quot;:5000147,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500014702,&quot;parentId&quot;:5000147,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]}]},{&quot;id&quot;:307,&quot;parentId&quot;:300,&quot;name&quot;:&quot;F1&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:5000062,&quot;parentId&quot;:307,&quot;name&quot;:&quot;Formula 1 2026&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500006201,&quot;parentId&quot;:5000062,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500006202,&quot;parentId&quot;:5000062,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]}]},{&quot;id&quot;:308,&quot;parentId&quot;:300,&quot;name&quot;:&quot;MotoGP&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:30801,&quot;parentId&quot;:308,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:30803,&quot;parentId&quot;:308,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:309,&quot;parentId&quot;:300,&quot;name&quot;:&quot;其他&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:30902,&quot;parentId&quot;:309,&quot;name&quot;:&quot;美式橄榄球&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:3090201,&quot;parentId&quot;:30902,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:3090202,&quot;parentId&quot;:30902,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:30903,&quot;parentId&quot;:309,&quot;name&quot;:&quot;板球&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:3090301,&quot;parentId&quot;:30903,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:3090302,&quot;parentId&quot;:30903,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:30904,&quot;parentId&quot;:309,&quot;name&quot;:&quot;排球&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:3090401,&quot;parentId&quot;:30904,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:3090402,&quot;parentId&quot;:30904,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:30905,&quot;parentId&quot;:309,&quot;name&quot;:&quot;橄榄球&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:3090501,&quot;parentId&quot;:30905,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:3090502,&quot;parentId&quot;:30905,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:30906,&quot;parentId&quot;:309,&quot;name&quot;:&quot;乒乓球&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:3090601,&quot;parentId&quot;:30906,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:3090602,&quot;parentId&quot;:30906,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:30907,&quot;parentId&quot;:309,&quot;name&quot;:&quot;高尔夫&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:3090701,&quot;parentId&quot;:30907,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:3090702,&quot;parentId&quot;:30907,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:30908,&quot;parentId&quot;:309,&quot;name&quot;:&quot;拳击&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:3090801,&quot;parentId&quot;:30908,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:3090802,&quot;parentId&quot;:30908,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000003,&quot;parentId&quot;:309,&quot;name&quot;:&quot;GCT: Super Rapid &amp; Blitz Poland 2026 | Blitz&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500000301,&quot;parentId&quot;:5000003,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500000302,&quot;parentId&quot;:5000003,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000065,&quot;parentId&quot;:309,&quot;name&quot;:&quot;MLP&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500006501,&quot;parentId&quot;:5000065,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500006502,&quot;parentId&quot;:5000065,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000067,&quot;parentId&quot;:309,&quot;name&quot;:&quot;PLL&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500006701,&quot;parentId&quot;:5000067,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500006702,&quot;parentId&quot;:5000067,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000098,&quot;parentId&quot;:309,&quot;name&quot;:&quot;World Baseball Classic&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500009801,&quot;parentId&quot;:5000098,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500009802,&quot;parentId&quot;:5000098,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000099,&quot;parentId&quot;:309,&quot;name&quot;:&quot;WLL&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500009901,&quot;parentId&quot;:5000099,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500009902,&quot;parentId&quot;:5000099,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]},{&quot;id&quot;:5000281,&quot;parentId&quot;:309,&quot;name&quot;:&quot;Power Slap&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:500028101,&quot;parentId&quot;:5000281,&quot;name&quot;:&quot;比赛&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:500028102,&quot;parentId&quot;:5000281,&quot;name&quot;:&quot;事件&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]}]}]},{&quot;id&quot;:500,&quot;parentId&quot;:0,&quot;name&quot;:&quot;世界&quot;,&quot;isLeaf&quot;:false,&quot;children&quot;:[{&quot;id&quot;:501,&quot;parentId&quot;:500,&quot;name&quot;:&quot;特朗普&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:502,&quot;parentId&quot;:500,&quot;name&quot;:&quot;美联储利率&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:503,&quot;parentId&quot;:500,&quot;name&quot;:&quot;宏观指标&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]},{&quot;id&quot;:504,&quot;parentId&quot;:500,&quot;name&quot;:&quot;通货膨胀&quot;,&quot;isLeaf&quot;:true,&quot;children&quot;:[]}]}],&quot;ext_code&quot;:null,&quot;time_now&quot;:&quot;1783482141486&quot;}</pre>
+          </div>
+        </details>
+        <details class="req" >
+          <summary>
+            <span>
+              <span class="status-dot passed"></span>
+              <span class="method method-get">GET</span>
+              S02 GET /instant-products 解析 instantProductId
+            </span>
+            <span class="req-meta">
+              HTTP 200 · 203ms · 544B
+              
+              <span class="chevron">▸</span>
+            </span>
+          </summary>
+          <div class="req-body">
+            <div><strong>URL</strong></div>
+            <div class="url-line">
+              {&quot;protocol&quot;:&quot;http&quot;,&quot;port&quot;:&quot;8080&quot;,&quot;path&quot;:[&quot;private&quot;,&quot;v1&quot;,&quot;pm&quot;,&quot;instant-products&quot;],&quot;host&quot;:[&quot;localhost&quot;],&quot;query&quot;:[],&quot;variable&quot;:[]}
+            </div>
+
+            <table class="assert">
+              <thead>
+                <tr><th>断言</th><th class="num">通过</th><th class="num">失败</th><th class="num">跳过</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>HTTP 200</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>ret_code&#x3D;0</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>ItemsResponse 结构</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>instantProductId&#x3D;1</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div><strong>响应体</strong></div>
+            <pre>{&quot;ret_code&quot;:0,&quot;ret_msg&quot;:&quot;OK&quot;,&quot;result&quot;:{&quot;items&quot;:[{&quot;id&quot;:1,&quot;name&quot;:&quot;BTC Up or Down 5m · 5m&quot;,&quot;seriesSlug&quot;:&quot;btc-up-or-down-5m&quot;,&quot;asset&quot;:&quot;BTC&quot;,&quot;categoryId&quot;:101,&quot;recurrenceMinutes&quot;:5,&quot;status&quot;:&quot;STOPPED&quot;,&quot;syncEnabled&quot;:true,&quot;iconUrl&quot;:&quot;&quot;,&quot;resolutionSource&quot;:&quot;&quot;,&quot;lastSyncAt&quot;:null,&quot;lastSyncStatus&quot;:&quot;&quot;,&quot;lastSyncRunId&quot;:0,&quot;todaySyncedCount&quot;:0,&quot;nextSyncAt&quot;:null,&quot;lastError&quot;:&quot;&quot;,&quot;createdBy&quot;:&quot;postman-cli&quot;,&quot;updatedBy&quot;:&quot;postman-cli&quot;,&quot;createdAt&quot;:&quot;2026-07-08T03:37:02.872+00:00&quot;,&quot;updatedAt&quot;:&quot;2026-07-08T03:37:10.614+00:00&quot;}]},&quot;ext_code&quot;:null,&quot;time_now&quot;:&quot;1783482141733&quot;}</pre>
+          </div>
+        </details>
+        <details class="req" >
+          <summary>
+            <span>
+              <span class="status-dot passed"></span>
+              <span class="method method-get">GET</span>
+              S03 A1 validate series slug 缓存
+            </span>
+            <span class="req-meta">
+              HTTP 200 · 650ms · 259B
+              
+              <span class="chevron">▸</span>
+            </span>
+          </summary>
+          <div class="req-body">
+            <div><strong>URL</strong></div>
+            <div class="url-line">
+              {&quot;protocol&quot;:&quot;http&quot;,&quot;port&quot;:&quot;8080&quot;,&quot;path&quot;:[&quot;private&quot;,&quot;v1&quot;,&quot;pm&quot;,&quot;instant-products&quot;,&quot;polymarket&quot;,&quot;series&quot;,&quot;validate&quot;],&quot;host&quot;:[&quot;localhost&quot;],&quot;query&quot;:[{&quot;key&quot;:&quot;slug&quot;,&quot;value&quot;:&quot;btc-up-or-down-5m&quot;}],&quot;variable&quot;:[]}
+            </div>
+
+            <table class="assert">
+              <thead>
+                <tr><th>断言</th><th class="num">通过</th><th class="num">失败</th><th class="num">跳过</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>HTTP 200</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>ret_code&#x3D;0</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>SeriesSlugValidateResponse 结构</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div><strong>响应体</strong></div>
+            <pre>{&quot;ret_code&quot;:0,&quot;ret_msg&quot;:&quot;OK&quot;,&quot;result&quot;:{&quot;valid&quot;:true,&quot;sourceSeriesId&quot;:&quot;10684&quot;,&quot;slug&quot;:&quot;btc-up-or-down-5m&quot;,&quot;title&quot;:&quot;BTC Up or Down 5m&quot;,&quot;recurrence&quot;:&quot;5m&quot;,&quot;suggestedName&quot;:&quot;BTC Up or Down 5m · 5m&quot;,&quot;suggestedAsset&quot;:&quot;BTC&quot;},&quot;ext_code&quot;:null,&quot;time_now&quot;:&quot;1783482142399&quot;}</pre>
+          </div>
+        </details>
+      </div>
+    </details>
+    <details class="folder" >
+      <summary>
+        <span><span class="status-dot passed"></span>A · GET 正向 [ok]</span>
+        <span class="req-meta">12 条 <span class="chevron">▸</span></span>
+      </summary>
+      <div class="inner">
+        <details class="req" >
+          <summary>
+            <span>
+              <span class="status-dot passed"></span>
+              <span class="method method-get">GET</span>
+              A01 A1 validate 有效 slug
+            </span>
+            <span class="req-meta">
+              HTTP 200 · 189ms · 259B
+              
+              <span class="chevron">▸</span>
+            </span>
+          </summary>
+          <div class="req-body">
+            <div><strong>URL</strong></div>
+            <div class="url-line">
+              {&quot;protocol&quot;:&quot;http&quot;,&quot;port&quot;:&quot;8080&quot;,&quot;path&quot;:[&quot;private&quot;,&quot;v1&quot;,&quot;pm&quot;,&quot;instant-products&quot;,&quot;polymarket&quot;,&quot;series&quot;,&quot;validate&quot;],&quot;host&quot;:[&quot;localhost&quot;],&quot;query&quot;:[{&quot;key&quot;:&quot;slug&quot;,&quot;value&quot;:&quot;btc-up-or-down-5m&quot;}],&quot;variable&quot;:[]}
+            </div>
+
+            <table class="assert">
+              <thead>
+                <tr><th>断言</th><th class="num">通过</th><th class="num">失败</th><th class="num">跳过</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>HTTP 200</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>ret_code&#x3D;0</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>validate 响应字段</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div><strong>响应体</strong></div>
+            <pre>{&quot;ret_code&quot;:0,&quot;ret_msg&quot;:&quot;OK&quot;,&quot;result&quot;:{&quot;valid&quot;:true,&quot;sourceSeriesId&quot;:&quot;10684&quot;,&quot;slug&quot;:&quot;btc-up-or-down-5m&quot;,&quot;title&quot;:&quot;BTC Up or Down 5m&quot;,&quot;recurrence&quot;:&quot;5m&quot;,&quot;suggestedName&quot;:&quot;BTC Up or Down 5m · 5m&quot;,&quot;suggestedAsset&quot;:&quot;BTC&quot;},&quot;ext_code&quot;:null,&quot;time_now&quot;:&quot;1783482142611&quot;}</pre>
+          </div>
+        </details>
+        <details class="req" >
+          <summary>
+            <span>
+              <span class="status-dot passed"></span>
+              <span class="method method-get">GET</span>
+              A02 A1 validate 无效 slug（valid&#x3D;false）
+            </span>
+            <span class="req-meta">
+              HTTP 200 · 384ms · 231B
+              
+              <span class="chevron">▸</span>
+            </span>
+          </summary>
+          <div class="req-body">
+            <div><strong>URL</strong></div>
+            <div class="url-line">
+              {&quot;protocol&quot;:&quot;http&quot;,&quot;port&quot;:&quot;8080&quot;,&quot;path&quot;:[&quot;private&quot;,&quot;v1&quot;,&quot;pm&quot;,&quot;instant-products&quot;,&quot;polymarket&quot;,&quot;series&quot;,&quot;validate&quot;],&quot;host&quot;:[&quot;localhost&quot;],&quot;query&quot;:[{&quot;key&quot;:&quot;slug&quot;,&quot;value&quot;:&quot;non-existent-series-slug-xyz&quot;}],&quot;variable&quot;:[]}
+            </div>
+
+            <table class="assert">
+              <thead>
+                <tr><th>断言</th><th class="num">通过</th><th class="num">失败</th><th class="num">跳过</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>HTTP 200</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>ret_code&#x3D;0</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>valid&#x3D;false</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div><strong>响应体</strong></div>
+            <pre>{&quot;ret_code&quot;:0,&quot;ret_msg&quot;:&quot;OK&quot;,&quot;result&quot;:{&quot;valid&quot;:false,&quot;sourceSeriesId&quot;:null,&quot;slug&quot;:&quot;non-existent-series-slug-xyz&quot;,&quot;title&quot;:null,&quot;recurrence&quot;:null,&quot;suggestedName&quot;:null,&quot;suggestedAsset&quot;:null},&quot;ext_code&quot;:null,&quot;time_now&quot;:&quot;1783482143014&quot;}</pre>
+          </div>
+        </details>
+        <details class="req" >
+          <summary>
+            <span>
+              <span class="status-dot passed"></span>
+              <span class="method method-get">GET</span>
+              A03 A2 list 全量
+            </span>
+            <span class="req-meta">
+              HTTP 200 · 298ms · 544B
+              
+              <span class="chevron">▸</span>
+            </span>
+          </summary>
+          <div class="req-body">
+            <div><strong>URL</strong></div>
+            <div class="url-line">
+              {&quot;protocol&quot;:&quot;http&quot;,&quot;port&quot;:&quot;8080&quot;,&quot;path&quot;:[&quot;private&quot;,&quot;v1&quot;,&quot;pm&quot;,&quot;instant-products&quot;],&quot;host&quot;:[&quot;localhost&quot;],&quot;query&quot;:[],&quot;variable&quot;:[]}
+            </div>
+
+            <table class="assert">
+              <thead>
+                <tr><th>断言</th><th class="num">通过</th><th class="num">失败</th><th class="num">跳过</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>HTTP 200</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>ret_code&#x3D;0</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>ItemsResponse&lt;InstantProductResponse&gt;</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div><strong>响应体</strong></div>
+            <pre>{&quot;ret_code&quot;:0,&quot;ret_msg&quot;:&quot;OK&quot;,&quot;result&quot;:{&quot;items&quot;:[{&quot;id&quot;:1,&quot;name&quot;:&quot;BTC Up or Down 5m · 5m&quot;,&quot;seriesSlug&quot;:&quot;btc-up-or-down-5m&quot;,&quot;asset&quot;:&quot;BTC&quot;,&quot;categoryId&quot;:101,&quot;recurrenceMinutes&quot;:5,&quot;status&quot;:&quot;STOPPED&quot;,&quot;syncEnabled&quot;:true,&quot;iconUrl&quot;:&quot;&quot;,&quot;resolutionSource&quot;:&quot;&quot;,&quot;lastSyncAt&quot;:null,&quot;lastSyncStatus&quot;:&quot;&quot;,&quot;lastSyncRunId&quot;:0,&quot;todaySyncedCount&quot;:0,&quot;nextSyncAt&quot;:null,&quot;lastError&quot;:&quot;&quot;,&quot;createdBy&quot;:&quot;postman-cli&quot;,&quot;updatedBy&quot;:&quot;postman-cli&quot;,&quot;createdAt&quot;:&quot;2026-07-08T03:37:02.872+00:00&quot;,&quot;updatedAt&quot;:&quot;2026-07-08T03:37:10.614+00:00&quot;}]},&quot;ext_code&quot;:null,&quot;time_now&quot;:&quot;1783482143331&quot;}</pre>
+          </div>
+        </details>
+        <details class="req" >
+          <summary>
+            <span>
+              <span class="status-dot passed"></span>
+              <span class="method method-get">GET</span>
+              A04 A2 list status&#x3D;STOPPED
+            </span>
+            <span class="req-meta">
+              HTTP 200 · 221ms · 544B
+              
+              <span class="chevron">▸</span>
+            </span>
+          </summary>
+          <div class="req-body">
+            <div><strong>URL</strong></div>
+            <div class="url-line">
+              {&quot;protocol&quot;:&quot;http&quot;,&quot;port&quot;:&quot;8080&quot;,&quot;path&quot;:[&quot;private&quot;,&quot;v1&quot;,&quot;pm&quot;,&quot;instant-products&quot;],&quot;host&quot;:[&quot;localhost&quot;],&quot;query&quot;:[{&quot;key&quot;:&quot;status&quot;,&quot;value&quot;:&quot;STOPPED&quot;}],&quot;variable&quot;:[]}
+            </div>
+
+            <table class="assert">
+              <thead>
+                <tr><th>断言</th><th class="num">通过</th><th class="num">失败</th><th class="num">跳过</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>HTTP 200</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>ret_code&#x3D;0</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>过滤结果 status&#x3D;STOPPED</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div><strong>响应体</strong></div>
+            <pre>{&quot;ret_code&quot;:0,&quot;ret_msg&quot;:&quot;OK&quot;,&quot;result&quot;:{&quot;items&quot;:[{&quot;id&quot;:1,&quot;name&quot;:&quot;BTC Up or Down 5m · 5m&quot;,&quot;seriesSlug&quot;:&quot;btc-up-or-down-5m&quot;,&quot;asset&quot;:&quot;BTC&quot;,&quot;categoryId&quot;:101,&quot;recurrenceMinutes&quot;:5,&quot;status&quot;:&quot;STOPPED&quot;,&quot;syncEnabled&quot;:true,&quot;iconUrl&quot;:&quot;&quot;,&quot;resolutionSource&quot;:&quot;&quot;,&quot;lastSyncAt&quot;:null,&quot;lastSyncStatus&quot;:&quot;&quot;,&quot;lastSyncRunId&quot;:0,&quot;todaySyncedCount&quot;:0,&quot;nextSyncAt&quot;:null,&quot;lastError&quot;:&quot;&quot;,&quot;createdBy&quot;:&quot;postman-cli&quot;,&quot;updatedBy&quot;:&quot;postman-cli&quot;,&quot;createdAt&quot;:&quot;2026-07-08T03:37:02.872+00:00&quot;,&quot;updatedAt&quot;:&quot;2026-07-08T03:37:10.614+00:00&quot;}]},&quot;ext_code&quot;:null,&quot;time_now&quot;:&quot;1783482143574&quot;}</pre>
+          </div>
+        </details>
+        <details class="req" >
+          <summary>
+            <span>
+              <span class="status-dot passed"></span>
+              <span class="method method-get">GET</span>
+              A05 A2 list asset&#x3D;BTC
+            </span>
+            <span class="req-meta">
+              HTTP 200 · 201ms · 544B
+              
+              <span class="chevron">▸</span>
+            </span>
+          </summary>
+          <div class="req-body">
+            <div><strong>URL</strong></div>
+            <div class="url-line">
+              {&quot;protocol&quot;:&quot;http&quot;,&quot;port&quot;:&quot;8080&quot;,&quot;path&quot;:[&quot;private&quot;,&quot;v1&quot;,&quot;pm&quot;,&quot;instant-products&quot;],&quot;host&quot;:[&quot;localhost&quot;],&quot;query&quot;:[{&quot;key&quot;:&quot;asset&quot;,&quot;value&quot;:&quot;BTC&quot;}],&quot;variable&quot;:[]}
+            </div>
+
+            <table class="assert">
+              <thead>
+                <tr><th>断言</th><th class="num">通过</th><th class="num">失败</th><th class="num">跳过</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>HTTP 200</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>ret_code&#x3D;0</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>过滤结果 asset&#x3D;BTC</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div><strong>响应体</strong></div>
+            <pre>{&quot;ret_code&quot;:0,&quot;ret_msg&quot;:&quot;OK&quot;,&quot;result&quot;:{&quot;items&quot;:[{&quot;id&quot;:1,&quot;name&quot;:&quot;BTC Up or Down 5m · 5m&quot;,&quot;seriesSlug&quot;:&quot;btc-up-or-down-5m&quot;,&quot;asset&quot;:&quot;BTC&quot;,&quot;categoryId&quot;:101,&quot;recurrenceMinutes&quot;:5,&quot;status&quot;:&quot;STOPPED&quot;,&quot;syncEnabled&quot;:true,&quot;iconUrl&quot;:&quot;&quot;,&quot;resolutionSource&quot;:&quot;&quot;,&quot;lastSyncAt&quot;:null,&quot;lastSyncStatus&quot;:&quot;&quot;,&quot;lastSyncRunId&quot;:0,&quot;todaySyncedCount&quot;:0,&quot;nextSyncAt&quot;:null,&quot;lastError&quot;:&quot;&quot;,&quot;createdBy&quot;:&quot;postman-cli&quot;,&quot;updatedBy&quot;:&quot;postman-cli&quot;,&quot;createdAt&quot;:&quot;2026-07-08T03:37:02.872+00:00&quot;,&quot;updatedAt&quot;:&quot;2026-07-08T03:37:10.614+00:00&quot;}]},&quot;ext_code&quot;:null,&quot;time_now&quot;:&quot;1783482143790&quot;}</pre>
+          </div>
+        </details>
+        <details class="req" >
+          <summary>
+            <span>
+              <span class="status-dot passed"></span>
+              <span class="method method-get">GET</span>
+              A06 A2 list keyword&#x3D;btc
+            </span>
+            <span class="req-meta">
+              HTTP 200 · 202ms · 544B
+              
+              <span class="chevron">▸</span>
+            </span>
+          </summary>
+          <div class="req-body">
+            <div><strong>URL</strong></div>
+            <div class="url-line">
+              {&quot;protocol&quot;:&quot;http&quot;,&quot;port&quot;:&quot;8080&quot;,&quot;path&quot;:[&quot;private&quot;,&quot;v1&quot;,&quot;pm&quot;,&quot;instant-products&quot;],&quot;host&quot;:[&quot;localhost&quot;],&quot;query&quot;:[{&quot;key&quot;:&quot;keyword&quot;,&quot;value&quot;:&quot;btc&quot;}],&quot;variable&quot;:[]}
+            </div>
+
+            <table class="assert">
+              <thead>
+                <tr><th>断言</th><th class="num">通过</th><th class="num">失败</th><th class="num">跳过</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>HTTP 200</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>ret_code&#x3D;0</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>keyword 过滤返回数组</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div><strong>响应体</strong></div>
+            <pre>{&quot;ret_code&quot;:0,&quot;ret_msg&quot;:&quot;OK&quot;,&quot;result&quot;:{&quot;items&quot;:[{&quot;id&quot;:1,&quot;name&quot;:&quot;BTC Up or Down 5m · 5m&quot;,&quot;seriesSlug&quot;:&quot;btc-up-or-down-5m&quot;,&quot;asset&quot;:&quot;BTC&quot;,&quot;categoryId&quot;:101,&quot;recurrenceMinutes&quot;:5,&quot;status&quot;:&quot;STOPPED&quot;,&quot;syncEnabled&quot;:true,&quot;iconUrl&quot;:&quot;&quot;,&quot;resolutionSource&quot;:&quot;&quot;,&quot;lastSyncAt&quot;:null,&quot;lastSyncStatus&quot;:&quot;&quot;,&quot;lastSyncRunId&quot;:0,&quot;todaySyncedCount&quot;:0,&quot;nextSyncAt&quot;:null,&quot;lastError&quot;:&quot;&quot;,&quot;createdBy&quot;:&quot;postman-cli&quot;,&quot;updatedBy&quot;:&quot;postman-cli&quot;,&quot;createdAt&quot;:&quot;2026-07-08T03:37:02.872+00:00&quot;,&quot;updatedAt&quot;:&quot;2026-07-08T03:37:10.614+00:00&quot;}]},&quot;ext_code&quot;:null,&quot;time_now&quot;:&quot;1783482144008&quot;}</pre>
+          </div>
+        </details>
+        <details class="req" >
+          <summary>
+            <span>
+              <span class="status-dot passed"></span>
+              <span class="method method-get">GET</span>
+              A07 A6-1 list sync-runs
+            </span>
+            <span class="req-meta">
+              HTTP 200 · 403ms · 351B
+              
+              <span class="chevron">▸</span>
+            </span>
+          </summary>
+          <div class="req-body">
+            <div><strong>URL</strong></div>
+            <div class="url-line">
+              {&quot;protocol&quot;:&quot;http&quot;,&quot;port&quot;:&quot;8080&quot;,&quot;path&quot;:[&quot;private&quot;,&quot;v1&quot;,&quot;pm&quot;,&quot;instant-products&quot;,&quot;1&quot;,&quot;sync-runs&quot;],&quot;host&quot;:[&quot;localhost&quot;],&quot;query&quot;:[{&quot;key&quot;:&quot;limit&quot;,&quot;value&quot;:&quot;20&quot;}],&quot;variable&quot;:[]}
+            </div>
+
+            <table class="assert">
+              <thead>
+                <tr><th>断言</th><th class="num">通过</th><th class="num">失败</th><th class="num">跳过</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>HTTP 200</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>ret_code&#x3D;0</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>ItemsResponse&lt;InstantProductSyncRunResponse&gt;</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div><strong>响应体</strong></div>
+            <pre>{&quot;ret_code&quot;:0,&quot;ret_msg&quot;:&quot;OK&quot;,&quot;result&quot;:{&quot;items&quot;:[{&quot;id&quot;:1,&quot;triggerType&quot;:&quot;MANUAL&quot;,&quot;status&quot;:&quot;RUNNING&quot;,&quot;startedAt&quot;:&quot;2026-07-08T03:37:05.116+00:00&quot;,&quot;finishedAt&quot;:null,&quot;gammaCursorStart&quot;:&quot;&quot;,&quot;gammaCursorEnd&quot;:&quot;&quot;,&quot;fetchedCount&quot;:0,&quot;insertedCount&quot;:0,&quot;updatedCount&quot;:0,&quot;skippedCount&quot;:0,&quot;failedCount&quot;:0,&quot;errorMessage&quot;:&quot;&quot;}]},&quot;ext_code&quot;:null,&quot;time_now&quot;:&quot;1783482144427&quot;}</pre>
+          </div>
+        </details>
+        <details class="req" >
+          <summary>
+            <span>
+              <span class="status-dot passed"></span>
+              <span class="method method-get">GET</span>
+              A08 A6-2 get sync-run 详情
+            </span>
+            <span class="req-meta">
+              HTTP 200 · 410ms · 339B
+              
+              <span class="chevron">▸</span>
+            </span>
+          </summary>
+          <div class="req-body">
+            <div><strong>URL</strong></div>
+            <div class="url-line">
+              {&quot;protocol&quot;:&quot;http&quot;,&quot;port&quot;:&quot;8080&quot;,&quot;path&quot;:[&quot;private&quot;,&quot;v1&quot;,&quot;pm&quot;,&quot;instant-products&quot;,&quot;1&quot;,&quot;sync-runs&quot;,&quot;1&quot;],&quot;host&quot;:[&quot;localhost&quot;],&quot;query&quot;:[],&quot;variable&quot;:[]}
+            </div>
+
+            <table class="assert">
+              <thead>
+                <tr><th>断言</th><th class="num">通过</th><th class="num">失败</th><th class="num">跳过</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>HTTP 200</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>ret_code&#x3D;0</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>InstantProductSyncRunResponse</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div><strong>响应体</strong></div>
+            <pre>{&quot;ret_code&quot;:0,&quot;ret_msg&quot;:&quot;OK&quot;,&quot;result&quot;:{&quot;id&quot;:1,&quot;triggerType&quot;:&quot;MANUAL&quot;,&quot;status&quot;:&quot;RUNNING&quot;,&quot;startedAt&quot;:&quot;2026-07-08T03:37:05.116+00:00&quot;,&quot;finishedAt&quot;:null,&quot;gammaCursorStart&quot;:&quot;&quot;,&quot;gammaCursorEnd&quot;:&quot;&quot;,&quot;fetchedCount&quot;:0,&quot;insertedCount&quot;:0,&quot;updatedCount&quot;:0,&quot;skippedCount&quot;:0,&quot;failedCount&quot;:0,&quot;errorMessage&quot;:&quot;&quot;},&quot;ext_code&quot;:null,&quot;time_now&quot;:&quot;1783482144860&quot;}</pre>
+          </div>
+        </details>
+        <details class="req" >
+          <summary>
+            <span>
+              <span class="status-dot passed"></span>
+              <span class="method method-get">GET</span>
+              A09 A7-1 list events source&#x3D;local
+            </span>
+            <span class="req-meta">
+              HTTP 200 · 401ms · 112B
+              
+              <span class="chevron">▸</span>
+            </span>
+          </summary>
+          <div class="req-body">
+            <div><strong>URL</strong></div>
+            <div class="url-line">
+              {&quot;protocol&quot;:&quot;http&quot;,&quot;port&quot;:&quot;8080&quot;,&quot;path&quot;:[&quot;private&quot;,&quot;v1&quot;,&quot;pm&quot;,&quot;instant-products&quot;,&quot;1&quot;,&quot;events&quot;],&quot;host&quot;:[&quot;localhost&quot;],&quot;query&quot;:[{&quot;key&quot;:&quot;source&quot;,&quot;value&quot;:&quot;local&quot;},{&quot;key&quot;:&quot;limit&quot;,&quot;value&quot;:&quot;50&quot;}],&quot;variable&quot;:[]}
+            </div>
+
+            <table class="assert">
+              <thead>
+                <tr><th>断言</th><th class="num">通过</th><th class="num">失败</th><th class="num">跳过</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>HTTP 200</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>ret_code&#x3D;0</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>InstantProductEventsResponse</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div><strong>响应体</strong></div>
+            <pre>{&quot;ret_code&quot;:0,&quot;ret_msg&quot;:&quot;OK&quot;,&quot;result&quot;:{&quot;items&quot;:[],&quot;nextCursor&quot;:null},&quot;ext_code&quot;:null,&quot;time_now&quot;:&quot;1783482145285&quot;}</pre>
+          </div>
+        </details>
+        <details class="req" >
+          <summary>
+            <span>
+              <span class="status-dot passed"></span>
+              <span class="method method-get">GET</span>
+              A10 A7-1 list events source&#x3D;gamma
+            </span>
+            <span class="req-meta">
+              HTTP 200 · 724ms · 378B
+              
+              <span class="chevron">▸</span>
+            </span>
+          </summary>
+          <div class="req-body">
+            <div><strong>URL</strong></div>
+            <div class="url-line">
+              {&quot;protocol&quot;:&quot;http&quot;,&quot;port&quot;:&quot;8080&quot;,&quot;path&quot;:[&quot;private&quot;,&quot;v1&quot;,&quot;pm&quot;,&quot;instant-products&quot;,&quot;1&quot;,&quot;events&quot;],&quot;host&quot;:[&quot;localhost&quot;],&quot;query&quot;:[{&quot;key&quot;:&quot;source&quot;,&quot;value&quot;:&quot;gamma&quot;},{&quot;key&quot;:&quot;limit&quot;,&quot;value&quot;:&quot;10&quot;}],&quot;variable&quot;:[]}
+            </div>
+
+            <table class="assert">
+              <thead>
+                <tr><th>断言</th><th class="num">通过</th><th class="num">失败</th><th class="num">跳过</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>HTTP 200</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>ret_code&#x3D;0</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>gamma 预览结构</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div><strong>响应体</strong></div>
+            <pre>{&quot;ret_code&quot;:0,&quot;ret_msg&quot;:&quot;OK&quot;,&quot;result&quot;:{&quot;items&quot;:[],&quot;nextCursor&quot;:&quot;fQZz9wNb7F5zTIB50U7KVCk5EvladOk1tA7p78rtqGF7InYiOjEsImsiOiJldmVudHMiLCJvaCI6ImFlNjJmZmE1NzcwYmY4YmZmOWViNDYwZGJjNTAyN2I4YjY5MTgyYjMwOTU3N2RjMzhmYjgxNjdlN2I3NWM4YzYiLCJrZXlzIjpbeyJ0IjoidGltZSIsInYiOiIyMDI2LTAxLTE5VDEyOjMyOjI2WiJ9LHsidCI6InN0cmluZyIsInYiOiIxNzQzNzAifV19&quot;},&quot;ext_code&quot;:null,&quot;time_now&quot;:&quot;1783482146035&quot;}</pre>
+          </div>
+        </details>
+        <details class="req" >
+          <summary>
+            <span>
+              <span class="status-dot passed"></span>
+              <span class="method method-get">GET</span>
+              A11 A7-2 list window-prices
+            </span>
+            <span class="req-meta">
+              HTTP 200 · 525ms · 94B
+              
+              <span class="chevron">▸</span>
+            </span>
+          </summary>
+          <div class="req-body">
+            <div><strong>URL</strong></div>
+            <div class="url-line">
+              {&quot;protocol&quot;:&quot;http&quot;,&quot;port&quot;:&quot;8080&quot;,&quot;path&quot;:[&quot;private&quot;,&quot;v1&quot;,&quot;pm&quot;,&quot;instant-products&quot;,&quot;1&quot;,&quot;window-prices&quot;],&quot;host&quot;:[&quot;localhost&quot;],&quot;query&quot;:[{&quot;key&quot;:&quot;limit&quot;,&quot;value&quot;:&quot;50&quot;}],&quot;variable&quot;:[]}
+            </div>
+
+            <table class="assert">
+              <thead>
+                <tr><th>断言</th><th class="num">通过</th><th class="num">失败</th><th class="num">跳过</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>HTTP 200</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>ret_code&#x3D;0</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>ItemsResponse&lt;InstantProductWindowPriceItemResponse&gt;</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div><strong>响应体</strong></div>
+            <pre>{&quot;ret_code&quot;:0,&quot;ret_msg&quot;:&quot;OK&quot;,&quot;result&quot;:{&quot;items&quot;:[]},&quot;ext_code&quot;:null,&quot;time_now&quot;:&quot;1783482146572&quot;}</pre>
+          </div>
+        </details>
+        <details class="req" >
+          <summary>
+            <span>
+              <span class="status-dot passed"></span>
+              <span class="method method-get">GET</span>
+              A12 A7-2 list window-prices captureStatus&#x3D;PENDING
+            </span>
+            <span class="req-meta">
+              HTTP 200 · 401ms · 94B
+              
+              <span class="chevron">▸</span>
+            </span>
+          </summary>
+          <div class="req-body">
+            <div><strong>URL</strong></div>
+            <div class="url-line">
+              {&quot;protocol&quot;:&quot;http&quot;,&quot;port&quot;:&quot;8080&quot;,&quot;path&quot;:[&quot;private&quot;,&quot;v1&quot;,&quot;pm&quot;,&quot;instant-products&quot;,&quot;1&quot;,&quot;window-prices&quot;],&quot;host&quot;:[&quot;localhost&quot;],&quot;query&quot;:[{&quot;key&quot;:&quot;captureStatus&quot;,&quot;value&quot;:&quot;PENDING&quot;},{&quot;key&quot;:&quot;limit&quot;,&quot;value&quot;:&quot;20&quot;}],&quot;variable&quot;:[]}
+            </div>
+
+            <table class="assert">
+              <thead>
+                <tr><th>断言</th><th class="num">通过</th><th class="num">失败</th><th class="num">跳过</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>HTTP 200</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>ret_code&#x3D;0</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>PENDING 过滤</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div><strong>响应体</strong></div>
+            <pre>{&quot;ret_code&quot;:0,&quot;ret_msg&quot;:&quot;OK&quot;,&quot;result&quot;:{&quot;items&quot;:[]},&quot;ext_code&quot;:null,&quot;time_now&quot;:&quot;1783482146994&quot;}</pre>
+          </div>
+        </details>
+      </div>
+    </details>
+    <details class="folder" >
+      <summary>
+        <span><span class="status-dot passed"></span>B · 参数校验 [err]</span>
+        <span class="req-meta">7 条 <span class="chevron">▸</span></span>
+      </summary>
+      <div class="inner">
+        <details class="req" >
+          <summary>
+            <span>
+              <span class="status-dot passed"></span>
+              <span class="method method-get">GET</span>
+              B01 A1 validate 缺 slug → 10001
+            </span>
+            <span class="req-meta">
+              HTTP 200 · 4ms · 169B
+              
+              <span class="chevron">▸</span>
+            </span>
+          </summary>
+          <div class="req-body">
+            <div><strong>URL</strong></div>
+            <div class="url-line">
+              {&quot;protocol&quot;:&quot;http&quot;,&quot;port&quot;:&quot;8080&quot;,&quot;path&quot;:[&quot;private&quot;,&quot;v1&quot;,&quot;pm&quot;,&quot;instant-products&quot;,&quot;polymarket&quot;,&quot;series&quot;,&quot;validate&quot;],&quot;host&quot;:[&quot;localhost&quot;],&quot;query&quot;:[],&quot;variable&quot;:[]}
+            </div>
+
+            <table class="assert">
+              <thead>
+                <tr><th>断言</th><th class="num">通过</th><th class="num">失败</th><th class="num">跳过</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>HTTP 200</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>缺 slug 业务/框架错误码</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>slug 相关错误信息</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div><strong>响应体</strong></div>
+            <pre>{&quot;ret_code&quot;:50000,&quot;ret_msg&quot;:&quot;Required request parameter &#x27;slug&#x27; for method parameter type String is not present&quot;,&quot;result&quot;:null,&quot;ext_code&quot;:null,&quot;time_now&quot;:&quot;1783482147015&quot;}</pre>
+          </div>
+        </details>
+        <details class="req" >
+          <summary>
+            <span>
+              <span class="status-dot passed"></span>
+              <span class="method method-post">POST</span>
+              B02 A3 create 缺 seriesSlug → HTTP 400
+            </span>
+            <span class="req-meta">
+              HTTP 400 · 4ms · 29B
+              
+              <span class="chevron">▸</span>
+            </span>
+          </summary>
+          <div class="req-body">
+            <div><strong>URL</strong></div>
+            <div class="url-line">
+              {&quot;protocol&quot;:&quot;http&quot;,&quot;port&quot;:&quot;8080&quot;,&quot;path&quot;:[&quot;private&quot;,&quot;v1&quot;,&quot;pm&quot;,&quot;instant-products&quot;],&quot;host&quot;:[&quot;localhost&quot;],&quot;query&quot;:[],&quot;variable&quot;:[]}
+            </div>
+
+            <table class="assert">
+              <thead>
+                <tr><th>断言</th><th class="num">通过</th><th class="num">失败</th><th class="num">跳过</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>HTTP 400</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>seriesSlug 校验</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div><strong>响应体</strong></div>
+            <pre>{&quot;seriesSlug&quot;:&quot;不能为空&quot;}</pre>
+          </div>
+        </details>
+        <details class="req" >
+          <summary>
+            <span>
+              <span class="status-dot passed"></span>
+              <span class="method method-post">POST</span>
+              B03 A3 create 缺 categoryId → HTTP 400
+            </span>
+            <span class="req-meta">
+              HTTP 400 · 3ms · 30B
+              
+              <span class="chevron">▸</span>
+            </span>
+          </summary>
+          <div class="req-body">
+            <div><strong>URL</strong></div>
+            <div class="url-line">
+              {&quot;protocol&quot;:&quot;http&quot;,&quot;port&quot;:&quot;8080&quot;,&quot;path&quot;:[&quot;private&quot;,&quot;v1&quot;,&quot;pm&quot;,&quot;instant-products&quot;],&quot;host&quot;:[&quot;localhost&quot;],&quot;query&quot;:[],&quot;variable&quot;:[]}
+            </div>
+
+            <table class="assert">
+              <thead>
+                <tr><th>断言</th><th class="num">通过</th><th class="num">失败</th><th class="num">跳过</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>HTTP 400</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>categoryId 校验</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div><strong>响应体</strong></div>
+            <pre>{&quot;categoryId&quot;:&quot;不能为null&quot;}</pre>
+          </div>
+        </details>
+        <details class="req" >
+          <summary>
+            <span>
+              <span class="status-dot passed"></span>
+              <span class="method method-post">POST</span>
+              B04 A3 create 缺 operator → HTTP 400
+            </span>
+            <span class="req-meta">
+              HTTP 400 · 2ms · 27B
+              
+              <span class="chevron">▸</span>
+            </span>
+          </summary>
+          <div class="req-body">
+            <div><strong>URL</strong></div>
+            <div class="url-line">
+              {&quot;protocol&quot;:&quot;http&quot;,&quot;port&quot;:&quot;8080&quot;,&quot;path&quot;:[&quot;private&quot;,&quot;v1&quot;,&quot;pm&quot;,&quot;instant-products&quot;],&quot;host&quot;:[&quot;localhost&quot;],&quot;query&quot;:[],&quot;variable&quot;:[]}
+            </div>
+
+            <table class="assert">
+              <thead>
+                <tr><th>断言</th><th class="num">通过</th><th class="num">失败</th><th class="num">跳过</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>HTTP 400</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>operator 校验</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div><strong>响应体</strong></div>
+            <pre>{&quot;operator&quot;:&quot;不能为空&quot;}</pre>
+          </div>
+        </details>
+        <details class="req" >
+          <summary>
+            <span>
+              <span class="status-dot passed"></span>
+              <span class="method method-post">POST</span>
+              B05 A4-1 start 缺 operator → HTTP 400
+            </span>
+            <span class="req-meta">
+              HTTP 400 · 4ms · 27B
+              
+              <span class="chevron">▸</span>
+            </span>
+          </summary>
+          <div class="req-body">
+            <div><strong>URL</strong></div>
+            <div class="url-line">
+              {&quot;protocol&quot;:&quot;http&quot;,&quot;port&quot;:&quot;8080&quot;,&quot;path&quot;:[&quot;private&quot;,&quot;v1&quot;,&quot;pm&quot;,&quot;instant-products&quot;,&quot;1&quot;,&quot;start&quot;],&quot;host&quot;:[&quot;localhost&quot;],&quot;query&quot;:[],&quot;variable&quot;:[]}
+            </div>
+
+            <table class="assert">
+              <thead>
+                <tr><th>断言</th><th class="num">通过</th><th class="num">失败</th><th class="num">跳过</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>HTTP 400</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>operator 校验</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div><strong>响应体</strong></div>
+            <pre>{&quot;operator&quot;:&quot;不能为空&quot;}</pre>
+          </div>
+        </details>
+        <details class="req" >
+          <summary>
+            <span>
+              <span class="status-dot passed"></span>
+              <span class="method method-post">POST</span>
+              B06 A4-2 stop 缺 operator → HTTP 400
+            </span>
+            <span class="req-meta">
+              HTTP 400 · 4ms · 27B
+              
+              <span class="chevron">▸</span>
+            </span>
+          </summary>
+          <div class="req-body">
+            <div><strong>URL</strong></div>
+            <div class="url-line">
+              {&quot;protocol&quot;:&quot;http&quot;,&quot;port&quot;:&quot;8080&quot;,&quot;path&quot;:[&quot;private&quot;,&quot;v1&quot;,&quot;pm&quot;,&quot;instant-products&quot;,&quot;1&quot;,&quot;stop&quot;],&quot;host&quot;:[&quot;localhost&quot;],&quot;query&quot;:[],&quot;variable&quot;:[]}
+            </div>
+
+            <table class="assert">
+              <thead>
+                <tr><th>断言</th><th class="num">通过</th><th class="num">失败</th><th class="num">跳过</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>HTTP 400</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>operator 校验</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div><strong>响应体</strong></div>
+            <pre>{&quot;operator&quot;:&quot;不能为空&quot;}</pre>
+          </div>
+        </details>
+        <details class="req" >
+          <summary>
+            <span>
+              <span class="status-dot passed"></span>
+              <span class="method method-post">POST</span>
+              B07 A5 sync 缺 operator → HTTP 400
+            </span>
+            <span class="req-meta">
+              HTTP 400 · 4ms · 27B
+              
+              <span class="chevron">▸</span>
+            </span>
+          </summary>
+          <div class="req-body">
+            <div><strong>URL</strong></div>
+            <div class="url-line">
+              {&quot;protocol&quot;:&quot;http&quot;,&quot;port&quot;:&quot;8080&quot;,&quot;path&quot;:[&quot;private&quot;,&quot;v1&quot;,&quot;pm&quot;,&quot;instant-products&quot;,&quot;1&quot;,&quot;sync&quot;],&quot;host&quot;:[&quot;localhost&quot;],&quot;query&quot;:[],&quot;variable&quot;:[]}
+            </div>
+
+            <table class="assert">
+              <thead>
+                <tr><th>断言</th><th class="num">通过</th><th class="num">失败</th><th class="num">跳过</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>HTTP 400</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>operator 校验</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div><strong>响应体</strong></div>
+            <pre>{&quot;operator&quot;:&quot;不能为空&quot;}</pre>
+          </div>
+        </details>
+      </div>
+    </details>
+    <details class="folder" >
+      <summary>
+        <span><span class="status-dot passed"></span>C · 边界与异常</span>
+        <span class="req-meta">9 条 <span class="chevron">▸</span></span>
+      </summary>
+      <div class="inner">
+        <details class="req" >
+          <summary>
+            <span>
+              <span class="status-dot passed"></span>
+              <span class="method method-post">POST</span>
+              C01 A4-1 start 不存在 id
+            </span>
+            <span class="req-meta">
+              HTTP 200 · 500ms · 113B
+              
+              <span class="chevron">▸</span>
+            </span>
+          </summary>
+          <div class="req-body">
+            <div><strong>URL</strong></div>
+            <div class="url-line">
+              {&quot;protocol&quot;:&quot;http&quot;,&quot;port&quot;:&quot;8080&quot;,&quot;path&quot;:[&quot;private&quot;,&quot;v1&quot;,&quot;pm&quot;,&quot;instant-products&quot;,&quot;999999999&quot;,&quot;start&quot;],&quot;host&quot;:[&quot;localhost&quot;],&quot;query&quot;:[],&quot;variable&quot;:[]}
+            </div>
+
+            <table class="assert">
+              <thead>
+                <tr><th>断言</th><th class="num">通过</th><th class="num">失败</th><th class="num">跳过</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>HTTP 200</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>instant product not found</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div><strong>响应体</strong></div>
+            <pre>{&quot;ret_code&quot;:10001,&quot;ret_msg&quot;:&quot;instant product not found&quot;,&quot;result&quot;:null,&quot;ext_code&quot;:null,&quot;time_now&quot;:&quot;1783482147626&quot;}</pre>
+          </div>
+        </details>
+        <details class="req" >
+          <summary>
+            <span>
+              <span class="status-dot passed"></span>
+              <span class="method method-post">POST</span>
+              C02 A4-2 stop 不存在 id
+            </span>
+            <span class="req-meta">
+              HTTP 200 · 495ms · 113B
+              
+              <span class="chevron">▸</span>
+            </span>
+          </summary>
+          <div class="req-body">
+            <div><strong>URL</strong></div>
+            <div class="url-line">
+              {&quot;protocol&quot;:&quot;http&quot;,&quot;port&quot;:&quot;8080&quot;,&quot;path&quot;:[&quot;private&quot;,&quot;v1&quot;,&quot;pm&quot;,&quot;instant-products&quot;,&quot;999999999&quot;,&quot;stop&quot;],&quot;host&quot;:[&quot;localhost&quot;],&quot;query&quot;:[],&quot;variable&quot;:[]}
+            </div>
+
+            <table class="assert">
+              <thead>
+                <tr><th>断言</th><th class="num">通过</th><th class="num">失败</th><th class="num">跳过</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>HTTP 200</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>instant product not found</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div><strong>响应体</strong></div>
+            <pre>{&quot;ret_code&quot;:10001,&quot;ret_msg&quot;:&quot;instant product not found&quot;,&quot;result&quot;:null,&quot;ext_code&quot;:null,&quot;time_now&quot;:&quot;1783482148139&quot;}</pre>
+          </div>
+        </details>
+        <details class="req" >
+          <summary>
+            <span>
+              <span class="status-dot passed"></span>
+              <span class="method method-post">POST</span>
+              C03 A5 sync 不存在 id
+            </span>
+            <span class="req-meta">
+              HTTP 200 · 513ms · 113B
+              
+              <span class="chevron">▸</span>
+            </span>
+          </summary>
+          <div class="req-body">
+            <div><strong>URL</strong></div>
+            <div class="url-line">
+              {&quot;protocol&quot;:&quot;http&quot;,&quot;port&quot;:&quot;8080&quot;,&quot;path&quot;:[&quot;private&quot;,&quot;v1&quot;,&quot;pm&quot;,&quot;instant-products&quot;,&quot;999999999&quot;,&quot;sync&quot;],&quot;host&quot;:[&quot;localhost&quot;],&quot;query&quot;:[],&quot;variable&quot;:[]}
+            </div>
+
+            <table class="assert">
+              <thead>
+                <tr><th>断言</th><th class="num">通过</th><th class="num">失败</th><th class="num">跳过</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>HTTP 200</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>instant product not found</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div><strong>响应体</strong></div>
+            <pre>{&quot;ret_code&quot;:10001,&quot;ret_msg&quot;:&quot;instant product not found&quot;,&quot;result&quot;:null,&quot;ext_code&quot;:null,&quot;time_now&quot;:&quot;1783482148672&quot;}</pre>
+          </div>
+        </details>
+        <details class="req" >
+          <summary>
+            <span>
+              <span class="status-dot passed"></span>
+              <span class="method method-get">GET</span>
+              C04 A6-1 list sync-runs 不存在 id
+            </span>
+            <span class="req-meta">
+              HTTP 200 · 196ms · 113B
+              
+              <span class="chevron">▸</span>
+            </span>
+          </summary>
+          <div class="req-body">
+            <div><strong>URL</strong></div>
+            <div class="url-line">
+              {&quot;protocol&quot;:&quot;http&quot;,&quot;port&quot;:&quot;8080&quot;,&quot;path&quot;:[&quot;private&quot;,&quot;v1&quot;,&quot;pm&quot;,&quot;instant-products&quot;,&quot;999999999&quot;,&quot;sync-runs&quot;],&quot;host&quot;:[&quot;localhost&quot;],&quot;query&quot;:[],&quot;variable&quot;:[]}
+            </div>
+
+            <table class="assert">
+              <thead>
+                <tr><th>断言</th><th class="num">通过</th><th class="num">失败</th><th class="num">跳过</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>HTTP 200</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>instant product not found</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div><strong>响应体</strong></div>
+            <pre>{&quot;ret_code&quot;:10001,&quot;ret_msg&quot;:&quot;instant product not found&quot;,&quot;result&quot;:null,&quot;ext_code&quot;:null,&quot;time_now&quot;:&quot;1783482148882&quot;}</pre>
+          </div>
+        </details>
+        <details class="req" >
+          <summary>
+            <span>
+              <span class="status-dot passed"></span>
+              <span class="method method-get">GET</span>
+              C05 A6-2 get sync-run 不存在 runId
+            </span>
+            <span class="req-meta">
+              HTTP 200 · 400ms · 106B
+              
+              <span class="chevron">▸</span>
+            </span>
+          </summary>
+          <div class="req-body">
+            <div><strong>URL</strong></div>
+            <div class="url-line">
+              {&quot;protocol&quot;:&quot;http&quot;,&quot;port&quot;:&quot;8080&quot;,&quot;path&quot;:[&quot;private&quot;,&quot;v1&quot;,&quot;pm&quot;,&quot;instant-products&quot;,&quot;1&quot;,&quot;sync-runs&quot;,&quot;999999999&quot;],&quot;host&quot;:[&quot;localhost&quot;],&quot;query&quot;:[],&quot;variable&quot;:[]}
+            </div>
+
+            <table class="assert">
+              <thead>
+                <tr><th>断言</th><th class="num">通过</th><th class="num">失败</th><th class="num">跳过</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>HTTP 200</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>sync run not found</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div><strong>响应体</strong></div>
+            <pre>{&quot;ret_code&quot;:10001,&quot;ret_msg&quot;:&quot;sync run not found&quot;,&quot;result&quot;:null,&quot;ext_code&quot;:null,&quot;time_now&quot;:&quot;1783482149297&quot;}</pre>
+          </div>
+        </details>
+        <details class="req" >
+          <summary>
+            <span>
+              <span class="status-dot passed"></span>
+              <span class="method method-get">GET</span>
+              C06 A7-1 list events 不存在 id
+            </span>
+            <span class="req-meta">
+              HTTP 200 · 201ms · 113B
+              
+              <span class="chevron">▸</span>
+            </span>
+          </summary>
+          <div class="req-body">
+            <div><strong>URL</strong></div>
+            <div class="url-line">
+              {&quot;protocol&quot;:&quot;http&quot;,&quot;port&quot;:&quot;8080&quot;,&quot;path&quot;:[&quot;private&quot;,&quot;v1&quot;,&quot;pm&quot;,&quot;instant-products&quot;,&quot;999999999&quot;,&quot;events&quot;],&quot;host&quot;:[&quot;localhost&quot;],&quot;query&quot;:[],&quot;variable&quot;:[]}
+            </div>
+
+            <table class="assert">
+              <thead>
+                <tr><th>断言</th><th class="num">通过</th><th class="num">失败</th><th class="num">跳过</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>HTTP 200</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>instant product not found</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div><strong>响应体</strong></div>
+            <pre>{&quot;ret_code&quot;:10001,&quot;ret_msg&quot;:&quot;instant product not found&quot;,&quot;result&quot;:null,&quot;ext_code&quot;:null,&quot;time_now&quot;:&quot;1783482149519&quot;}</pre>
+          </div>
+        </details>
+        <details class="req" >
+          <summary>
+            <span>
+              <span class="status-dot passed"></span>
+              <span class="method method-get">GET</span>
+              C07 A7-2 list window-prices 不存在 id
+            </span>
+            <span class="req-meta">
+              HTTP 200 · 203ms · 113B
+              
+              <span class="chevron">▸</span>
+            </span>
+          </summary>
+          <div class="req-body">
+            <div><strong>URL</strong></div>
+            <div class="url-line">
+              {&quot;protocol&quot;:&quot;http&quot;,&quot;port&quot;:&quot;8080&quot;,&quot;path&quot;:[&quot;private&quot;,&quot;v1&quot;,&quot;pm&quot;,&quot;instant-products&quot;,&quot;999999999&quot;,&quot;window-prices&quot;],&quot;host&quot;:[&quot;localhost&quot;],&quot;query&quot;:[],&quot;variable&quot;:[]}
+            </div>
+
+            <table class="assert">
+              <thead>
+                <tr><th>断言</th><th class="num">通过</th><th class="num">失败</th><th class="num">跳过</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>HTTP 200</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>instant product not found</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div><strong>响应体</strong></div>
+            <pre>{&quot;ret_code&quot;:10001,&quot;ret_msg&quot;:&quot;instant product not found&quot;,&quot;result&quot;:null,&quot;ext_code&quot;:null,&quot;time_now&quot;:&quot;1783482149734&quot;}</pre>
+          </div>
+        </details>
+        <details class="req" >
+          <summary>
+            <span>
+              <span class="status-dot passed"></span>
+              <span class="method method-post">POST</span>
+              C08 A3 create 重复 seriesSlug
+            </span>
+            <span class="req-meta">
+              HTTP 200 · 759ms · 114B
+              
+              <span class="chevron">▸</span>
+            </span>
+          </summary>
+          <div class="req-body">
+            <div><strong>URL</strong></div>
+            <div class="url-line">
+              {&quot;protocol&quot;:&quot;http&quot;,&quot;port&quot;:&quot;8080&quot;,&quot;path&quot;:[&quot;private&quot;,&quot;v1&quot;,&quot;pm&quot;,&quot;instant-products&quot;],&quot;host&quot;:[&quot;localhost&quot;],&quot;query&quot;:[],&quot;variable&quot;:[]}
+            </div>
+
+            <table class="assert">
+              <thead>
+                <tr><th>断言</th><th class="num">通过</th><th class="num">失败</th><th class="num">跳过</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>HTTP 200</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>series slug already exists</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div><strong>响应体</strong></div>
+            <pre>{&quot;ret_code&quot;:10001,&quot;ret_msg&quot;:&quot;series slug already exists&quot;,&quot;result&quot;:null,&quot;ext_code&quot;:null,&quot;time_now&quot;:&quot;1783482150510&quot;}</pre>
+          </div>
+        </details>
+        <details class="req" >
+          <summary>
+            <span>
+              <span class="status-dot passed"></span>
+              <span class="method method-post">POST</span>
+              C09 A3 create 无效 seriesSlug
+            </span>
+            <span class="req-meta">
+              HTTP 200 · 448ms · 107B
+              
+              <span class="chevron">▸</span>
+            </span>
+          </summary>
+          <div class="req-body">
+            <div><strong>URL</strong></div>
+            <div class="url-line">
+              {&quot;protocol&quot;:&quot;http&quot;,&quot;port&quot;:&quot;8080&quot;,&quot;path&quot;:[&quot;private&quot;,&quot;v1&quot;,&quot;pm&quot;,&quot;instant-products&quot;],&quot;host&quot;:[&quot;localhost&quot;],&quot;query&quot;:[],&quot;variable&quot;:[]}
+            </div>
+
+            <table class="assert">
+              <thead>
+                <tr><th>断言</th><th class="num">通过</th><th class="num">失败</th><th class="num">跳过</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>HTTP 200</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>invalid series slug</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div><strong>响应体</strong></div>
+            <pre>{&quot;ret_code&quot;:10001,&quot;ret_msg&quot;:&quot;invalid series slug&quot;,&quot;result&quot;:null,&quot;ext_code&quot;:null,&quot;time_now&quot;:&quot;1783482150977&quot;}</pre>
+          </div>
+        </details>
+      </div>
+    </details>
+    <details class="folder" >
+      <summary>
+        <span><span class="status-dot passed"></span>D · POST 正向 [ok]</span>
+        <span class="req-meta">9 条 <span class="chevron">▸</span></span>
+      </summary>
+      <div class="inner">
+        <details class="req" >
+          <summary>
+            <span>
+              <span class="status-dot passed"></span>
+              <span class="method method-post">POST</span>
+              D02 A4-1 start 启用
+            </span>
+            <span class="req-meta">
+              HTTP 200 · 1289ms · 532B
+              
+              <span class="chevron">▸</span>
+            </span>
+          </summary>
+          <div class="req-body">
+            <div><strong>URL</strong></div>
+            <div class="url-line">
+              {&quot;protocol&quot;:&quot;http&quot;,&quot;port&quot;:&quot;8080&quot;,&quot;path&quot;:[&quot;private&quot;,&quot;v1&quot;,&quot;pm&quot;,&quot;instant-products&quot;,&quot;1&quot;,&quot;start&quot;],&quot;host&quot;:[&quot;localhost&quot;],&quot;query&quot;:[],&quot;variable&quot;:[]}
+            </div>
+
+            <table class="assert">
+              <thead>
+                <tr><th>断言</th><th class="num">通过</th><th class="num">失败</th><th class="num">跳过</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>HTTP 200</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>ret_code&#x3D;0</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>status&#x3D;RUNNING</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div><strong>响应体</strong></div>
+            <pre>{&quot;ret_code&quot;:0,&quot;ret_msg&quot;:&quot;OK&quot;,&quot;result&quot;:{&quot;id&quot;:1,&quot;name&quot;:&quot;BTC Up or Down 5m · 5m&quot;,&quot;seriesSlug&quot;:&quot;btc-up-or-down-5m&quot;,&quot;asset&quot;:&quot;BTC&quot;,&quot;categoryId&quot;:101,&quot;recurrenceMinutes&quot;:5,&quot;status&quot;:&quot;RUNNING&quot;,&quot;syncEnabled&quot;:true,&quot;iconUrl&quot;:&quot;&quot;,&quot;resolutionSource&quot;:&quot;&quot;,&quot;lastSyncAt&quot;:null,&quot;lastSyncStatus&quot;:&quot;&quot;,&quot;lastSyncRunId&quot;:0,&quot;todaySyncedCount&quot;:0,&quot;nextSyncAt&quot;:null,&quot;lastError&quot;:&quot;&quot;,&quot;createdBy&quot;:&quot;postman-cli&quot;,&quot;updatedBy&quot;:&quot;postman-cli&quot;,&quot;createdAt&quot;:&quot;2026-07-08T03:37:02.872+00:00&quot;,&quot;updatedAt&quot;:&quot;2026-07-08T03:42:31.946+00:00&quot;},&quot;ext_code&quot;:null,&quot;time_now&quot;:&quot;1783482152285&quot;}</pre>
+          </div>
+        </details>
+        <details class="req" open>
+          <summary>
+            <span>
+              <span class="status-dot failed"></span>
+              <span class="method method-post">POST</span>
+              D03 A5 sync 立即同步
+            </span>
+            <span class="req-meta">
+              HTTP 200 · 693ms · 108B
+              · <strong style="color:var(--allure-failed)">2 失败</strong>
+              <span class="chevron">▸</span>
+            </span>
+          </summary>
+          <div class="req-body">
+            <div><strong>URL</strong></div>
+            <div class="url-line">
+              {&quot;protocol&quot;:&quot;http&quot;,&quot;port&quot;:&quot;8080&quot;,&quot;path&quot;:[&quot;private&quot;,&quot;v1&quot;,&quot;pm&quot;,&quot;instant-products&quot;,&quot;1&quot;,&quot;sync&quot;],&quot;host&quot;:[&quot;localhost&quot;],&quot;query&quot;:[],&quot;variable&quot;:[]}
+            </div>
+
+            <table class="assert">
+              <thead>
+                <tr><th>断言</th><th class="num">通过</th><th class="num">失败</th><th class="num">跳过</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>HTTP 200</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>ret_code&#x3D;0</td>
+                  <td class="num ">0</td>
+                  <td class="num cell-fail">1</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>InstantProductSyncTriggerResponse</td>
+                  <td class="num ">0</td>
+                  <td class="num cell-fail">1</td>
+                  <td class="num ">0</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div><strong>响应体</strong></div>
+            <pre>{&quot;ret_code&quot;:10001,&quot;ret_msg&quot;:&quot;sync already running&quot;,&quot;result&quot;:null,&quot;ext_code&quot;:null,&quot;time_now&quot;:&quot;1783482153001&quot;}</pre>
+          </div>
+        </details>
+        <details class="req" >
+          <summary>
+            <span>
+              <span class="status-dot passed"></span>
+              <span class="method method-get">GET</span>
+              D04 A6-2 get sync-run（提交后查询）
+            </span>
+            <span class="req-meta">
+              HTTP 200 · 399ms · 339B
+              
+              <span class="chevron">▸</span>
+            </span>
+          </summary>
+          <div class="req-body">
+            <div><strong>URL</strong></div>
+            <div class="url-line">
+              {&quot;protocol&quot;:&quot;http&quot;,&quot;port&quot;:&quot;8080&quot;,&quot;path&quot;:[&quot;private&quot;,&quot;v1&quot;,&quot;pm&quot;,&quot;instant-products&quot;,&quot;1&quot;,&quot;sync-runs&quot;,&quot;1&quot;],&quot;host&quot;:[&quot;localhost&quot;],&quot;query&quot;:[],&quot;variable&quot;:[]}
+            </div>
+
+            <table class="assert">
+              <thead>
+                <tr><th>断言</th><th class="num">通过</th><th class="num">失败</th><th class="num">跳过</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>HTTP 200</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>ret_code&#x3D;0</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>sync run 状态合法</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div><strong>响应体</strong></div>
+            <pre>{&quot;ret_code&quot;:0,&quot;ret_msg&quot;:&quot;OK&quot;,&quot;result&quot;:{&quot;id&quot;:1,&quot;triggerType&quot;:&quot;MANUAL&quot;,&quot;status&quot;:&quot;RUNNING&quot;,&quot;startedAt&quot;:&quot;2026-07-08T03:37:05.116+00:00&quot;,&quot;finishedAt&quot;:null,&quot;gammaCursorStart&quot;:&quot;&quot;,&quot;gammaCursorEnd&quot;:&quot;&quot;,&quot;fetchedCount&quot;:0,&quot;insertedCount&quot;:0,&quot;updatedCount&quot;:0,&quot;skippedCount&quot;:0,&quot;failedCount&quot;:0,&quot;errorMessage&quot;:&quot;&quot;},&quot;ext_code&quot;:null,&quot;time_now&quot;:&quot;1783482153428&quot;}</pre>
+          </div>
+        </details>
+        <details class="req" >
+          <summary>
+            <span>
+              <span class="status-dot passed"></span>
+              <span class="method method-post">POST</span>
+              D05 A5 sync 重复提交（sync already running）
+            </span>
+            <span class="req-meta">
+              HTTP 200 · 726ms · 108B
+              
+              <span class="chevron">▸</span>
+            </span>
+          </summary>
+          <div class="req-body">
+            <div><strong>URL</strong></div>
+            <div class="url-line">
+              {&quot;protocol&quot;:&quot;http&quot;,&quot;port&quot;:&quot;8080&quot;,&quot;path&quot;:[&quot;private&quot;,&quot;v1&quot;,&quot;pm&quot;,&quot;instant-products&quot;,&quot;1&quot;,&quot;sync&quot;],&quot;host&quot;:[&quot;localhost&quot;],&quot;query&quot;:[],&quot;variable&quot;:[]}
+            </div>
+
+            <table class="assert">
+              <thead>
+                <tr><th>断言</th><th class="num">通过</th><th class="num">失败</th><th class="num">跳过</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>HTTP 200</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>sync already running</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div><strong>响应体</strong></div>
+            <pre>{&quot;ret_code&quot;:10001,&quot;ret_msg&quot;:&quot;sync already running&quot;,&quot;result&quot;:null,&quot;ext_code&quot;:null,&quot;time_now&quot;:&quot;1783482154170&quot;}</pre>
+          </div>
+        </details>
+        <details class="req" >
+          <summary>
+            <span>
+              <span class="status-dot passed"></span>
+              <span class="method method-get">GET</span>
+              D06 A6-1 list sync-runs
+            </span>
+            <span class="req-meta">
+              HTTP 200 · 395ms · 351B
+              
+              <span class="chevron">▸</span>
+            </span>
+          </summary>
+          <div class="req-body">
+            <div><strong>URL</strong></div>
+            <div class="url-line">
+              {&quot;protocol&quot;:&quot;http&quot;,&quot;port&quot;:&quot;8080&quot;,&quot;path&quot;:[&quot;private&quot;,&quot;v1&quot;,&quot;pm&quot;,&quot;instant-products&quot;,&quot;1&quot;,&quot;sync-runs&quot;],&quot;host&quot;:[&quot;localhost&quot;],&quot;query&quot;:[{&quot;key&quot;:&quot;limit&quot;,&quot;value&quot;:&quot;5&quot;}],&quot;variable&quot;:[]}
+            </div>
+
+            <table class="assert">
+              <thead>
+                <tr><th>断言</th><th class="num">通过</th><th class="num">失败</th><th class="num">跳过</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>HTTP 200</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>ret_code&#x3D;0</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>至少有一条 sync run</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div><strong>响应体</strong></div>
+            <pre>{&quot;ret_code&quot;:0,&quot;ret_msg&quot;:&quot;OK&quot;,&quot;result&quot;:{&quot;items&quot;:[{&quot;id&quot;:1,&quot;triggerType&quot;:&quot;MANUAL&quot;,&quot;status&quot;:&quot;RUNNING&quot;,&quot;startedAt&quot;:&quot;2026-07-08T03:37:05.116+00:00&quot;,&quot;finishedAt&quot;:null,&quot;gammaCursorStart&quot;:&quot;&quot;,&quot;gammaCursorEnd&quot;:&quot;&quot;,&quot;fetchedCount&quot;:0,&quot;insertedCount&quot;:0,&quot;updatedCount&quot;:0,&quot;skippedCount&quot;:0,&quot;failedCount&quot;:0,&quot;errorMessage&quot;:&quot;&quot;}]},&quot;ext_code&quot;:null,&quot;time_now&quot;:&quot;1783482154582&quot;}</pre>
+          </div>
+        </details>
+        <details class="req" >
+          <summary>
+            <span>
+              <span class="status-dot passed"></span>
+              <span class="method method-get">GET</span>
+              D07 A7-1 list events local
+            </span>
+            <span class="req-meta">
+              HTTP 200 · 391ms · 112B
+              
+              <span class="chevron">▸</span>
+            </span>
+          </summary>
+          <div class="req-body">
+            <div><strong>URL</strong></div>
+            <div class="url-line">
+              {&quot;protocol&quot;:&quot;http&quot;,&quot;port&quot;:&quot;8080&quot;,&quot;path&quot;:[&quot;private&quot;,&quot;v1&quot;,&quot;pm&quot;,&quot;instant-products&quot;,&quot;1&quot;,&quot;events&quot;],&quot;host&quot;:[&quot;localhost&quot;],&quot;query&quot;:[{&quot;key&quot;:&quot;source&quot;,&quot;value&quot;:&quot;local&quot;},{&quot;key&quot;:&quot;limit&quot;,&quot;value&quot;:&quot;20&quot;}],&quot;variable&quot;:[]}
+            </div>
+
+            <table class="assert">
+              <thead>
+                <tr><th>断言</th><th class="num">通过</th><th class="num">失败</th><th class="num">跳过</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>HTTP 200</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>ret_code&#x3D;0</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>local events</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div><strong>响应体</strong></div>
+            <pre>{&quot;ret_code&quot;:0,&quot;ret_msg&quot;:&quot;OK&quot;,&quot;result&quot;:{&quot;items&quot;:[],&quot;nextCursor&quot;:null},&quot;ext_code&quot;:null,&quot;time_now&quot;:&quot;1783482154990&quot;}</pre>
+          </div>
+        </details>
+        <details class="req" >
+          <summary>
+            <span>
+              <span class="status-dot passed"></span>
+              <span class="method method-get">GET</span>
+              D08 A7-1 list events gamma 预览
+            </span>
+            <span class="req-meta">
+              HTTP 200 · 653ms · 378B
+              
+              <span class="chevron">▸</span>
+            </span>
+          </summary>
+          <div class="req-body">
+            <div><strong>URL</strong></div>
+            <div class="url-line">
+              {&quot;protocol&quot;:&quot;http&quot;,&quot;port&quot;:&quot;8080&quot;,&quot;path&quot;:[&quot;private&quot;,&quot;v1&quot;,&quot;pm&quot;,&quot;instant-products&quot;,&quot;1&quot;,&quot;events&quot;],&quot;host&quot;:[&quot;localhost&quot;],&quot;query&quot;:[{&quot;key&quot;:&quot;source&quot;,&quot;value&quot;:&quot;gamma&quot;},{&quot;key&quot;:&quot;limit&quot;,&quot;value&quot;:&quot;5&quot;}],&quot;variable&quot;:[]}
+            </div>
+
+            <table class="assert">
+              <thead>
+                <tr><th>断言</th><th class="num">通过</th><th class="num">失败</th><th class="num">跳过</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>HTTP 200</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>ret_code&#x3D;0</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>gamma preview</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div><strong>响应体</strong></div>
+            <pre>{&quot;ret_code&quot;:0,&quot;ret_msg&quot;:&quot;OK&quot;,&quot;result&quot;:{&quot;items&quot;:[],&quot;nextCursor&quot;:&quot;orxGNd0cS2b_Ox2eiHdnMThHGfYRi4MfclFuKunKDI97InYiOjEsImsiOiJldmVudHMiLCJvaCI6ImFlNjJmZmE1NzcwYmY4YmZmOWViNDYwZGJjNTAyN2I4YjY5MTgyYjMwOTU3N2RjMzhmYjgxNjdlN2I3NWM4YzYiLCJrZXlzIjpbeyJ0IjoidGltZSIsInYiOiIyMDI1LTEyLTE4VDE3OjAxOjU0WiJ9LHsidCI6InN0cmluZyIsInYiOiIxMTAwMDgifV19&quot;},&quot;ext_code&quot;:null,&quot;time_now&quot;:&quot;1783482155655&quot;}</pre>
+          </div>
+        </details>
+        <details class="req" >
+          <summary>
+            <span>
+              <span class="status-dot passed"></span>
+              <span class="method method-get">GET</span>
+              D09 A7-2 list window-prices
+            </span>
+            <span class="req-meta">
+              HTTP 200 · 402ms · 94B
+              
+              <span class="chevron">▸</span>
+            </span>
+          </summary>
+          <div class="req-body">
+            <div><strong>URL</strong></div>
+            <div class="url-line">
+              {&quot;protocol&quot;:&quot;http&quot;,&quot;port&quot;:&quot;8080&quot;,&quot;path&quot;:[&quot;private&quot;,&quot;v1&quot;,&quot;pm&quot;,&quot;instant-products&quot;,&quot;1&quot;,&quot;window-prices&quot;],&quot;host&quot;:[&quot;localhost&quot;],&quot;query&quot;:[{&quot;key&quot;:&quot;limit&quot;,&quot;value&quot;:&quot;20&quot;}],&quot;variable&quot;:[]}
+            </div>
+
+            <table class="assert">
+              <thead>
+                <tr><th>断言</th><th class="num">通过</th><th class="num">失败</th><th class="num">跳过</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>HTTP 200</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>ret_code&#x3D;0</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>window prices</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div><strong>响应体</strong></div>
+            <pre>{&quot;ret_code&quot;:0,&quot;ret_msg&quot;:&quot;OK&quot;,&quot;result&quot;:{&quot;items&quot;:[]},&quot;ext_code&quot;:null,&quot;time_now&quot;:&quot;1783482156071&quot;}</pre>
+          </div>
+        </details>
+        <details class="req" >
+          <summary>
+            <span>
+              <span class="status-dot passed"></span>
+              <span class="method method-post">POST</span>
+              D10 A4-2 stop 停用
+            </span>
+            <span class="req-meta">
+              HTTP 200 · 1284ms · 532B
+              
+              <span class="chevron">▸</span>
+            </span>
+          </summary>
+          <div class="req-body">
+            <div><strong>URL</strong></div>
+            <div class="url-line">
+              {&quot;protocol&quot;:&quot;http&quot;,&quot;port&quot;:&quot;8080&quot;,&quot;path&quot;:[&quot;private&quot;,&quot;v1&quot;,&quot;pm&quot;,&quot;instant-products&quot;,&quot;1&quot;,&quot;stop&quot;],&quot;host&quot;:[&quot;localhost&quot;],&quot;query&quot;:[],&quot;variable&quot;:[]}
+            </div>
+
+            <table class="assert">
+              <thead>
+                <tr><th>断言</th><th class="num">通过</th><th class="num">失败</th><th class="num">跳过</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>HTTP 200</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>ret_code&#x3D;0</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+                <tr>
+                  <td>status&#x3D;STOPPED</td>
+                  <td class="num cell-pass">1</td>
+                  <td class="num ">0</td>
+                  <td class="num ">0</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div><strong>响应体</strong></div>
+            <pre>{&quot;ret_code&quot;:0,&quot;ret_msg&quot;:&quot;OK&quot;,&quot;result&quot;:{&quot;id&quot;:1,&quot;name&quot;:&quot;BTC Up or Down 5m · 5m&quot;,&quot;seriesSlug&quot;:&quot;btc-up-or-down-5m&quot;,&quot;asset&quot;:&quot;BTC&quot;,&quot;categoryId&quot;:101,&quot;recurrenceMinutes&quot;:5,&quot;status&quot;:&quot;STOPPED&quot;,&quot;syncEnabled&quot;:true,&quot;iconUrl&quot;:&quot;&quot;,&quot;resolutionSource&quot;:&quot;&quot;,&quot;lastSyncAt&quot;:null,&quot;lastSyncStatus&quot;:&quot;&quot;,&quot;lastSyncRunId&quot;:0,&quot;todaySyncedCount&quot;:0,&quot;nextSyncAt&quot;:null,&quot;lastError&quot;:&quot;&quot;,&quot;createdBy&quot;:&quot;postman-cli&quot;,&quot;updatedBy&quot;:&quot;postman-cli&quot;,&quot;createdAt&quot;:&quot;2026-07-08T03:37:02.872+00:00&quot;,&quot;updatedAt&quot;:&quot;2026-07-08T03:42:37.029+00:00&quot;},&quot;ext_code&quot;:null,&quot;time_now&quot;:&quot;1783482157372&quot;}</pre>
+          </div>
+        </details>
+      </div>
+    </details>
+
+    <h2 class="section-title" style="color:var(--allure-failed);border-color:rgba(253,90,62,.4)">Failures · 失败详情</h2>
+    <div class="fail-block">
+      <h4>D03 A5 sync 立即同步</h4>
+      <pre style="margin:0;border:none;background:transparent;padding:0">expected 10001 to deeply equal +0</pre>
+    </div>
+    <div class="fail-block">
+      <h4>D03 A5 sync 立即同步</h4>
+      <pre style="margin:0;border:none;background:transparent;padding:0">Cannot convert undefined or null to object</pre>
+    </div>
+    <div class="fail-block">
+      <h4>D03 A5 sync 立即同步</h4>
+      <pre style="margin:0;border:none;background:transparent;padding:0">Cannot read properties of null (reading &#x27;syncRunId&#x27;)</pre>
+    </div>
+
+    <footer>
+      由 <a href="https://www.npmjs.com/package/newman-reporter-htmlextra" rel="noreferrer">newman-reporter-htmlextra</a> + 本仓库 Allure 风格模板生成；
+      字体与图表来自 <a href="https://fonts.google.com" rel="noreferrer">Google Fonts</a>、<a href="https://www.chartjs.org" rel="noreferrer">Chart.js</a> CDN。
+    </footer>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <script>
+    (function () {
+      var d = window.__ALLURE_CHART__;
+      if (!d || typeof Chart === "undefined") return;
+      var el = document.getElementById("assertChart");
+      if (!el) return;
+      var passed = d.passed || 0;
+      var failed = d.failed || 0;
+      if (passed === 0 && failed === 0) passed = 1;
+      new Chart(el, {
+        type: "doughnut",
+        data: {
+          labels: ["通过", "失败"],
+          datasets: [{
+            data: [passed, failed],
+            backgroundColor: ["#97cc64", "#fd5a3e"],
+            borderWidth: 0,
+            hoverOffset: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          cutout: "62%",
+          plugins: {
+            legend: { position: "bottom", labels: { boxWidth: 12, padding: 10, font: { size: 11 } } }
+          }
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
