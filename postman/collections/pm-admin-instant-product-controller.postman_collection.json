@@ -16,7 +16,8 @@
     { "key": "existingSeriesSlug", "value": "" },
     { "key": "fakeInstantProductId", "value": "999999999" },
     { "key": "fakeSyncRunId", "value": "999999999" },
-    { "key": "_skipCreate", "value": "false" }
+    { "key": "_skipCreate", "value": "false" },
+    { "key": "_validateIconUrl", "value": "" }
   ],
   "event": [
     {
@@ -41,8 +42,9 @@
           "  pm.request.headers.upsert({ key: 'X-Requested-With', value: 'XMLHttpRequest' });",
           "}",
           "if (isTestnet) {",
-          "  pm.request.headers.upsert({ key: 'User-Agent', value: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36' });",
-          "  pm.request.headers.upsert({ key: 'sec-ch-ua', value: '\"Google Chrome\";v=\"149\", \"Chromium\";v=\"149\", \"Not)A;Brand\";v=\"24\"' });",
+          "  pm.request.headers.upsert({ key: 'Connection', value: 'keep-alive' });",
+          "  pm.request.headers.upsert({ key: 'User-Agent', value: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36' });",
+          "  pm.request.headers.upsert({ key: 'sec-ch-ua', value: '\"Not;A=Brand\";v=\"8\", \"Chromium\";v=\"150\", \"Google Chrome\";v=\"150\"' });",
           "  pm.request.headers.upsert({ key: 'sec-ch-ua-mobile', value: '?0' });",
           "  pm.request.headers.upsert({ key: 'sec-ch-ua-platform', value: '\"macOS\"' });",
           "  pm.request.headers.upsert({ key: 'Sec-Fetch-Dest', value: 'empty' });",
@@ -53,7 +55,10 @@
           "  }",
           "}",
           "pm.request.headers.upsert({ key: 'Accept', value: 'application/json, text/plain, */*' });",
-          "pm.request.headers.upsert({ key: 'Accept-Language', value: 'zh-CN,zh;q=0.9' });"
+          "pm.request.headers.upsert({ key: 'Accept-Language', value: 'zh-CN,zh;q=0.9' });",
+          "if (!pm.collectionVariables.get('_iconAssertSnippet')) {",
+          "  pm.collectionVariables.set('_iconAssertSnippet', 'function __pmAssertIconUrl(value, opts){opts=opts||{};var label=opts.label||\"iconUrl\";var allowNull=!!opts.allowNull;if(value===null||value===undefined){pm.expect(allowNull,label+\" 允许为空\").to.eql(true);return;}pm.expect(value,label+\" 为字符串\").to.be.a(\"string\");if(value.length>0){pm.expect(value,label+\" 为 http(s) URL\").to.match(/^https?:\\\\/\\\\//);}}');",
+          "}"
         ]
       }
     },
@@ -122,6 +127,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
+                  "eval(pm.collectionVariables.get('_iconAssertSnippet'));",
                   "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
                   "const body = pm.response.json();",
                   "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
@@ -139,6 +145,13 @@
                   "  pm.environment.set('instantProductId', String(picked.id));",
                   "  if (matched) pm.collectionVariables.set('_skipCreate', 'true');",
                   "  pm.test('instantProductId=' + picked.id, () => pm.expect(picked.id).to.be.a('number'));",
+                  "  pm.test('列表项含 iconUrl', () => {",
+                  "    pm.expect(picked).to.include.keys('iconUrl');",
+                  "    __pmAssertIconUrl(picked.iconUrl, { label: 'list.iconUrl' });",
+                  "  });",
+                  "  if (matched && picked.iconUrl != null) {",
+                  "    pm.collectionVariables.set('_listIconUrl', String(picked.iconUrl));",
+                  "  }",
                   "}",
                   "if (!items.length) {",
                   "  pm.test('列表为空，D 段将走 create 新建', () => pm.expect(body.result.items).to.eql([]));",
@@ -161,17 +174,22 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
+                  "eval(pm.collectionVariables.get('_iconAssertSnippet'));",
                   "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
                   "const body = pm.response.json();",
                   "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
                   "pm.test('SeriesSlugValidateResponse 结构', () => {",
-                  "  pm.expect(body.result).to.include.keys('valid', 'slug');",
+                  "  pm.expect(body.result).to.include.keys('valid', 'slug', 'iconUrl');",
                   "});",
                   "if (body.result.valid) {",
                   "  pm.collectionVariables.set('_seriesSlugValid', 'true');",
                   "  if (body.result.suggestedAsset) {",
                   "    pm.collectionVariables.set('_suggestedAsset', body.result.suggestedAsset);",
                   "  }",
+                  "  pm.test('validate iconUrl（Gamma series.image）', () => {",
+                  "    __pmAssertIconUrl(body.result.iconUrl, { label: 'validate.iconUrl' });",
+                  "  });",
+                  "  pm.collectionVariables.set('_validateIconUrl', body.result.iconUrl == null ? '' : String(body.result.iconUrl));",
                   "} else {",
                   "  pm.collectionVariables.set('_seriesSlugValid', 'false');",
                   "  pm.test('Gamma 未返回有效 series（create 正向将跳过）', () => pm.expect(body.result.valid).to.eql(false));",
@@ -200,13 +218,20 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
+                  "eval(pm.collectionVariables.get('_iconAssertSnippet'));",
                   "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
                   "const body = pm.response.json();",
                   "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
                   "pm.test('validate 响应字段', () => {",
-                  "  pm.expect(body.result).to.include.keys('valid', 'slug');",
+                  "  pm.expect(body.result).to.include.keys('valid', 'slug', 'iconUrl');",
                   "  pm.expect(body.result.slug).to.eql(pm.collectionVariables.get('seriesSlug'));",
-                  "});"
+                  "});",
+                  "if (body.result.valid) {",
+                  "  pm.test('validate iconUrl（Gamma series.image）', () => {",
+                  "    __pmAssertIconUrl(body.result.iconUrl, { label: 'validate.iconUrl' });",
+                  "  });",
+                  "  pm.collectionVariables.set('_validateIconUrl', body.result.iconUrl == null ? '' : String(body.result.iconUrl));",
+                  "}"
                 ]
               }
             }
@@ -225,12 +250,16 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
+                  "eval(pm.collectionVariables.get('_iconAssertSnippet'));",
                   "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
                   "const body = pm.response.json();",
                   "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
                   "pm.test('valid=false', () => {",
                   "  pm.expect(body.result.valid).to.eql(false);",
                   "  pm.expect(body.result.slug).to.eql(pm.collectionVariables.get('invalidSeriesSlug'));",
+                  "});",
+                  "pm.test('valid=false 时 iconUrl 为 null', () => {",
+                  "  __pmAssertIconUrl(body.result.iconUrl, { allowNull: true, label: 'validate.iconUrl' });",
                   "});"
                 ]
               }
@@ -250,6 +279,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
+                  "eval(pm.collectionVariables.get('_iconAssertSnippet'));",
                   "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
                   "const body = pm.response.json();",
                   "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
@@ -257,7 +287,17 @@
                   "  pm.expect(body.result.items).to.be.an('array');",
                   "  const items = body.result.items;",
                   "  if (!items.length) return;",
-                  "  pm.expect(items[0]).to.include.keys('id', 'seriesSlug', 'status', 'asset');",
+                  "  pm.expect(items[0]).to.include.keys('id', 'seriesSlug', 'status', 'asset', 'iconUrl');",
+                  "  items.forEach((item) => {",
+                  "    __pmAssertIconUrl(item.iconUrl, { label: 'list[' + item.id + '].iconUrl' });",
+                  "  });",
+                  "});",
+                  "pm.test('seriesSlug 命中项 iconUrl 与 validate 一致', () => {",
+                  "  const slug = pm.collectionVariables.get('seriesSlug');",
+                  "  const expected = pm.collectionVariables.get('_validateIconUrl');",
+                  "  const item = (body.result.items || []).find((i) => i.seriesSlug === slug);",
+                  "  if (!item || expected === undefined) return;",
+                  "  pm.expect(item.iconUrl).to.eql(expected);",
                   "});"
                 ]
               }
@@ -277,11 +317,16 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
+                  "eval(pm.collectionVariables.get('_iconAssertSnippet'));",
                   "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
                   "const body = pm.response.json();",
                   "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
                   "pm.test('过滤结果 status=STOPPED', () => {",
-                  "  (body.result.items || []).forEach((i) => pm.expect(i.status).to.eql('STOPPED'));",
+                  "  (body.result.items || []).forEach((i) => {",
+                  "    pm.expect(i.status).to.eql('STOPPED');",
+                  "    pm.expect(i).to.include.keys('iconUrl');",
+                  "    __pmAssertIconUrl(i.iconUrl, { label: 'list[' + i.id + '].iconUrl' });",
+                  "  });",
                   "});"
                 ]
               }
@@ -301,11 +346,16 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
+                  "eval(pm.collectionVariables.get('_iconAssertSnippet'));",
                   "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
                   "const body = pm.response.json();",
                   "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
                   "pm.test('过滤结果 asset=BTC', () => {",
-                  "  (body.result.items || []).forEach((i) => pm.expect(i.asset).to.eql('BTC'));",
+                  "  (body.result.items || []).forEach((i) => {",
+                  "    pm.expect(i.asset).to.eql('BTC');",
+                  "    pm.expect(i).to.include.keys('iconUrl');",
+                  "    __pmAssertIconUrl(i.iconUrl, { label: 'list[' + i.id + '].iconUrl' });",
+                  "  });",
                   "});"
                 ]
               }
@@ -325,10 +375,17 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
+                  "eval(pm.collectionVariables.get('_iconAssertSnippet'));",
                   "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
                   "const body = pm.response.json();",
                   "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
-                  "pm.test('keyword 过滤返回数组', () => pm.expect(body.result.items).to.be.an('array'));"
+                  "pm.test('keyword 过滤返回数组', () => {",
+                  "  pm.expect(body.result.items).to.be.an('array');",
+                  "  (body.result.items || []).forEach((i) => {",
+                  "    pm.expect(i).to.include.keys('iconUrl');",
+                  "    __pmAssertIconUrl(i.iconUrl, { label: 'list[' + i.id + '].iconUrl' });",
+                  "  });",
+                  "});"
                 ]
               }
             }
@@ -1020,13 +1077,18 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
+                  "eval(pm.collectionVariables.get('_iconAssertSnippet'));",
                   "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
                   "const body = pm.response.json();",
                   "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
                   "pm.test('InstantProductResponse', () => {",
-                  "  pm.expect(body.result).to.include.keys('id', 'seriesSlug', 'status', 'asset');",
+                  "  pm.expect(body.result).to.include.keys('id', 'seriesSlug', 'status', 'asset', 'iconUrl');",
                   "  pm.expect(body.result.seriesSlug).to.eql(pm.collectionVariables.get('seriesSlug'));",
                   "  pm.expect(body.result.status).to.eql('STOPPED');",
+                  "  __pmAssertIconUrl(body.result.iconUrl, { label: 'create.iconUrl' });",
+                  "  if (pm.collectionVariables.get('_seriesSlugValid') === 'true') {",
+                  "    pm.expect(body.result.iconUrl).to.eql(pm.collectionVariables.get('_validateIconUrl'));",
+                  "  }",
                   "});",
                   "pm.collectionVariables.set('instantProductId', String(body.result.id));",
                   "pm.collectionVariables.set('existingSeriesSlug', body.result.seriesSlug);",
@@ -1062,10 +1124,19 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
+                  "eval(pm.collectionVariables.get('_iconAssertSnippet'));",
                   "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
                   "const body = pm.response.json();",
                   "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
-                  "pm.test('status=RUNNING', () => pm.expect(body.result.status).to.eql('RUNNING'));"
+                  "pm.test('status=RUNNING', () => pm.expect(body.result.status).to.eql('RUNNING'));",
+                  "pm.test('start 后 iconUrl 不变', () => {",
+                  "  pm.expect(body.result).to.include.keys('iconUrl');",
+                  "  __pmAssertIconUrl(body.result.iconUrl, { label: 'start.iconUrl' });",
+                  "  const listIcon = pm.collectionVariables.get('_listIconUrl');",
+                  "  if (listIcon !== undefined && listIcon !== '') {",
+                  "    pm.expect(body.result.iconUrl).to.eql(listIcon);",
+                  "  }",
+                  "});"
                 ]
               }
             }
@@ -1354,10 +1425,19 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
+                  "eval(pm.collectionVariables.get('_iconAssertSnippet'));",
                   "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
                   "const body = pm.response.json();",
                   "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
-                  "pm.test('status=STOPPED', () => pm.expect(body.result.status).to.eql('STOPPED'));"
+                  "pm.test('status=STOPPED', () => pm.expect(body.result.status).to.eql('STOPPED'));",
+                  "pm.test('stop 后 iconUrl 不变', () => {",
+                  "  pm.expect(body.result).to.include.keys('iconUrl');",
+                  "  __pmAssertIconUrl(body.result.iconUrl, { label: 'stop.iconUrl' });",
+                  "  const listIcon = pm.collectionVariables.get('_listIconUrl');",
+                  "  if (listIcon !== undefined && listIcon !== '') {",
+                  "    pm.expect(body.result.iconUrl).to.eql(listIcon);",
+                  "  }",
+                  "});"
                 ]
               }
             }

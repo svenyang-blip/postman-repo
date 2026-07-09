@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="PM CE · UpdownEventController · local" tests="18" time="10.068">
+  <testsuite name="00 Setup / S01 拉取分类树并写入 categoryId" id="3132dba8-b40a-4ef7-a983-1ddeae179096" timestamp="2026-07-09T10:11:14.506Z" tests="3" failures="0" errors="0" time="0.575">
+    <testcase name="HTTP 200" time="0.575" classname="00SetupS01CategoryId"/>
+    <testcase name="ret_code 为 0" time="0.575" classname="00SetupS01CategoryId"/>
+    <testcase name="已写入 categoryId=101" time="0.575" classname="00SetupS01CategoryId"/>
+  </testsuite>
+  <testsuite name="00 Setup / S02 从 event/list 解析 updown 上下文" id="1e9658fb-efe7-436b-877f-df4eb58ca03f" timestamp="2026-07-09T10:11:14.506Z" tests="3" failures="0" errors="0" time="1.744">
+    <testcase name="HTTP 200" time="1.744" classname="00SetupS02EventListUpdown"/>
+    <testcase name="ret_code 为 0" time="1.744" classname="00SetupS02EventListUpdown"/>
+    <testcase name="已写入 instantProductId / sourceEventId" time="1.744" classname="00SetupS02EventListUpdown"/>
+  </testsuite>
+  <testsuite name="00 Setup / S03 windows(seriesSlug) 写入 updownEventId / anchorEventId" id="93403f89-f097-4ce9-a8bd-2bfe8c2b6dbc" timestamp="2026-07-09T10:11:14.506Z" tests="4" failures="0" errors="0" time="0.357">
+    <testcase name="HTTP 200" time="0.357" classname="00SetupS03WindowsSeriesSlugUpdownEventIdAnchorEventId"/>
+    <testcase name="ret_code 为 0" time="0.357" classname="00SetupS03WindowsSeriesSlugUpdownEventIdAnchorEventId"/>
+    <testcase name="result 含 current/past/next" time="0.357" classname="00SetupS03WindowsSeriesSlugUpdownEventIdAnchorEventId"/>
+    <testcase name="已尝试写入 updownEventId" time="0.357" classname="00SetupS03WindowsSeriesSlugUpdownEventIdAnchorEventId"/>
+  </testsuite>
+  <testsuite name="A · Updown 正向 / A01 windows · seriesSlug" id="5dc36bc6-7352-4ce4-a9c0-593ad2b640c9" timestamp="2026-07-09T10:11:14.506Z" tests="5" failures="0" errors="0" time="0.346">
+    <testcase name="HTTP 200" time="0.346" classname="AUpdownA01WindowsSeriesSlug"/>
+    <testcase name="ret_code 为 0" time="0.346" classname="AUpdownA01WindowsSeriesSlug"/>
+    <testcase name="Responses 壳字段" time="0.346" classname="AUpdownA01WindowsSeriesSlug"/>
+    <testcase name="current 含 eventId / windowLabel / phase" time="0.346" classname="AUpdownA01WindowsSeriesSlug"/>
+    <testcase name="past/next 为数组" time="0.346" classname="AUpdownA01WindowsSeriesSlug"/>
+  </testsuite>
+  <testsuite name="A · Updown 正向 / A02 windows · instantProductId" id="158f37a1-ad06-4b2b-956d-bccc8efa1ac0" timestamp="2026-07-09T10:11:14.506Z" tests="5" failures="0" errors="0" time="0.328">
+    <testcase name="HTTP 200" time="0.328" classname="AUpdownA02WindowsInstantProductId"/>
+    <testcase name="ret_code 为 0" time="0.328" classname="AUpdownA02WindowsInstantProductId"/>
+    <testcase name="Responses 壳字段" time="0.328" classname="AUpdownA02WindowsInstantProductId"/>
+    <testcase name="result 含 current/past/next" time="0.328" classname="AUpdownA02WindowsInstantProductId"/>
+    <testcase name="current 有数据时 eventId 为正整数" time="0.328" classname="AUpdownA02WindowsInstantProductId"/>
+  </testsuite>
+  <testsuite name="A · Updown 正向 / A04 history · limit=5" id="bc71f500-910c-4669-9b72-98940f4f8135" timestamp="2026-07-09T10:11:14.506Z" tests="5" failures="0" errors="0" time="0.333">
+    <testcase name="HTTP 200" time="0.333" classname="AUpdownA04HistoryLimit5"/>
+    <testcase name="ret_code 为 0" time="0.333" classname="AUpdownA04HistoryLimit5"/>
+    <testcase name="Responses 壳字段" time="0.333" classname="AUpdownA04HistoryLimit5"/>
+    <testcase name="items 为数组" time="0.333" classname="AUpdownA04HistoryLimit5"/>
+    <testcase name="历史项字段（有数据时）" time="0.333" classname="AUpdownA04HistoryLimit5"/>
+  </testsuite>
+  <testsuite name="B · Event 列表 / 详情回归 / B01 list · 默认分页壳" id="abc7260f-30ca-429e-86a1-24b9a5fa5bb5" timestamp="2026-07-09T10:11:14.506Z" tests="4" failures="0" errors="0" time="1.729">
+    <testcase name="HTTP 200" time="1.729" classname="BEventB01List"/>
+    <testcase name="ret_code 为 0" time="1.729" classname="BEventB01List"/>
+    <testcase name="分页壳 page/pageSize/total/list" time="1.729" classname="BEventB01List"/>
+    <testcase name="列表模式 markets[].rules 为 null（有数据时）" time="1.729" classname="BEventB01List"/>
+  </testsuite>
+  <testsuite name="B · Event 列表 / 详情回归 / B02 list · updown 叠加字段" id="9c195bf2-2e39-4dac-bdc4-515a8f7aecbf" timestamp="2026-07-09T10:11:14.506Z" tests="3" failures="0" errors="0" time="0.190">
+    <testcase name="HTTP 200" time="0.190" classname="BEventB02ListUpdown"/>
+    <testcase name="ret_code 为 0" time="0.190" classname="BEventB02ListUpdown"/>
+    <testcase name="updown 事件含 instantProductId" time="0.190" classname="BEventB02ListUpdown"/>
+  </testsuite>
+  <testsuite name="B · Event 列表 / 详情回归 / B03 list · categoryId 筛选" id="5472dc61-99a0-4121-b4e3-ec1528efae86" timestamp="2026-07-09T10:11:14.506Z" tests="4" failures="0" errors="0" time="1.449">
+    <testcase name="HTTP 200" time="1.449" classname="BEventB03ListCategoryId"/>
+    <testcase name="ret_code 为 0" time="1.449" classname="BEventB03ListCategoryId"/>
+    <testcase name="pageSize 与请求一致" time="1.449" classname="BEventB03ListCategoryId"/>
+    <testcase name="list 长度不超过 pageSize" time="1.449" classname="BEventB03ListCategoryId"/>
+  </testsuite>
+  <testsuite name="B · Event 列表 / 详情回归 / B04 detail · GET /event?eventId=" id="4a696c3f-b373-44c1-9f71-302cd5f105b8" timestamp="2026-07-09T10:11:14.506Z" tests="4" failures="0" errors="0" time="1.191">
+    <testcase name="HTTP 200" time="1.191" classname="BEventB04DetailGetEventEventId"/>
+    <testcase name="ret_code 为 0" time="1.191" classname="BEventB04DetailGetEventEventId"/>
+    <testcase name="EventVo 基础字段" time="1.191" classname="BEventB04DetailGetEventEventId"/>
+    <testcase name="详情含 rules（与列表不同）" time="1.191" classname="BEventB04DetailGetEventEventId"/>
+  </testsuite>
+  <testsuite name="B · Event 列表 / 详情回归 / B05 detail · updown 叠加字段" id="f95f92c4-b8ba-4786-b450-3879ec30a749" timestamp="2026-07-09T10:11:14.506Z" tests="3" failures="0" errors="0" time="0.981">
+    <testcase name="HTTP 200" time="0.981" classname="BEventB05DetailUpdown"/>
+    <testcase name="ret_code 为 0" time="0.981" classname="BEventB05DetailUpdown"/>
+    <testcase name="updown 详情叠加字段" time="0.981" classname="BEventB05DetailUpdown"/>
+  </testsuite>
+  <testsuite name="C · 参数校验 / 边界 / [err] C01 windows 缺 instantProductId 与 seriesSlug" id="3705af03-4390-4409-aee2-e272cb44d9e3" timestamp="2026-07-09T10:11:14.506Z" tests="3" failures="0" errors="0" time="0.004">
+    <testcase name="HTTP 200" time="0.004" classname="CErrC01WindowsInstantProductIdSeriesSlug"/>
+    <testcase name="ret_code 为 10001" time="0.004" classname="CErrC01WindowsInstantProductIdSeriesSlug"/>
+    <testcase name="错误信息含 required" time="0.004" classname="CErrC01WindowsInstantProductIdSeriesSlug"/>
+  </testsuite>
+  <testsuite name="C · 参数校验 / 边界 / [err] C02 windows 假 seriesSlug" id="08511dd5-2d55-48f3-ac27-c1a78e535bff" timestamp="2026-07-09T10:11:14.506Z" tests="3" failures="0" errors="0" time="0.177">
+    <testcase name="HTTP 200" time="0.177" classname="CErrC02WindowsSeriesSlug"/>
+    <testcase name="ret_code 为 10001" time="0.177" classname="CErrC02WindowsSeriesSlug"/>
+    <testcase name="instant product not found" time="0.177" classname="CErrC02WindowsSeriesSlug"/>
+  </testsuite>
+  <testsuite name="C · 参数校验 / 边界 / [err] C03 history 缺 instantProductId" id="56db3cf9-0548-4fb1-84a1-d094353fdf4c" timestamp="2026-07-09T10:11:14.506Z" tests="1" failures="0" errors="0" time="0.006">
+    <testcase name="缺参：HTTP 400 或 ret_code 50000/10001" time="0.006" classname="CErrC03HistoryInstantProductId"/>
+  </testsuite>
+  <testsuite name="C · 参数校验 / 边界 / [err] C04 history 假 instantProductId" id="41c1b700-ed9e-4e35-b7e3-dcf2578c5b2d" timestamp="2026-07-09T10:11:14.506Z" tests="2" failures="0" errors="0" time="0.164">
+    <testcase name="HTTP 200" time="0.164" classname="CErrC04HistoryInstantProductId"/>
+    <testcase name="ret_code 为 10001" time="0.164" classname="CErrC04HistoryInstantProductId"/>
+  </testsuite>
+  <testsuite name="C · 参数校验 / 边界 / [err] C05 chart 缺 eventId" id="b65dcb7c-c534-4159-8f6d-25ace39fd285" timestamp="2026-07-09T10:11:14.506Z" tests="1" failures="0" errors="0" time="0.003">
+    <testcase name="缺参：HTTP 400 或 ret_code 50000/10001" time="0.003" classname="CErrC05ChartEventId"/>
+  </testsuite>
+  <testsuite name="C · 参数校验 / 边界 / [err] C06 chart 假 eventId" id="c1e3509e-9911-4b00-8986-2a854a626194" timestamp="2026-07-09T10:11:14.506Z" tests="2" failures="0" errors="0" time="0.167">
+    <testcase name="HTTP 200" time="0.167" classname="CErrC06ChartEventId"/>
+    <testcase name="ret_code 为 10001" time="0.167" classname="CErrC06ChartEventId"/>
+  </testsuite>
+  <testsuite name="C · 参数校验 / 边界 / [err] C07 detail 假 eventId" id="f330513b-ece0-491b-a318-51be796ee4e8" timestamp="2026-07-09T10:11:14.506Z" tests="2" failures="0" errors="0" time="0.324">
+    <testcase name="HTTP 200" time="0.324" classname="CErrC07DetailEventId"/>
+    <testcase name="不存在 eventId 时 result 为 null" time="0.324" classname="CErrC07DetailEventId"/>
+  </testsuite>
+</testsuites>

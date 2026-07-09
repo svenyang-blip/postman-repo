@@ -1,216 +1,195 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="PM Admin · PmInstantProductController · /private/v1/pm/instant-products" tests="40" time="15.996">
-  <testsuite name="00 Setup / S01 拉取叶子分类 leafCategoryId" id="e12f005a-fd68-435d-bf7d-9b4eb812e820" timestamp="2026-07-08T03:42:20.685Z" tests="3" failures="0" errors="0" time="0.812">
-    <testcase name="HTTP 200" time="0.812" classname="00SetupS01LeafCategoryId"/>
-    <testcase name="ret_code=0" time="0.812" classname="00SetupS01LeafCategoryId"/>
-    <testcase name="已写入 leafCategoryId=101" time="0.812" classname="00SetupS01LeafCategoryId"/>
+<testsuites name="PM Admin · PmInstantProductController · /private/v1/pm/instant-products" tests="40" time="14.588">
+  <testsuite name="00 Setup / S01 拉取叶子分类 leafCategoryId" id="50fd2b82-de3f-4d4f-935d-f4c1cc1d1d81" timestamp="2026-07-09T11:06:34.938Z" tests="3" failures="0" errors="0" time="0.627">
+    <testcase name="HTTP 200" time="0.627" classname="00SetupS01LeafCategoryId"/>
+    <testcase name="ret_code=0" time="0.627" classname="00SetupS01LeafCategoryId"/>
+    <testcase name="已写入 leafCategoryId=101" time="0.627" classname="00SetupS01LeafCategoryId"/>
   </testsuite>
-  <testsuite name="00 Setup / S02 GET /instant-products 解析 instantProductId" id="9d066dc9-8081-4306-a8a0-3eae85f75da9" timestamp="2026-07-08T03:42:20.685Z" tests="4" failures="0" errors="0" time="0.203">
-    <testcase name="HTTP 200" time="0.203" classname="00SetupS02GetInstantProductsInstantProductId"/>
-    <testcase name="ret_code=0" time="0.203" classname="00SetupS02GetInstantProductsInstantProductId"/>
-    <testcase name="ItemsResponse 结构" time="0.203" classname="00SetupS02GetInstantProductsInstantProductId"/>
-    <testcase name="instantProductId=1" time="0.203" classname="00SetupS02GetInstantProductsInstantProductId"/>
+  <testsuite name="00 Setup / S02 GET /instant-products 解析 instantProductId" id="a9b0cf23-11e7-439d-ba9f-7ffe22ad78fa" timestamp="2026-07-09T11:06:34.938Z" tests="5" failures="0" errors="0" time="0.201">
+    <testcase name="HTTP 200" time="0.201" classname="00SetupS02GetInstantProductsInstantProductId"/>
+    <testcase name="ret_code=0" time="0.201" classname="00SetupS02GetInstantProductsInstantProductId"/>
+    <testcase name="ItemsResponse 结构" time="0.201" classname="00SetupS02GetInstantProductsInstantProductId"/>
+    <testcase name="instantProductId=1" time="0.201" classname="00SetupS02GetInstantProductsInstantProductId"/>
+    <testcase name="列表项含 iconUrl" time="0.201" classname="00SetupS02GetInstantProductsInstantProductId"/>
   </testsuite>
-  <testsuite name="00 Setup / S03 A1 validate series slug 缓存" id="b112aa93-cbfd-46ee-a983-c920e4384c73" timestamp="2026-07-08T03:42:20.685Z" tests="3" failures="0" errors="0" time="0.650">
-    <testcase name="HTTP 200" time="0.650" classname="00SetupS03A1ValidateSeriesSlug"/>
-    <testcase name="ret_code=0" time="0.650" classname="00SetupS03A1ValidateSeriesSlug"/>
-    <testcase name="SeriesSlugValidateResponse 结构" time="0.650" classname="00SetupS03A1ValidateSeriesSlug"/>
+  <testsuite name="00 Setup / S03 A1 validate series slug 缓存" id="fdd5f4e1-6160-46c3-8fad-8164eff8451f" timestamp="2026-07-09T11:06:34.938Z" tests="4" failures="0" errors="0" time="0.758">
+    <testcase name="HTTP 200" time="0.758" classname="00SetupS03A1ValidateSeriesSlug"/>
+    <testcase name="ret_code=0" time="0.758" classname="00SetupS03A1ValidateSeriesSlug"/>
+    <testcase name="SeriesSlugValidateResponse 结构" time="0.758" classname="00SetupS03A1ValidateSeriesSlug"/>
+    <testcase name="validate iconUrl（Gamma series.image）" time="0.758" classname="00SetupS03A1ValidateSeriesSlug"/>
   </testsuite>
-  <testsuite name="A · GET 正向 [ok] / A01 A1 validate 有效 slug" id="54ab84ea-1d42-48f8-bd6a-3278c65c6981" timestamp="2026-07-08T03:42:20.685Z" tests="3" failures="0" errors="0" time="0.189">
-    <testcase name="HTTP 200" time="0.189" classname="AGetOkA01A1ValidateSlug"/>
-    <testcase name="ret_code=0" time="0.189" classname="AGetOkA01A1ValidateSlug"/>
-    <testcase name="validate 响应字段" time="0.189" classname="AGetOkA01A1ValidateSlug"/>
+  <testsuite name="A · GET 正向 [ok] / A01 A1 validate 有效 slug" id="153ecc96-e85a-4970-b442-47d8467331a7" timestamp="2026-07-09T11:06:34.938Z" tests="4" failures="0" errors="0" time="0.200">
+    <testcase name="HTTP 200" time="0.200" classname="AGetOkA01A1ValidateSlug"/>
+    <testcase name="ret_code=0" time="0.200" classname="AGetOkA01A1ValidateSlug"/>
+    <testcase name="validate 响应字段" time="0.200" classname="AGetOkA01A1ValidateSlug"/>
+    <testcase name="validate iconUrl（Gamma series.image）" time="0.200" classname="AGetOkA01A1ValidateSlug"/>
   </testsuite>
-  <testsuite name="A · GET 正向 [ok] / A02 A1 validate 无效 slug（valid=false）" id="40a250f9-d62f-4acf-b2f0-520fbfd49137" timestamp="2026-07-08T03:42:20.685Z" tests="3" failures="0" errors="0" time="0.384">
-    <testcase name="HTTP 200" time="0.384" classname="AGetOkA02A1ValidateSlugvalidFalse"/>
-    <testcase name="ret_code=0" time="0.384" classname="AGetOkA02A1ValidateSlugvalidFalse"/>
-    <testcase name="valid=false" time="0.384" classname="AGetOkA02A1ValidateSlugvalidFalse"/>
+  <testsuite name="A · GET 正向 [ok] / A02 A1 validate 无效 slug（valid=false）" id="e1521f5a-3575-421d-9efe-45d28aa395b4" timestamp="2026-07-09T11:06:34.938Z" tests="4" failures="0" errors="0" time="0.412">
+    <testcase name="HTTP 200" time="0.412" classname="AGetOkA02A1ValidateSlugvalidFalse"/>
+    <testcase name="ret_code=0" time="0.412" classname="AGetOkA02A1ValidateSlugvalidFalse"/>
+    <testcase name="valid=false" time="0.412" classname="AGetOkA02A1ValidateSlugvalidFalse"/>
+    <testcase name="valid=false 时 iconUrl 为 null" time="0.412" classname="AGetOkA02A1ValidateSlugvalidFalse"/>
   </testsuite>
-  <testsuite name="A · GET 正向 [ok] / A03 A2 list 全量" id="3a35a63b-eeb4-4184-9eec-7d61db66c561" timestamp="2026-07-08T03:42:20.685Z" tests="3" failures="0" errors="0" time="0.298">
-    <testcase name="HTTP 200" time="0.298" classname="AGetOkA03A2List"/>
-    <testcase name="ret_code=0" time="0.298" classname="AGetOkA03A2List"/>
-    <testcase name="ItemsResponse&lt;InstantProductResponse>" time="0.298" classname="AGetOkA03A2List"/>
+  <testsuite name="A · GET 正向 [ok] / A03 A2 list 全量" id="314d3b7a-bc41-404a-a8b9-cb3039882593" timestamp="2026-07-09T11:06:34.938Z" tests="4" failures="0" errors="0" time="0.260">
+    <testcase name="HTTP 200" time="0.260" classname="AGetOkA03A2List"/>
+    <testcase name="ret_code=0" time="0.260" classname="AGetOkA03A2List"/>
+    <testcase name="ItemsResponse&lt;InstantProductResponse>" time="0.260" classname="AGetOkA03A2List"/>
+    <testcase name="seriesSlug 命中项 iconUrl 与 validate 一致" time="0.260" classname="AGetOkA03A2List"/>
   </testsuite>
-  <testsuite name="A · GET 正向 [ok] / A04 A2 list status=STOPPED" id="8182cde4-79b4-49d0-9465-ea38266f097c" timestamp="2026-07-08T03:42:20.685Z" tests="3" failures="0" errors="0" time="0.221">
-    <testcase name="HTTP 200" time="0.221" classname="AGetOkA04A2ListStatusStopped"/>
-    <testcase name="ret_code=0" time="0.221" classname="AGetOkA04A2ListStatusStopped"/>
-    <testcase name="过滤结果 status=STOPPED" time="0.221" classname="AGetOkA04A2ListStatusStopped"/>
+  <testsuite name="A · GET 正向 [ok] / A04 A2 list status=STOPPED" id="7733f516-bf51-4e4d-9212-e5d1d54d327f" timestamp="2026-07-09T11:06:34.938Z" tests="3" failures="0" errors="0" time="0.174">
+    <testcase name="HTTP 200" time="0.174" classname="AGetOkA04A2ListStatusStopped"/>
+    <testcase name="ret_code=0" time="0.174" classname="AGetOkA04A2ListStatusStopped"/>
+    <testcase name="过滤结果 status=STOPPED" time="0.174" classname="AGetOkA04A2ListStatusStopped"/>
   </testsuite>
-  <testsuite name="A · GET 正向 [ok] / A05 A2 list asset=BTC" id="a800e428-5641-44cf-9c87-a9b467c0b093" timestamp="2026-07-08T03:42:20.685Z" tests="3" failures="0" errors="0" time="0.201">
-    <testcase name="HTTP 200" time="0.201" classname="AGetOkA05A2ListAssetBtc"/>
-    <testcase name="ret_code=0" time="0.201" classname="AGetOkA05A2ListAssetBtc"/>
-    <testcase name="过滤结果 asset=BTC" time="0.201" classname="AGetOkA05A2ListAssetBtc"/>
+  <testsuite name="A · GET 正向 [ok] / A05 A2 list asset=BTC" id="5557a786-4a81-4d82-bc89-af6350a904da" timestamp="2026-07-09T11:06:34.938Z" tests="3" failures="0" errors="0" time="0.172">
+    <testcase name="HTTP 200" time="0.172" classname="AGetOkA05A2ListAssetBtc"/>
+    <testcase name="ret_code=0" time="0.172" classname="AGetOkA05A2ListAssetBtc"/>
+    <testcase name="过滤结果 asset=BTC" time="0.172" classname="AGetOkA05A2ListAssetBtc"/>
   </testsuite>
-  <testsuite name="A · GET 正向 [ok] / A06 A2 list keyword=btc" id="7b7dbab9-fe13-459d-a61c-062ff6781102" timestamp="2026-07-08T03:42:20.685Z" tests="3" failures="0" errors="0" time="0.202">
-    <testcase name="HTTP 200" time="0.202" classname="AGetOkA06A2ListKeywordBtc"/>
-    <testcase name="ret_code=0" time="0.202" classname="AGetOkA06A2ListKeywordBtc"/>
-    <testcase name="keyword 过滤返回数组" time="0.202" classname="AGetOkA06A2ListKeywordBtc"/>
+  <testsuite name="A · GET 正向 [ok] / A06 A2 list keyword=btc" id="f5aaf76f-0c35-4719-9342-b32cfa75b87a" timestamp="2026-07-09T11:06:34.938Z" tests="3" failures="0" errors="0" time="0.167">
+    <testcase name="HTTP 200" time="0.167" classname="AGetOkA06A2ListKeywordBtc"/>
+    <testcase name="ret_code=0" time="0.167" classname="AGetOkA06A2ListKeywordBtc"/>
+    <testcase name="keyword 过滤返回数组" time="0.167" classname="AGetOkA06A2ListKeywordBtc"/>
   </testsuite>
-  <testsuite name="A · GET 正向 [ok] / A07 A6-1 list sync-runs" id="2bc17f4f-5657-4bf3-981b-b20446dccfd5" timestamp="2026-07-08T03:42:20.685Z" tests="3" failures="0" errors="0" time="0.403">
-    <testcase name="HTTP 200" time="0.403" classname="AGetOkA07A61ListSyncRuns"/>
-    <testcase name="ret_code=0" time="0.403" classname="AGetOkA07A61ListSyncRuns"/>
-    <testcase name="ItemsResponse&lt;InstantProductSyncRunResponse>" time="0.403" classname="AGetOkA07A61ListSyncRuns"/>
+  <testsuite name="A · GET 正向 [ok] / A07 A6-1 list sync-runs" id="11755572-6442-4ba6-a3ce-a3e254d752a5" timestamp="2026-07-09T11:06:34.938Z" tests="3" failures="0" errors="0" time="0.328">
+    <testcase name="HTTP 200" time="0.328" classname="AGetOkA07A61ListSyncRuns"/>
+    <testcase name="ret_code=0" time="0.328" classname="AGetOkA07A61ListSyncRuns"/>
+    <testcase name="ItemsResponse&lt;InstantProductSyncRunResponse>" time="0.328" classname="AGetOkA07A61ListSyncRuns"/>
   </testsuite>
-  <testsuite name="A · GET 正向 [ok] / A08 A6-2 get sync-run 详情" id="f259cff1-a4da-444e-8437-fdad4ce8521a" timestamp="2026-07-08T03:42:20.685Z" tests="3" failures="0" errors="0" time="0.410">
-    <testcase name="HTTP 200" time="0.410" classname="AGetOkA08A62GetSyncRun"/>
-    <testcase name="ret_code=0" time="0.410" classname="AGetOkA08A62GetSyncRun"/>
-    <testcase name="InstantProductSyncRunResponse" time="0.410" classname="AGetOkA08A62GetSyncRun"/>
+  <testsuite name="A · GET 正向 [ok] / A08 A6-2 get sync-run 详情" id="8f182a3f-e693-4832-93f4-530560f1af00" timestamp="2026-07-09T11:06:34.938Z" tests="3" failures="0" errors="0" time="0.336">
+    <testcase name="HTTP 200" time="0.336" classname="AGetOkA08A62GetSyncRun"/>
+    <testcase name="ret_code=0" time="0.336" classname="AGetOkA08A62GetSyncRun"/>
+    <testcase name="InstantProductSyncRunResponse" time="0.336" classname="AGetOkA08A62GetSyncRun"/>
   </testsuite>
-  <testsuite name="A · GET 正向 [ok] / A09 A7-1 list events source=local" id="6c8e63cc-20b8-47a4-8a65-1244f93557b5" timestamp="2026-07-08T03:42:20.685Z" tests="3" failures="0" errors="0" time="0.401">
-    <testcase name="HTTP 200" time="0.401" classname="AGetOkA09A71ListEventsSourceLocal"/>
-    <testcase name="ret_code=0" time="0.401" classname="AGetOkA09A71ListEventsSourceLocal"/>
-    <testcase name="InstantProductEventsResponse" time="0.401" classname="AGetOkA09A71ListEventsSourceLocal"/>
+  <testsuite name="A · GET 正向 [ok] / A09 A7-1 list events source=local" id="4083d71e-a3a6-4757-89f0-97a5d4abb691" timestamp="2026-07-09T11:06:34.938Z" tests="3" failures="0" errors="0" time="0.591">
+    <testcase name="HTTP 200" time="0.591" classname="AGetOkA09A71ListEventsSourceLocal"/>
+    <testcase name="ret_code=0" time="0.591" classname="AGetOkA09A71ListEventsSourceLocal"/>
+    <testcase name="InstantProductEventsResponse" time="0.591" classname="AGetOkA09A71ListEventsSourceLocal"/>
   </testsuite>
-  <testsuite name="A · GET 正向 [ok] / A10 A7-1 list events source=gamma" id="1a280e60-5d66-465c-98cb-c62656753150" timestamp="2026-07-08T03:42:20.685Z" tests="3" failures="0" errors="0" time="0.724">
-    <testcase name="HTTP 200" time="0.724" classname="AGetOkA10A71ListEventsSourceGamma"/>
-    <testcase name="ret_code=0" time="0.724" classname="AGetOkA10A71ListEventsSourceGamma"/>
-    <testcase name="gamma 预览结构" time="0.724" classname="AGetOkA10A71ListEventsSourceGamma"/>
+  <testsuite name="A · GET 正向 [ok] / A10 A7-1 list events source=gamma" id="3c721172-541e-4606-b9cc-05bda64fe178" timestamp="2026-07-09T11:06:34.938Z" tests="3" failures="0" errors="0" time="0.370">
+    <testcase name="HTTP 200" time="0.370" classname="AGetOkA10A71ListEventsSourceGamma"/>
+    <testcase name="ret_code=0" time="0.370" classname="AGetOkA10A71ListEventsSourceGamma"/>
+    <testcase name="gamma 预览结构" time="0.370" classname="AGetOkA10A71ListEventsSourceGamma"/>
   </testsuite>
-  <testsuite name="A · GET 正向 [ok] / A11 A7-2 list window-prices" id="54ed27d3-f668-4ff3-aa93-aef1e95ed9d1" timestamp="2026-07-08T03:42:20.685Z" tests="3" failures="0" errors="0" time="0.525">
-    <testcase name="HTTP 200" time="0.525" classname="AGetOkA11A72ListWindowPrices"/>
-    <testcase name="ret_code=0" time="0.525" classname="AGetOkA11A72ListWindowPrices"/>
-    <testcase name="ItemsResponse&lt;InstantProductWindowPriceItemResponse>" time="0.525" classname="AGetOkA11A72ListWindowPrices"/>
+  <testsuite name="A · GET 正向 [ok] / A11 A7-2 list window-prices" id="be535b7b-022f-4cdf-8597-54dd09a54f35" timestamp="2026-07-09T11:06:34.938Z" tests="3" failures="0" errors="0" time="0.359">
+    <testcase name="HTTP 200" time="0.359" classname="AGetOkA11A72ListWindowPrices"/>
+    <testcase name="ret_code=0" time="0.359" classname="AGetOkA11A72ListWindowPrices"/>
+    <testcase name="ItemsResponse&lt;InstantProductWindowPriceItemResponse>" time="0.359" classname="AGetOkA11A72ListWindowPrices"/>
   </testsuite>
-  <testsuite name="A · GET 正向 [ok] / A12 A7-2 list window-prices captureStatus=PENDING" id="92e98630-458a-421f-8205-d56aec37cff1" timestamp="2026-07-08T03:42:20.685Z" tests="3" failures="0" errors="0" time="0.401">
-    <testcase name="HTTP 200" time="0.401" classname="AGetOkA12A72ListWindowPricesCaptureStatusPending"/>
-    <testcase name="ret_code=0" time="0.401" classname="AGetOkA12A72ListWindowPricesCaptureStatusPending"/>
-    <testcase name="PENDING 过滤" time="0.401" classname="AGetOkA12A72ListWindowPricesCaptureStatusPending"/>
+  <testsuite name="A · GET 正向 [ok] / A12 A7-2 list window-prices captureStatus=PENDING" id="aef38d1d-89bd-4d3d-9bc3-68dd2ba171df" timestamp="2026-07-09T11:06:34.938Z" tests="3" failures="0" errors="0" time="0.337">
+    <testcase name="HTTP 200" time="0.337" classname="AGetOkA12A72ListWindowPricesCaptureStatusPending"/>
+    <testcase name="ret_code=0" time="0.337" classname="AGetOkA12A72ListWindowPricesCaptureStatusPending"/>
+    <testcase name="PENDING 过滤" time="0.337" classname="AGetOkA12A72ListWindowPricesCaptureStatusPending"/>
   </testsuite>
-  <testsuite name="B · 参数校验 [err] / B01 A1 validate 缺 slug → 10001" id="2c39583f-fbc9-42ab-9764-c1166f9863ce" timestamp="2026-07-08T03:42:20.685Z" tests="3" failures="0" errors="0" time="0.004">
-    <testcase name="HTTP 200" time="0.004" classname="BErrB01A1ValidateSlug10001"/>
-    <testcase name="缺 slug 业务/框架错误码" time="0.004" classname="BErrB01A1ValidateSlug10001"/>
-    <testcase name="slug 相关错误信息" time="0.004" classname="BErrB01A1ValidateSlug10001"/>
+  <testsuite name="B · 参数校验 [err] / B01 A1 validate 缺 slug → 10001" id="4fc4f4d3-b8d8-4d0e-b474-dca7da26aed9" timestamp="2026-07-09T11:06:34.938Z" tests="3" failures="0" errors="0" time="0.007">
+    <testcase name="HTTP 200" time="0.007" classname="BErrB01A1ValidateSlug10001"/>
+    <testcase name="缺 slug 业务/框架错误码" time="0.007" classname="BErrB01A1ValidateSlug10001"/>
+    <testcase name="slug 相关错误信息" time="0.007" classname="BErrB01A1ValidateSlug10001"/>
   </testsuite>
-  <testsuite name="B · 参数校验 [err] / B02 A3 create 缺 seriesSlug → HTTP 400" id="1e3d295a-ac2a-4cdf-bc45-56d8f0fdc1bd" timestamp="2026-07-08T03:42:20.685Z" tests="2" failures="0" errors="0" time="0.004">
-    <testcase name="HTTP 400" time="0.004" classname="BErrB02A3CreateSeriesSlugHttp400"/>
-    <testcase name="seriesSlug 校验" time="0.004" classname="BErrB02A3CreateSeriesSlugHttp400"/>
+  <testsuite name="B · 参数校验 [err] / B02 A3 create 缺 seriesSlug → HTTP 400" id="2be29807-9c0b-48b1-b579-01a7809165ca" timestamp="2026-07-09T11:06:34.938Z" tests="2" failures="0" errors="0" time="0.031">
+    <testcase name="HTTP 400" time="0.031" classname="BErrB02A3CreateSeriesSlugHttp400"/>
+    <testcase name="seriesSlug 校验" time="0.031" classname="BErrB02A3CreateSeriesSlugHttp400"/>
   </testsuite>
-  <testsuite name="B · 参数校验 [err] / B03 A3 create 缺 categoryId → HTTP 400" id="1801779f-5bf5-4f72-8d5e-a1a5d1df41d0" timestamp="2026-07-08T03:42:20.685Z" tests="2" failures="0" errors="0" time="0.003">
-    <testcase name="HTTP 400" time="0.003" classname="BErrB03A3CreateCategoryIdHttp400"/>
-    <testcase name="categoryId 校验" time="0.003" classname="BErrB03A3CreateCategoryIdHttp400"/>
+  <testsuite name="B · 参数校验 [err] / B03 A3 create 缺 categoryId → HTTP 400" id="1ceb6460-461e-4e78-a7a8-160e6d547aff" timestamp="2026-07-09T11:06:34.938Z" tests="2" failures="0" errors="0" time="0.025">
+    <testcase name="HTTP 400" time="0.025" classname="BErrB03A3CreateCategoryIdHttp400"/>
+    <testcase name="categoryId 校验" time="0.025" classname="BErrB03A3CreateCategoryIdHttp400"/>
   </testsuite>
-  <testsuite name="B · 参数校验 [err] / B04 A3 create 缺 operator → HTTP 400" id="2040edfe-0933-42f1-bea7-37292ac5b8d2" timestamp="2026-07-08T03:42:20.685Z" tests="2" failures="0" errors="0" time="0.002">
-    <testcase name="HTTP 400" time="0.002" classname="BErrB04A3CreateOperatorHttp400"/>
-    <testcase name="operator 校验" time="0.002" classname="BErrB04A3CreateOperatorHttp400"/>
+  <testsuite name="B · 参数校验 [err] / B04 A3 create 缺 operator → HTTP 400" id="82bc7001-27f0-407b-9350-8988e3851dc2" timestamp="2026-07-09T11:06:34.938Z" tests="2" failures="0" errors="0" time="0.019">
+    <testcase name="HTTP 400" time="0.019" classname="BErrB04A3CreateOperatorHttp400"/>
+    <testcase name="operator 校验" time="0.019" classname="BErrB04A3CreateOperatorHttp400"/>
   </testsuite>
-  <testsuite name="B · 参数校验 [err] / B05 A4-1 start 缺 operator → HTTP 400" id="5119bc47-3780-4e46-84bc-43d87b3d0a23" timestamp="2026-07-08T03:42:20.685Z" tests="2" failures="0" errors="0" time="0.004">
-    <testcase name="HTTP 400" time="0.004" classname="BErrB05A41StartOperatorHttp400"/>
-    <testcase name="operator 校验" time="0.004" classname="BErrB05A41StartOperatorHttp400"/>
+  <testsuite name="B · 参数校验 [err] / B05 A4-1 start 缺 operator → HTTP 400" id="e165fdf8-e45c-417e-8bb8-fbf0ce0f56ee" timestamp="2026-07-09T11:06:34.938Z" tests="2" failures="0" errors="0" time="0.003">
+    <testcase name="HTTP 400" time="0.003" classname="BErrB05A41StartOperatorHttp400"/>
+    <testcase name="operator 校验" time="0.003" classname="BErrB05A41StartOperatorHttp400"/>
   </testsuite>
-  <testsuite name="B · 参数校验 [err] / B06 A4-2 stop 缺 operator → HTTP 400" id="a2789e5e-b713-4dab-aada-4f75d3d2a094" timestamp="2026-07-08T03:42:20.685Z" tests="2" failures="0" errors="0" time="0.004">
-    <testcase name="HTTP 400" time="0.004" classname="BErrB06A42StopOperatorHttp400"/>
-    <testcase name="operator 校验" time="0.004" classname="BErrB06A42StopOperatorHttp400"/>
+  <testsuite name="B · 参数校验 [err] / B06 A4-2 stop 缺 operator → HTTP 400" id="ad742827-747f-45d7-9434-ad9ddb6261cd" timestamp="2026-07-09T11:06:34.938Z" tests="2" failures="0" errors="0" time="0.002">
+    <testcase name="HTTP 400" time="0.002" classname="BErrB06A42StopOperatorHttp400"/>
+    <testcase name="operator 校验" time="0.002" classname="BErrB06A42StopOperatorHttp400"/>
   </testsuite>
-  <testsuite name="B · 参数校验 [err] / B07 A5 sync 缺 operator → HTTP 400" id="61c24b64-585e-44a4-850b-8fb5bfe7f064" timestamp="2026-07-08T03:42:20.685Z" tests="2" failures="0" errors="0" time="0.004">
-    <testcase name="HTTP 400" time="0.004" classname="BErrB07A5SyncOperatorHttp400"/>
-    <testcase name="operator 校验" time="0.004" classname="BErrB07A5SyncOperatorHttp400"/>
+  <testsuite name="B · 参数校验 [err] / B07 A5 sync 缺 operator → HTTP 400" id="a9b84e11-ca8b-4cc2-a062-853f311330e6" timestamp="2026-07-09T11:06:34.938Z" tests="2" failures="0" errors="0" time="0.005">
+    <testcase name="HTTP 400" time="0.005" classname="BErrB07A5SyncOperatorHttp400"/>
+    <testcase name="operator 校验" time="0.005" classname="BErrB07A5SyncOperatorHttp400"/>
   </testsuite>
-  <testsuite name="C · 边界与异常 / C01 A4-1 start 不存在 id" id="a280eb7f-0efc-4a0a-be8f-acbf3eb67ea1" timestamp="2026-07-08T03:42:20.685Z" tests="2" failures="0" errors="0" time="0.500">
-    <testcase name="HTTP 200" time="0.500" classname="CC01A41StartId"/>
-    <testcase name="instant product not found" time="0.500" classname="CC01A41StartId"/>
+  <testsuite name="C · 边界与异常 / C01 A4-1 start 不存在 id" id="0d644b0c-6e99-43d0-ab6c-562360fa43e4" timestamp="2026-07-09T11:06:34.938Z" tests="2" failures="0" errors="0" time="0.419">
+    <testcase name="HTTP 200" time="0.419" classname="CC01A41StartId"/>
+    <testcase name="instant product not found" time="0.419" classname="CC01A41StartId"/>
   </testsuite>
-  <testsuite name="C · 边界与异常 / C02 A4-2 stop 不存在 id" id="c968112e-419a-415c-8912-521c22b5b831" timestamp="2026-07-08T03:42:20.685Z" tests="2" failures="0" errors="0" time="0.495">
-    <testcase name="HTTP 200" time="0.495" classname="CC02A42StopId"/>
-    <testcase name="instant product not found" time="0.495" classname="CC02A42StopId"/>
+  <testsuite name="C · 边界与异常 / C02 A4-2 stop 不存在 id" id="4112ca36-95fa-45fd-a03f-33e6d3115c28" timestamp="2026-07-09T11:06:34.938Z" tests="2" failures="0" errors="0" time="0.421">
+    <testcase name="HTTP 200" time="0.421" classname="CC02A42StopId"/>
+    <testcase name="instant product not found" time="0.421" classname="CC02A42StopId"/>
   </testsuite>
-  <testsuite name="C · 边界与异常 / C03 A5 sync 不存在 id" id="20f89947-e994-4f9b-9aab-e420b137c7a2" timestamp="2026-07-08T03:42:20.685Z" tests="2" failures="0" errors="0" time="0.513">
-    <testcase name="HTTP 200" time="0.513" classname="CC03A5SyncId"/>
-    <testcase name="instant product not found" time="0.513" classname="CC03A5SyncId"/>
+  <testsuite name="C · 边界与异常 / C03 A5 sync 不存在 id" id="4b19b7dc-05aa-49e4-b1aa-ae0ff99a8f63" timestamp="2026-07-09T11:06:34.938Z" tests="2" failures="0" errors="0" time="0.438">
+    <testcase name="HTTP 200" time="0.438" classname="CC03A5SyncId"/>
+    <testcase name="instant product not found" time="0.438" classname="CC03A5SyncId"/>
   </testsuite>
-  <testsuite name="C · 边界与异常 / C04 A6-1 list sync-runs 不存在 id" id="1b41fbcd-9488-4814-9c17-21102ec5dc21" timestamp="2026-07-08T03:42:20.685Z" tests="2" failures="0" errors="0" time="0.196">
-    <testcase name="HTTP 200" time="0.196" classname="CC04A61ListSyncRunsId"/>
-    <testcase name="instant product not found" time="0.196" classname="CC04A61ListSyncRunsId"/>
+  <testsuite name="C · 边界与异常 / C04 A6-1 list sync-runs 不存在 id" id="ff86105f-9b6a-4167-9612-bc8474004ee0" timestamp="2026-07-09T11:06:34.938Z" tests="2" failures="0" errors="0" time="0.167">
+    <testcase name="HTTP 200" time="0.167" classname="CC04A61ListSyncRunsId"/>
+    <testcase name="instant product not found" time="0.167" classname="CC04A61ListSyncRunsId"/>
   </testsuite>
-  <testsuite name="C · 边界与异常 / C05 A6-2 get sync-run 不存在 runId" id="9d5b1cc2-6261-4b0c-9702-34bc7688e98a" timestamp="2026-07-08T03:42:20.685Z" tests="2" failures="0" errors="0" time="0.400">
-    <testcase name="HTTP 200" time="0.400" classname="CC05A62GetSyncRunRunId"/>
-    <testcase name="sync run not found" time="0.400" classname="CC05A62GetSyncRunRunId"/>
+  <testsuite name="C · 边界与异常 / C05 A6-2 get sync-run 不存在 runId" id="3146d693-2932-48e7-b0cb-5534da21739a" timestamp="2026-07-09T11:06:34.938Z" tests="2" failures="0" errors="0" time="0.336">
+    <testcase name="HTTP 200" time="0.336" classname="CC05A62GetSyncRunRunId"/>
+    <testcase name="sync run not found" time="0.336" classname="CC05A62GetSyncRunRunId"/>
   </testsuite>
-  <testsuite name="C · 边界与异常 / C06 A7-1 list events 不存在 id" id="595bfd13-1621-4223-9f43-a28179496482" timestamp="2026-07-08T03:42:20.685Z" tests="2" failures="0" errors="0" time="0.201">
-    <testcase name="HTTP 200" time="0.201" classname="CC06A71ListEventsId"/>
-    <testcase name="instant product not found" time="0.201" classname="CC06A71ListEventsId"/>
+  <testsuite name="C · 边界与异常 / C06 A7-1 list events 不存在 id" id="9436d5b7-be30-4a34-b662-1adebe208a44" timestamp="2026-07-09T11:06:34.938Z" tests="2" failures="0" errors="0" time="0.175">
+    <testcase name="HTTP 200" time="0.175" classname="CC06A71ListEventsId"/>
+    <testcase name="instant product not found" time="0.175" classname="CC06A71ListEventsId"/>
   </testsuite>
-  <testsuite name="C · 边界与异常 / C07 A7-2 list window-prices 不存在 id" id="27fa7ea8-48b9-41be-a137-c358831b939f" timestamp="2026-07-08T03:42:20.685Z" tests="2" failures="0" errors="0" time="0.203">
-    <testcase name="HTTP 200" time="0.203" classname="CC07A72ListWindowPricesId"/>
-    <testcase name="instant product not found" time="0.203" classname="CC07A72ListWindowPricesId"/>
+  <testsuite name="C · 边界与异常 / C07 A7-2 list window-prices 不存在 id" id="4aa9625b-2890-4474-9b42-1d102492def8" timestamp="2026-07-09T11:06:34.938Z" tests="2" failures="0" errors="0" time="0.174">
+    <testcase name="HTTP 200" time="0.174" classname="CC07A72ListWindowPricesId"/>
+    <testcase name="instant product not found" time="0.174" classname="CC07A72ListWindowPricesId"/>
   </testsuite>
-  <testsuite name="C · 边界与异常 / C08 A3 create 重复 seriesSlug" id="17eecbb3-373a-4671-9f54-582b63777399" timestamp="2026-07-08T03:42:20.685Z" tests="2" failures="0" errors="0" time="0.759">
-    <testcase name="HTTP 200" time="0.759" classname="CC08A3CreateSeriesSlug"/>
-    <testcase name="series slug already exists" time="0.759" classname="CC08A3CreateSeriesSlug"/>
+  <testsuite name="C · 边界与异常 / C08 A3 create 重复 seriesSlug" id="18152eb3-a29f-4043-a059-d2b6082be090" timestamp="2026-07-09T11:06:34.938Z" tests="2" failures="0" errors="0" time="0.612">
+    <testcase name="HTTP 200" time="0.612" classname="CC08A3CreateSeriesSlug"/>
+    <testcase name="series slug already exists" time="0.612" classname="CC08A3CreateSeriesSlug"/>
   </testsuite>
-  <testsuite name="C · 边界与异常 / C09 A3 create 无效 seriesSlug" id="caf311e0-ed3c-4aa8-be7c-5a4f1b9b983a" timestamp="2026-07-08T03:42:20.685Z" tests="2" failures="0" errors="0" time="0.448">
-    <testcase name="HTTP 200" time="0.448" classname="CC09A3CreateSeriesSlug"/>
-    <testcase name="invalid series slug" time="0.448" classname="CC09A3CreateSeriesSlug"/>
+  <testsuite name="C · 边界与异常 / C09 A3 create 无效 seriesSlug" id="7911dbe9-4484-442f-a84b-fa8d58ae1705" timestamp="2026-07-09T11:06:34.938Z" tests="2" failures="0" errors="0" time="0.385">
+    <testcase name="HTTP 200" time="0.385" classname="CC09A3CreateSeriesSlug"/>
+    <testcase name="invalid series slug" time="0.385" classname="CC09A3CreateSeriesSlug"/>
   </testsuite>
-  <testsuite name="D · POST 正向 [ok] / D02 A4-1 start 启用" id="a6c11cbe-1da6-4279-95b8-c2aaf6d8dd29" timestamp="2026-07-08T03:42:20.685Z" tests="3" failures="0" errors="0" time="1.289">
-    <testcase name="HTTP 200" time="1.289" classname="DPostOkD02A41Start"/>
-    <testcase name="ret_code=0" time="1.289" classname="DPostOkD02A41Start"/>
-    <testcase name="status=RUNNING" time="1.289" classname="DPostOkD02A41Start"/>
+  <testsuite name="D · POST 正向 [ok] / D02 A4-1 start 启用" id="99a8b0b5-f694-410c-8abc-69a87115adc2" timestamp="2026-07-09T11:06:34.938Z" tests="4" failures="0" errors="0" time="1.096">
+    <testcase name="HTTP 200" time="1.096" classname="DPostOkD02A41Start"/>
+    <testcase name="ret_code=0" time="1.096" classname="DPostOkD02A41Start"/>
+    <testcase name="status=RUNNING" time="1.096" classname="DPostOkD02A41Start"/>
+    <testcase name="start 后 iconUrl 不变" time="1.096" classname="DPostOkD02A41Start"/>
   </testsuite>
-  <testsuite name="D · POST 正向 [ok] / D03 A5 sync 立即同步" id="27ff19bb-1aa7-49de-8640-6e2d6e787136" timestamp="2026-07-08T03:42:20.685Z" tests="3" failures="2" errors="1" time="0.693">
-    <system-err><![CDATA[Iteration: 0
-
----
-testScriptError: Cannot read properties of null (reading 'syncRunId')
----
-]]></system-err>
-    <testcase name="HTTP 200" time="0.693" classname="DPostOkD03A5Sync"/>
-    <testcase name="ret_code=0" time="0.693" classname="DPostOkD03A5Sync">
-      <failure type="AssertionFailure" message="expected 10001 to deeply equal +0">
-        <![CDATA[Failed 1 times.]]>
-        <![CDATA[Collection JSON ID: e5f6a7b8-c9d0-1234-ef01-pm-instant-product.]]>
-        <![CDATA[Collection name: PM Admin · PmInstantProductController · /private/v1/pm/instant-products.]]>
-        <![CDATA[Request name: D · POST 正向 [ok] / D03 A5 sync 立即同步.]]>
-        <![CDATA[Test description: ret_code=0.]]>
-        <![CDATA[Error message: expected 10001 to deeply equal +0.]]>
-        <![CDATA[Stacktrace: AssertionError: expected 10001 to deeply equal +0
-   at Object.eval sandbox-script.js:2:34).]]>
-      </failure>
-    </testcase>
-    <testcase name="InstantProductSyncTriggerResponse" time="0.693" classname="DPostOkD03A5Sync">
-      <failure type="AssertionFailure" message="Cannot convert undefined or null to object">
-        <![CDATA[Failed 1 times.]]>
-        <![CDATA[Collection JSON ID: e5f6a7b8-c9d0-1234-ef01-pm-instant-product.]]>
-        <![CDATA[Collection name: PM Admin · PmInstantProductController · /private/v1/pm/instant-products.]]>
-        <![CDATA[Request name: D · POST 正向 [ok] / D03 A5 sync 立即同步.]]>
-        <![CDATA[Test description: InstantProductSyncTriggerResponse.]]>
-        <![CDATA[Error message: Cannot convert undefined or null to object.]]>
-        <![CDATA[Stacktrace: TypeError: Cannot convert undefined or null to object
-   at Object.eval sandbox-script.js:3:34).]]>
-      </failure>
-    </testcase>
+  <testsuite name="D · POST 正向 [ok] / D03 A5 sync 立即同步" id="89a35e5f-3f5a-4ba2-a240-ab33f733d5d1" timestamp="2026-07-09T11:06:34.938Z" tests="3" failures="0" errors="0" time="1.135">
+    <testcase name="HTTP 200" time="1.135" classname="DPostOkD03A5Sync"/>
+    <testcase name="ret_code=0" time="1.135" classname="DPostOkD03A5Sync"/>
+    <testcase name="InstantProductSyncTriggerResponse" time="1.135" classname="DPostOkD03A5Sync"/>
   </testsuite>
-  <testsuite name="D · POST 正向 [ok] / D04 A6-2 get sync-run（提交后查询）" id="25015438-bad5-49eb-9e15-9e9f470fab9c" timestamp="2026-07-08T03:42:20.685Z" tests="3" failures="0" errors="0" time="0.399">
-    <testcase name="HTTP 200" time="0.399" classname="DPostOkD04A62GetSyncRun"/>
-    <testcase name="ret_code=0" time="0.399" classname="DPostOkD04A62GetSyncRun"/>
-    <testcase name="sync run 状态合法" time="0.399" classname="DPostOkD04A62GetSyncRun"/>
+  <testsuite name="D · POST 正向 [ok] / D04 A6-2 get sync-run（提交后查询）" id="49048ed2-ff6d-487b-953c-8dea444cd508" timestamp="2026-07-09T11:06:34.938Z" tests="3" failures="0" errors="0" time="0.331">
+    <testcase name="HTTP 200" time="0.331" classname="DPostOkD04A62GetSyncRun"/>
+    <testcase name="ret_code=0" time="0.331" classname="DPostOkD04A62GetSyncRun"/>
+    <testcase name="sync run 状态合法" time="0.331" classname="DPostOkD04A62GetSyncRun"/>
   </testsuite>
-  <testsuite name="D · POST 正向 [ok] / D05 A5 sync 重复提交（sync already running）" id="09069fd9-818b-4276-a191-fedd32d53abd" timestamp="2026-07-08T03:42:20.685Z" tests="2" failures="0" errors="0" time="0.726">
-    <testcase name="HTTP 200" time="0.726" classname="DPostOkD05A5SyncsyncAlreadyRunning"/>
-    <testcase name="sync already running" time="0.726" classname="DPostOkD05A5SyncsyncAlreadyRunning"/>
+  <testsuite name="D · POST 正向 [ok] / D05 A5 sync 重复提交（sync already running）" id="b87b8e89-e306-416d-b524-39679248b984" timestamp="2026-07-09T11:06:34.938Z" tests="2" failures="0" errors="0" time="0.610">
+    <testcase name="HTTP 200" time="0.610" classname="DPostOkD05A5SyncsyncAlreadyRunning"/>
+    <testcase name="sync already running" time="0.610" classname="DPostOkD05A5SyncsyncAlreadyRunning"/>
   </testsuite>
-  <testsuite name="D · POST 正向 [ok] / D06 A6-1 list sync-runs" id="531a7378-51df-4146-be2c-0cf03ad5af53" timestamp="2026-07-08T03:42:20.685Z" tests="3" failures="0" errors="0" time="0.395">
-    <testcase name="HTTP 200" time="0.395" classname="DPostOkD06A61ListSyncRuns"/>
-    <testcase name="ret_code=0" time="0.395" classname="DPostOkD06A61ListSyncRuns"/>
-    <testcase name="至少有一条 sync run" time="0.395" classname="DPostOkD06A61ListSyncRuns"/>
+  <testsuite name="D · POST 正向 [ok] / D06 A6-1 list sync-runs" id="4a0aa2a9-65ca-437d-bd02-7fb6753ef1d1" timestamp="2026-07-09T11:06:34.938Z" tests="3" failures="0" errors="0" time="0.324">
+    <testcase name="HTTP 200" time="0.324" classname="DPostOkD06A61ListSyncRuns"/>
+    <testcase name="ret_code=0" time="0.324" classname="DPostOkD06A61ListSyncRuns"/>
+    <testcase name="至少有一条 sync run" time="0.324" classname="DPostOkD06A61ListSyncRuns"/>
   </testsuite>
-  <testsuite name="D · POST 正向 [ok] / D07 A7-1 list events local" id="3d6d88f1-1b2f-4f24-85c3-d7eaa916d1ab" timestamp="2026-07-08T03:42:20.685Z" tests="3" failures="0" errors="0" time="0.391">
-    <testcase name="HTTP 200" time="0.391" classname="DPostOkD07A71ListEventsLocal"/>
-    <testcase name="ret_code=0" time="0.391" classname="DPostOkD07A71ListEventsLocal"/>
-    <testcase name="local events" time="0.391" classname="DPostOkD07A71ListEventsLocal"/>
+  <testsuite name="D · POST 正向 [ok] / D07 A7-1 list events local" id="efcfb00c-4d64-4a2a-860f-20ea0695048f" timestamp="2026-07-09T11:06:34.938Z" tests="3" failures="0" errors="0" time="0.518">
+    <testcase name="HTTP 200" time="0.518" classname="DPostOkD07A71ListEventsLocal"/>
+    <testcase name="ret_code=0" time="0.518" classname="DPostOkD07A71ListEventsLocal"/>
+    <testcase name="local events" time="0.518" classname="DPostOkD07A71ListEventsLocal"/>
   </testsuite>
-  <testsuite name="D · POST 正向 [ok] / D08 A7-1 list events gamma 预览" id="1be8dc46-2e89-4c28-8bca-0919360524f1" timestamp="2026-07-08T03:42:20.685Z" tests="3" failures="0" errors="0" time="0.653">
-    <testcase name="HTTP 200" time="0.653" classname="DPostOkD08A71ListEventsGamma"/>
-    <testcase name="ret_code=0" time="0.653" classname="DPostOkD08A71ListEventsGamma"/>
-    <testcase name="gamma preview" time="0.653" classname="DPostOkD08A71ListEventsGamma"/>
+  <testsuite name="D · POST 正向 [ok] / D08 A7-1 list events gamma 预览" id="d7c48948-e673-4ff3-8eda-496342ca87cc" timestamp="2026-07-09T11:06:34.938Z" tests="3" failures="0" errors="0" time="0.625">
+    <testcase name="HTTP 200" time="0.625" classname="DPostOkD08A71ListEventsGamma"/>
+    <testcase name="ret_code=0" time="0.625" classname="DPostOkD08A71ListEventsGamma"/>
+    <testcase name="gamma preview" time="0.625" classname="DPostOkD08A71ListEventsGamma"/>
   </testsuite>
-  <testsuite name="D · POST 正向 [ok] / D09 A7-2 list window-prices" id="9d4f5198-e192-4b67-9461-b2e3f24a40ee" timestamp="2026-07-08T03:42:20.685Z" tests="3" failures="0" errors="0" time="0.402">
-    <testcase name="HTTP 200" time="0.402" classname="DPostOkD09A72ListWindowPrices"/>
-    <testcase name="ret_code=0" time="0.402" classname="DPostOkD09A72ListWindowPrices"/>
-    <testcase name="window prices" time="0.402" classname="DPostOkD09A72ListWindowPrices"/>
+  <testsuite name="D · POST 正向 [ok] / D09 A7-2 list window-prices" id="69e2e3f4-e35b-4010-9184-281f3de87b82" timestamp="2026-07-09T11:06:34.938Z" tests="3" failures="0" errors="0" time="0.330">
+    <testcase name="HTTP 200" time="0.330" classname="DPostOkD09A72ListWindowPrices"/>
+    <testcase name="ret_code=0" time="0.330" classname="DPostOkD09A72ListWindowPrices"/>
+    <testcase name="window prices" time="0.330" classname="DPostOkD09A72ListWindowPrices"/>
   </testsuite>
-  <testsuite name="D · POST 正向 [ok] / D10 A4-2 stop 停用" id="e1f46dd2-bc89-44fb-8d97-2f2aa3943fd1" timestamp="2026-07-08T03:42:20.685Z" tests="3" failures="0" errors="0" time="1.284">
-    <testcase name="HTTP 200" time="1.284" classname="DPostOkD10A42Stop"/>
-    <testcase name="ret_code=0" time="1.284" classname="DPostOkD10A42Stop"/>
-    <testcase name="status=STOPPED" time="1.284" classname="DPostOkD10A42Stop"/>
+  <testsuite name="D · POST 正向 [ok] / D10 A4-2 stop 停用" id="7448516f-89ec-4bf3-937f-e0f3f7389b15" timestamp="2026-07-09T11:06:34.938Z" tests="4" failures="0" errors="0" time="1.108">
+    <testcase name="HTTP 200" time="1.108" classname="DPostOkD10A42Stop"/>
+    <testcase name="ret_code=0" time="1.108" classname="DPostOkD10A42Stop"/>
+    <testcase name="status=STOPPED" time="1.108" classname="DPostOkD10A42Stop"/>
+    <testcase name="stop 后 iconUrl 不变" time="1.108" classname="DPostOkD10A42Stop"/>
   </testsuite>
 </testsuites>

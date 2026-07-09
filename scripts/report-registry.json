@@ -87,6 +87,22 @@
         { "id": "windowPrices", "pathIncludes": "/window-prices", "summaryLabel": "A7-2 window-prices" },
         { "id": "other", "pathIncludes": null, "summaryLabel": "其它" }
       ]
+    },
+    {
+      "id": "pm-ce-updown-local",
+      "title": "UpdownEventController",
+      "controller": "5m 涨跌 windows/history/chart + event 回归 · local :8080",
+      "json": "reports/newman-ce-updown-local.json",
+      "html": "reports/controllers/pm-ce-updown-local.html",
+      "apiGroups": [
+        { "id": "updownWindows", "pathIncludes": "/event/updown/windows", "summaryLabel": "GET updown/windows" },
+        { "id": "updownHistory", "pathIncludes": "/event/updown/history", "summaryLabel": "GET updown/history" },
+        { "id": "updownChart", "pathIncludes": "/event/updown/chart", "summaryLabel": "GET updown/chart" },
+        { "id": "eventList", "pathIncludes": "/event/list", "summaryLabel": "GET /event/list" },
+        { "id": "eventDetail", "pathIncludes": "/event?", "summaryLabel": "GET /event 详情" },
+        { "id": "categories", "pathIncludes": "/categories", "summaryLabel": "Setup categories" },
+        { "id": "other", "pathIncludes": null, "summaryLabel": "其它" }
+      ]
     }
   ]
 }

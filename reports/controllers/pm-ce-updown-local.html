@@ -1,0 +1,1499 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>UpdownEventController · Newman 报告</title>
+  <style>
+    :root {
+      --bg: #f2f2f2; --surface: #fff; --border: #e5e5e5; --text: #333; --muted: #888;
+      --header: #1e293b; --passed: #16a34a; --failed: #dc2626; --accent: #2563eb;
+      --shadow: 0 1px 3px rgba(0,0,0,.08); --radius: 6px;
+    }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: ui-sans-serif, system-ui, "PingFang SC", "Microsoft YaHei", sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; font-size: 14px; }
+    .topbar { background: var(--header); color: #fff; padding: 16px clamp(16px,4vw,40px); }
+    .topbar h1 { margin: 0 0 4px; font-size: 1.3rem; }
+    .topbar .sub { color: rgba(255,255,255,.75); font-size: .85rem; }
+    .topbar a { color: #93c5fd; text-decoration: none; font-size: .85rem; }
+    .topbar a:hover { text-decoration: underline; }
+    .page { padding: 20px clamp(16px,4vw,40px) 48px; max-width: 1320px; margin: 0 auto; }
+    .widgets { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin-bottom: 20px; }
+    .widget { background: var(--surface); border-radius: var(--radius); padding: 12px 14px; border-left: 4px solid var(--accent); box-shadow: var(--shadow); }
+    .widget h3 { margin: 0 0 6px; font-size: .7rem; text-transform: uppercase; color: var(--muted); }
+    .widget .val { font-size: 1.5rem; font-weight: 700; }
+    .widget.passed { border-left-color: var(--passed); } .widget.passed .val { color: var(--passed); }
+    .widget.failed { border-left-color: var(--failed); } .widget.failed .val { color: var(--failed); }
+    .badge { display: inline-block; padding: 4px 12px; border-radius: 4px; font-size: .8rem; font-weight: 600; color: #fff; margin-bottom: 20px; }
+    .badge.ok { background: var(--passed); } .badge.bad { background: var(--failed); }
+    section { margin-top: 28px; }
+    section h2 { font-size: .92rem; font-weight: 600; text-transform: uppercase; color: var(--muted); margin: 0 0 12px; padding-bottom: 8px; border-bottom: 2px solid var(--border); }
+    .hint { color: var(--muted); font-size: .82rem; margin: -6px 0 12px; }
+    table { width: 100%; border-collapse: collapse; font-size: .86rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+    th, td { padding: 9px 11px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+    th { background: #fafafa; color: var(--muted); font-size: .72rem; text-transform: uppercase; font-weight: 600; }
+    tr:last-child td { border-bottom: none; }
+    tr.row-fail { background: #fff5f5; }
+    .row-folder { font-size: .75rem; color: var(--muted); }
+    .api-code { font-size: .78rem; word-break: break-all; }
+    .focus-cell .kv { display: inline-block; margin: 2px 6px 2px 0; padding: 2px 6px; background: #f3f4f6; border-radius: 4px; font-size: .78rem; }
+    .focus-cell .kv.important { background: #eff6ff; border: 1px solid #bfdbfe; }
+    .focus-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: var(--radius); padding: 10px 12px; margin-bottom: 10px; }
+    .focus-title { font-size: .72rem; font-weight: 600; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+    .kv-grid .kv { display: inline-block; margin: 3px 8px 3px 0; font-size: .82rem; }
+    .kv-grid .kv.important b { color: var(--accent); }
+    .summary-api code { font-size: .82rem; }
+    details.details-folder, details.details-req { border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 8px; background: var(--surface); box-shadow: var(--shadow); }
+    details > summary { list-style: none; cursor: pointer; padding: 10px 14px; display: flex; flex-wrap: wrap; gap: 8px 14px; user-select: none; background: #fafafa; }
+    details[open] > summary { border-bottom: 1px solid var(--border); }
+    details > summary::-webkit-details-marker { display: none; }
+    details > summary::before { content: "▸"; color: var(--muted); margin-right: 6px; transition: transform .15s; }
+    details[open] > summary::before { transform: rotate(90deg); }
+    .folder-inner { padding: 8px 10px 10px; }
+    details.details-req { margin-left: 10px; }
+    .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+    .status-dot.passed { background: var(--passed); } .status-dot.failed { background: var(--failed); }
+    .sum-meta, .folder-meta, .meta { color: var(--muted); font-size: .8rem; }
+    .sum-title { font-weight: 600; }
+    .details-body { padding: 12px; }
+    .payload { max-height: 280px; overflow: auto; background: #f8f8f8; border: 1px solid var(--border); border-radius: var(--radius); padding: 10px; font-size: .78rem; white-space: pre-wrap; word-break: break-word; }
+    .payload-label { font-size: .7rem; font-weight: 600; color: var(--muted); margin: 10px 0 4px; text-transform: uppercase; }
+    .fail-card { border-left: 4px solid var(--failed); background: #fff5f5; padding: 12px; margin-bottom: 10px; border-radius: var(--radius); }
+    .assert-ok { color: var(--passed); font-weight: 600; }
+    .assert-bad { color: var(--failed); font-weight: 600; }
+    .bad { color: var(--failed); font-weight: 600; }
+    .ok-inline { color: var(--passed); }
+    .muted { color: var(--muted); }
+    footer { margin-top: 28px; padding-top: 14px; border-top: 1px solid var(--border); color: var(--muted); font-size: .78rem; }
+    footer a { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <p><a href="../index.html">← 返回汇总</a></p>
+    <h1>UpdownEventController</h1>
+    <div class="sub">5m 涨跌 windows/history/chart + event 回归 · local :8080 · PM CE · UpdownEventController · local · 生成 2026/7/9 18:11:25</div>
+  </div>
+  <div class="page">
+    <div class="widgets">
+      <div class="widget"><h3>请求</h3><div class="val">18</div></div>
+      <div class="widget"><h3>断言</h3><div class="val">57</div></div>
+      <div class="widget passed"><h3>失败断言</h3><div class="val">0</div></div>
+      <div class="widget"><h3>平均耗时</h3><div class="val" style="font-size:1rem">559 ms</div></div>
+    </div>
+    <span class="badge ok">全部通过</span>
+
+    <section>
+      <h2>用例一览（测试要点）</h2>
+      <p class="hint">点击用例名跳转明细；<code>ret_code</code> 与 <code>result</code> 关键字段已提取。</p>
+      <table class="case-overview">
+        <thead><tr>
+          <th>#</th><th>用例</th><th>API</th><th>HTTP</th><th>ret_code</th>
+          <th>测试要点</th><th>断言</th><th>失败</th><th>耗时</th>
+        </tr></thead>
+        <tbody><tr class="">
+    <td>1</td>
+    <td><a href="#req-1">S01 拉取分类树并写入 categoryId</a><div class="row-folder">00 Setup</div></td>
+    <td><code class="api-code">GET /ce/pm/v1/api/categories</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span></td>
+    <td>3</td>
+    <td class="assert-ok">0</td>
+    <td>575 ms</td>
+  </tr>
+<tr class="">
+    <td>2</td>
+    <td><a href="#req-2">S02 从 event/list 解析 updown 上下文</a><div class="row-folder">00 Setup</div></td>
+    <td><code class="api-code">GET /ce/pm/v1/api/event/list?page=1&amp;pageSize=100&amp;eventStatus=ALL&amp;sortBy=START_TIME_DESC</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=1</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>pageSize</b>=50</span></td>
+    <td>3</td>
+    <td class="assert-ok">0</td>
+    <td>1744 ms</td>
+  </tr>
+<tr class="">
+    <td>3</td>
+    <td><a href="#req-3">S03 windows(seriesSlug) 写入 updownEventId / anchorEventId</a><div class="row-folder">00 Setup</div></td>
+    <td><code class="api-code">GET /ce/pm/v1/api/event/updown/windows?seriesSlug=btc-up-or-down-5m</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span></td>
+    <td>4</td>
+    <td class="assert-ok">0</td>
+    <td>357 ms</td>
+  </tr>
+<tr class="">
+    <td>4</td>
+    <td><a href="#req-4">A01 windows · seriesSlug</a><div class="row-folder">A · Updown 正向</div></td>
+    <td><code class="api-code">GET /ce/pm/v1/api/event/updown/windows?seriesSlug=btc-up-or-down-5m</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span></td>
+    <td>5</td>
+    <td class="assert-ok">0</td>
+    <td>346 ms</td>
+  </tr>
+<tr class="">
+    <td>5</td>
+    <td><a href="#req-5">A02 windows · instantProductId</a><div class="row-folder">A · Updown 正向</div></td>
+    <td><code class="api-code">GET /ce/pm/v1/api/event/updown/windows?instantProductId=1</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span></td>
+    <td>5</td>
+    <td class="assert-ok">0</td>
+    <td>328 ms</td>
+  </tr>
+<tr class="">
+    <td>6</td>
+    <td><a href="#req-6">A04 history · limit=5</a><div class="row-folder">A · Updown 正向</div></td>
+    <td><code class="api-code">GET /ce/pm/v1/api/event/updown/history?instantProductId=1&amp;limit=5</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=0 条</span></td>
+    <td>5</td>
+    <td class="assert-ok">0</td>
+    <td>333 ms</td>
+  </tr>
+<tr class="">
+    <td>7</td>
+    <td><a href="#req-7">B01 list · 默认分页壳</a><div class="row-folder">B · Event 列表 / 详情回归</div></td>
+    <td><code class="api-code">GET /ce/pm/v1/api/event/list?page=1&amp;pageSize=20</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=1</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>pageSize</b>=20</span></td>
+    <td>4</td>
+    <td class="assert-ok">0</td>
+    <td>1729 ms</td>
+  </tr>
+<tr class="">
+    <td>8</td>
+    <td><a href="#req-8">B02 list · updown 叠加字段</a><div class="row-folder">B · Event 列表 / 详情回归</div></td>
+    <td><code class="api-code">GET /ce/pm/v1/api/event/list?page=1&amp;pageSize=50&amp;eventStatus=ALL&amp;sortBy=START_TIME_DESC</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=1</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>pageSize</b>=50</span></td>
+    <td>3</td>
+    <td class="assert-ok">0</td>
+    <td>190 ms</td>
+  </tr>
+<tr class="">
+    <td>9</td>
+    <td><a href="#req-9">B03 list · categoryId 筛选</a><div class="row-folder">B · Event 列表 / 详情回归</div></td>
+    <td><code class="api-code">GET /ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=10</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=1</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>pageSize</b>=10</span></td>
+    <td>4</td>
+    <td class="assert-ok">0</td>
+    <td>1449 ms</td>
+  </tr>
+<tr class="">
+    <td>10</td>
+    <td><a href="#req-10">B04 detail · GET /event?eventId=</a><div class="row-folder">B · Event 列表 / 详情回归</div></td>
+    <td><code class="api-code">GET /ce/pm/v1/api/event?eventId=680069</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>id</b>=680069</span><span class="kv"><b>title</b>=Bitcoin Up or Down - July 9, 6:10AM-6:15AM ET</span><span class="kv"><b>imageUrl</b>=https://polymarket-upload.s3.us-east-2.amazonaws.com/BTC+fullsize.png</span><span class="kv"><b>endDate</b>=1783592100</span><span class="kv"><b>totalVolume</b>=1.96078300</span><span class="kv"><b>multiMarket</b>=false</span><span class="kv"><b>rules</b>=This market will resolve to &quot;Up&quot; if the Bitcoin price at the end of the time range specified in the title is greater than or equal to the price at the beginning of that range. Otherwise, it will resolve to &quot;Down&quot;.
+The resolution source for this market is information from Chainlink, specifically the BTC/USD data stream available at https://data.chain.link/streams/btc-usd.
+Please note that this market is about the price according to Chainlink data stream BTC/USD, not according to other sources or spot markets.</span><span class="kv"><b>workflowStatus</b>=APPROVED</span><span class="kv"><b>instantProductId</b>=1</span><span class="kv"><b>windowLabel</b>=10:18 - 10:15</span></td>
+    <td>4</td>
+    <td class="assert-ok">0</td>
+    <td>1191 ms</td>
+  </tr>
+<tr class="">
+    <td>11</td>
+    <td><a href="#req-11">B05 detail · updown 叠加字段</a><div class="row-folder">B · Event 列表 / 详情回归</div></td>
+    <td><code class="api-code">GET /ce/pm/v1/api/event?eventId=680069</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>id</b>=680069</span><span class="kv"><b>title</b>=Bitcoin Up or Down - July 9, 6:10AM-6:15AM ET</span><span class="kv"><b>imageUrl</b>=https://polymarket-upload.s3.us-east-2.amazonaws.com/BTC+fullsize.png</span><span class="kv"><b>endDate</b>=1783592100</span><span class="kv"><b>totalVolume</b>=1.96078300</span><span class="kv"><b>multiMarket</b>=false</span><span class="kv"><b>rules</b>=This market will resolve to &quot;Up&quot; if the Bitcoin price at the end of the time range specified in the title is greater than or equal to the price at the beginning of that range. Otherwise, it will resolve to &quot;Down&quot;.
+The resolution source for this market is information from Chainlink, specifically the BTC/USD data stream available at https://data.chain.link/streams/btc-usd.
+Please note that this market is about the price according to Chainlink data stream BTC/USD, not according to other sources or spot markets.</span><span class="kv"><b>workflowStatus</b>=APPROVED</span><span class="kv"><b>instantProductId</b>=1</span><span class="kv"><b>windowLabel</b>=10:18 - 10:15</span></td>
+    <td>3</td>
+    <td class="assert-ok">0</td>
+    <td>981 ms</td>
+  </tr>
+<tr class="">
+    <td>12</td>
+    <td><a href="#req-12">[err] C01 windows 缺 instantProductId 与 seriesSlug</a><div class="row-folder">C · 参数校验 / 边界</div></td>
+    <td><code class="api-code">GET /ce/pm/v1/api/event/updown/windows</code></td>
+    <td>200</td>
+    <td><span class="assert-bad">10001</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=10001</span><span class="kv important"><b>ret_msg</b>=instantProductId or seriesSlug is required</span></td>
+    <td>3</td>
+    <td class="assert-ok">0</td>
+    <td>4 ms</td>
+  </tr>
+<tr class="">
+    <td>13</td>
+    <td><a href="#req-13">[err] C02 windows 假 seriesSlug</a><div class="row-folder">C · 参数校验 / 边界</div></td>
+    <td><code class="api-code">GET /ce/pm/v1/api/event/updown/windows?seriesSlug=non-existent-series-slug-xyz</code></td>
+    <td>200</td>
+    <td><span class="assert-bad">10001</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=10001</span><span class="kv important"><b>ret_msg</b>=instant product not found</span></td>
+    <td>3</td>
+    <td class="assert-ok">0</td>
+    <td>177 ms</td>
+  </tr>
+<tr class="">
+    <td>14</td>
+    <td><a href="#req-14">[err] C03 history 缺 instantProductId</a><div class="row-folder">C · 参数校验 / 边界</div></td>
+    <td><code class="api-code">GET /ce/pm/v1/api/event/updown/history</code></td>
+    <td>200</td>
+    <td><span class="assert-bad">50000</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=50000</span><span class="kv important"><b>ret_msg</b>=Required request parameter 'instantProductId' for method parameter type Long is not present</span></td>
+    <td>1</td>
+    <td class="assert-ok">0</td>
+    <td>6 ms</td>
+  </tr>
+<tr class="">
+    <td>15</td>
+    <td><a href="#req-15">[err] C04 history 假 instantProductId</a><div class="row-folder">C · 参数校验 / 边界</div></td>
+    <td><code class="api-code">GET /ce/pm/v1/api/event/updown/history?instantProductId=999999999</code></td>
+    <td>200</td>
+    <td><span class="assert-bad">10001</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=10001</span><span class="kv important"><b>ret_msg</b>=instant product not found</span></td>
+    <td>2</td>
+    <td class="assert-ok">0</td>
+    <td>164 ms</td>
+  </tr>
+<tr class="">
+    <td>16</td>
+    <td><a href="#req-16">[err] C05 chart 缺 eventId</a><div class="row-folder">C · 参数校验 / 边界</div></td>
+    <td><code class="api-code">GET /ce/pm/v1/api/event/updown/chart</code></td>
+    <td>200</td>
+    <td><span class="assert-bad">50000</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=50000</span><span class="kv important"><b>ret_msg</b>=Required request parameter 'eventId' for method parameter type Long is not present</span></td>
+    <td>1</td>
+    <td class="assert-ok">0</td>
+    <td>3 ms</td>
+  </tr>
+<tr class="">
+    <td>17</td>
+    <td><a href="#req-17">[err] C06 chart 假 eventId</a><div class="row-folder">C · 参数校验 / 边界</div></td>
+    <td><code class="api-code">GET /ce/pm/v1/api/event/updown/chart?eventId=999999999</code></td>
+    <td>200</td>
+    <td><span class="assert-bad">10001</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=10001</span><span class="kv important"><b>ret_msg</b>=invalid updown eventId</span></td>
+    <td>2</td>
+    <td class="assert-ok">0</td>
+    <td>167 ms</td>
+  </tr>
+<tr class="">
+    <td>18</td>
+    <td><a href="#req-18">[err] C07 detail 假 eventId</a><div class="row-folder">C · 参数校验 / 边界</div></td>
+    <td><code class="api-code">GET /ce/pm/v1/api/event?eventId=fake-event-id-not-exists</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span></td>
+    <td>2</td>
+    <td class="assert-ok">0</td>
+    <td>324 ms</td>
+  </tr></tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>接口汇总</h2>
+      <table class="summary-api">
+        <thead><tr><th>接口</th><th>用例</th><th>断言</th><th>失败</th><th>结果</th></tr></thead>
+        <tbody><tr>
+    <td><code>GET updown/windows</code></td>
+    <td>5</td>
+    <td>20</td>
+    <td>0</td>
+    <td class="assert-ok">全通过</td>
+  </tr>
+<tr>
+    <td><code>GET updown/history</code></td>
+    <td>3</td>
+    <td>8</td>
+    <td>0</td>
+    <td class="assert-ok">全通过</td>
+  </tr>
+<tr>
+    <td><code>GET updown/chart</code></td>
+    <td>2</td>
+    <td>3</td>
+    <td>0</td>
+    <td class="assert-ok">全通过</td>
+  </tr>
+<tr>
+    <td><code>GET /event/list</code></td>
+    <td>4</td>
+    <td>14</td>
+    <td>0</td>
+    <td class="assert-ok">全通过</td>
+  </tr>
+<tr>
+    <td><code>GET /event 详情</code></td>
+    <td>3</td>
+    <td>9</td>
+    <td>0</td>
+    <td class="assert-ok">全通过</td>
+  </tr>
+<tr>
+    <td><code>Setup categories</code></td>
+    <td>1</td>
+    <td>3</td>
+    <td>0</td>
+    <td class="assert-ok">全通过</td>
+  </tr>
+</tbody>
+      </table>
+    </section>
+
+    
+
+    <section><h2>分节明细</h2><section id="api-updownWindows">
+    <h2>一、GET updown/windows</h2>
+    <p class="hint">（本运行无此类请求）</p>
+  </section>
+
+<section id="api-updownHistory">
+    <h2>二、GET updown/history</h2>
+    <p class="hint">（本运行无此类请求）</p>
+  </section>
+
+<section id="api-updownChart">
+    <h2>三、GET updown/chart</h2>
+    <p class="hint">（本运行无此类请求）</p>
+  </section>
+
+<section id="api-eventList">
+    <h2>四、GET /event/list</h2>
+    <p class="hint">（本运行无此类请求）</p>
+  </section>
+
+<section id="api-eventDetail">
+    <h2>五、GET /event 详情</h2>
+    <p class="hint">（本运行无此类请求）</p>
+  </section>
+
+<section id="api-categories">
+    <h2>六、Setup categories</h2>
+    <p class="hint">（本运行无此类请求）</p>
+  </section>
+
+<section id="api-other">
+    <h2>其它请求</h2>
+    <details class="details-folder">
+    <summary><span class="folder-title">00 Setup</span><span class="folder-meta">3 个用例 · <span class="ok-inline">断言全过</span></span></summary>
+    <div class="folder-inner"><details class="details-req" id="req-1">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>S01 拉取分类树并写入 categoryId</span><span class="sum-meta">GET /ce/pm/v1/api/categories · HTTP 200 · 575 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span></div>
+        </div>
+        <div class="meta">响应体积 3664 字节</div>
+        <div class="meta">http://localhost:8080/ce/pm/v1/api/categories</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET http://localhost:8080/ce/pm/v1/api/categories
+lang: zh-Hant</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;tree&quot;: [
+      {
+        &quot;id&quot;: 100,
+        &quot;parentId&quot;: 0,
+        &quot;name&quot;: &quot;加密资产&quot;,
+        &quot;translateKey&quot;: &quot;pmCryptoAssets&quot;,
+        &quot;slug&quot;: &quot;crypto-assets&quot;,
+        &quot;level&quot;: 1,
+        &quot;isLeaf&quot;: false,
+        &quot;marketCount&quot;: 7,
+        &quot;i18nName&quot;: &quot;加密資產&quot;,
+        &quot;children&quot;: [
+          {
+            &quot;id&quot;: 101,
+            &quot;parentId&quot;: 100,
+            &quot;name&quot;: &quot;比特币&quot;,
+            &quot;translateKey&quot;: &quot;pmBitcoin&quot;,
+            &quot;slug&quot;: &quot;bitcoin&quot;,
+            &quot;level&quot;: 2,
+            &quot;isLeaf&quot;: true,
+            &quot;marketCount&quot;: 7,
+            &quot;i18nName&quot;: &quot;比特幣&quot;
+          },
+          {
+            &quot;id&quot;: 102,
+            &quot;parentId&quot;: 100,
+            &quot;name&quot;: &quot;以太坊&quot;,
+            &quot;translateKey&quot;: &quot;pmEthereum&quot;,
+            &quot;slug&quot;: &quot;ethereum&quot;,
+            &quot;level&quot;: 2,
+            &quot;isLeaf&quot;: true,
+            &quot;marketCount&quot;: 0,
+            &quot;i18nName&quot;: &quot;以太坊&quot;
+          },
+          {
+            &quot;id&quot;: 103,
+            &quot;parentId&quot;: 100,
+            &quot;name&quot;: &quot;索拉纳&quot;,
+            &quot;translateKey&quot;: &quot;pmSolana&quot;,
+            &quot;slug&quot;: &quot;solana&quot;,
+            &quot;level&quot;: 2,
+            &quot;isLeaf&quot;: true,
+            &quot;marketCount&quot;: 0,
+            &quot;i18nName&quot;: &quot;索拉納&quot;
+          },
+          {
+            &quot;id&quot;: 104,
+            &quot;parentId&quot;: 100,
+            &quot;name&quot;: &quot;瑞波&quot;,
+            &quot;translateKey&quot;: &quot;pmRipple&quot;,
+            &quot;slug&quot;: &quot;ripple&quot;,
+            &quot;level&quot;: 2,
+            &quot;isLeaf&quot;: true,
+            &quot;marketCount&quot;: 0,
+            &quot;i18nName&quot;: &quot;瑞波&quot;
+          },
+          {
+            &quot;id&quot;: 105,
+            &quot;parentId&quot;: 100,
+            &quot;name&quot;: &quot;微策略&quot;,
+            &quot;translateKey&quot;: &quot;pmMicroStrategy&quot;,
+            &quot;slug&quot;: &quot;micro-strategy&quot;,
+            &quot;level&quot;: 2,
+            &quot;isLeaf&quot;: true,
+            &quot;marketCount&quot;: 0,
+            &quot;i18nName&quot;: &quot;微策略&quot;
+          }
+        ]
+      
+…（已截断，全文 6915 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code 为 0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 已写入 categoryId=101</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-2">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>S02 从 event/list 解析 updown 上下文</span><span class="sum-meta">GET /ce/pm/v1/api/event/list?page=1&amp;pageSize=100&amp;eventStatus=ALL&amp;sortBy=START_TIME_DESC · HTTP 200 · 1744 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=1</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>pageSize</b>=50</span></div>
+        </div>
+        <div class="meta">响应体积 1582 字节</div>
+        <div class="meta">http://localhost:8080/ce/pm/v1/api/event/list?page=1&amp;pageSize=100&amp;eventStatus=ALL&amp;sortBy=START_TIME_DESC</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET http://localhost:8080/ce/pm/v1/api/event/list?page=1&amp;pageSize=100&amp;eventStatus=ALL&amp;sortBy=START_TIME_DESC
+lang: zh-Hant</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;page&quot;: 1,
+    &quot;pageSize&quot;: 50,
+    &quot;total&quot;: 1,
+    &quot;list&quot;: [
+      {
+        &quot;id&quot;: &quot;680069&quot;,
+        &quot;title&quot;: &quot;Bitcoin Up or Down - July 9, 6:10AM-6:15AM ET&quot;,
+        &quot;imageUrl&quot;: &quot;https://polymarket-upload.s3.us-east-2.amazonaws.com/BTC+fullsize.png&quot;,
+        &quot;endDate&quot;: 1783592100,
+        &quot;totalVolume&quot;: &quot;1.96078300&quot;,
+        &quot;live&quot;: null,
+        &quot;markets&quot;: [
+          {
+            &quot;id&quot;: &quot;2844198&quot;,
+            &quot;description&quot;: &quot;This market will resolve to \&quot;Up\&quot; if the Bitcoin price at the end of the time range specified in the title is greater than or equal to the price at the beginning of that range. Otherwise, it will resolve to \&quot;Down\&quot;.\nThe resolution source for this market is information from Chainlink, specifically the BTC/USD data stream available at https://data.chain.link/streams/btc-usd.\nPlease note that this market is about the price according to Chainlink data stream BTC/USD, not according to other sources or spot markets.&quot;,
+            &quot;question&quot;: &quot;Bitcoin Up or Down - July 9, 6:10AM-6:15AM ET&quot;,
+            &quot;miniTitle&quot;: &quot;&quot;,
+            &quot;sportsMarketType&quot;: null,
+            &quot;sportsDisplayColumn&quot;: null,
+            &quot;groupItemTitle&quot;: null,
+            &quot;groupItemThreshold&quot;: 0,
+            &quot;wdlSlot&quot;: null,
+            &quot;line&quot;: null,
+            &quot;totalVolume&quot;: &quot;1.96078300&quot;,
+            &quot;outcomes&quot;: {
+              &quot;Up&quot;: {
+                &quot;outcomePrice&quot;: &quot;0.59&quot;,
+                &quot;clobTokenId&quot;: &quot;66890408084618955614818738388266015794110365912476986023377682148680606891377&quot;
+              },
+              &quot;Down&quot;: {
+                &quot;outcomePrice&quot;: &quot;0.42&quot;,
+                &quot;clobTokenId&quot;: &quot;101715608928264100530949120224649365525756611309572161520106975836783506294487&quot;
+              }
+            },
+            &quot;tick
+…（已截断，全文 2177 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code 为 0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 已写入 instantProductId / sourceEventId</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-3">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>S03 windows(seriesSlug) 写入 updownEventId / anchorEventId</span><span class="sum-meta">GET /ce/pm/v1/api/event/updown/windows?seriesSlug=btc-up-or-down-5m · HTTP 200 · 357 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span></div>
+        </div>
+        <div class="meta">响应体积 118 字节</div>
+        <div class="meta">http://localhost:8080/ce/pm/v1/api/event/updown/windows?seriesSlug=btc-up-or-down-5m</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET http://localhost:8080/ce/pm/v1/api/event/updown/windows?seriesSlug=btc-up-or-down-5m
+lang: zh-Hant</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;current&quot;: null,
+    &quot;past&quot;: [],
+    &quot;next&quot;: []
+  },
+  &quot;ext_code&quot;: null,
+  &quot;time_now&quot;: &quot;1783591877242&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code 为 0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — result 含 current/past/next</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 已尝试写入 updownEventId</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details></div>
+  </details>
+<details class="details-folder">
+    <summary><span class="folder-title">A · Updown 正向</span><span class="folder-meta">3 个用例 · <span class="ok-inline">断言全过</span></span></summary>
+    <div class="folder-inner"><details class="details-req" id="req-4">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>A01 windows · seriesSlug</span><span class="sum-meta">GET /ce/pm/v1/api/event/updown/windows?seriesSlug=btc-up-or-down-5m · HTTP 200 · 346 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span></div>
+        </div>
+        <div class="meta">响应体积 118 字节</div>
+        <div class="meta">http://localhost:8080/ce/pm/v1/api/event/updown/windows?seriesSlug=btc-up-or-down-5m</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET http://localhost:8080/ce/pm/v1/api/event/updown/windows?seriesSlug=btc-up-or-down-5m
+lang: zh-Hant</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;current&quot;: null,
+    &quot;past&quot;: [],
+    &quot;next&quot;: []
+  },
+  &quot;ext_code&quot;: null,
+  &quot;time_now&quot;: &quot;1783591877617&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code 为 0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — Responses 壳字段</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — current 含 eventId / windowLabel / phase</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — past/next 为数组</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-5">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>A02 windows · instantProductId</span><span class="sum-meta">GET /ce/pm/v1/api/event/updown/windows?instantProductId=1 · HTTP 200 · 328 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span></div>
+        </div>
+        <div class="meta">响应体积 118 字节</div>
+        <div class="meta">http://localhost:8080/ce/pm/v1/api/event/updown/windows?instantProductId=1</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET http://localhost:8080/ce/pm/v1/api/event/updown/windows?instantProductId=1
+lang: zh-Hant</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;current&quot;: null,
+    &quot;past&quot;: [],
+    &quot;next&quot;: []
+  },
+  &quot;ext_code&quot;: null,
+  &quot;time_now&quot;: &quot;1783591877961&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code 为 0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — Responses 壳字段</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — result 含 current/past/next</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — current 有数据时 eventId 为正整数</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-6">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>A04 history · limit=5</span><span class="sum-meta">GET /ce/pm/v1/api/event/updown/history?instantProductId=1&amp;limit=5 · HTTP 200 · 333 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=0 条</span></div>
+        </div>
+        <div class="meta">响应体积 94 字节</div>
+        <div class="meta">http://localhost:8080/ce/pm/v1/api/event/updown/history?instantProductId=1&amp;limit=5</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET http://localhost:8080/ce/pm/v1/api/event/updown/history?instantProductId=1&amp;limit=5
+lang: zh-Hant</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;items&quot;: []
+  },
+  &quot;ext_code&quot;: null,
+  &quot;time_now&quot;: &quot;1783591878313&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code 为 0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — Responses 壳字段</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — items 为数组</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 历史项字段（有数据时）</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details></div>
+  </details>
+<details class="details-folder">
+    <summary><span class="folder-title">B · Event 列表 / 详情回归</span><span class="folder-meta">5 个用例 · <span class="ok-inline">断言全过</span></span></summary>
+    <div class="folder-inner"><details class="details-req" id="req-7">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>B01 list · 默认分页壳</span><span class="sum-meta">GET /ce/pm/v1/api/event/list?page=1&amp;pageSize=20 · HTTP 200 · 1729 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=1</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>pageSize</b>=20</span></div>
+        </div>
+        <div class="meta">响应体积 1582 字节</div>
+        <div class="meta">http://localhost:8080/ce/pm/v1/api/event/list?page=1&amp;pageSize=20</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET http://localhost:8080/ce/pm/v1/api/event/list?page=1&amp;pageSize=20
+lang: zh-Hant</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;page&quot;: 1,
+    &quot;pageSize&quot;: 20,
+    &quot;total&quot;: 1,
+    &quot;list&quot;: [
+      {
+        &quot;id&quot;: &quot;680069&quot;,
+        &quot;title&quot;: &quot;Bitcoin Up or Down - July 9, 6:10AM-6:15AM ET&quot;,
+        &quot;imageUrl&quot;: &quot;https://polymarket-upload.s3.us-east-2.amazonaws.com/BTC+fullsize.png&quot;,
+        &quot;endDate&quot;: 1783592100,
+        &quot;totalVolume&quot;: &quot;1.96078300&quot;,
+        &quot;live&quot;: null,
+        &quot;markets&quot;: [
+          {
+            &quot;id&quot;: &quot;2844198&quot;,
+            &quot;description&quot;: &quot;This market will resolve to \&quot;Up\&quot; if the Bitcoin price at the end of the time range specified in the title is greater than or equal to the price at the beginning of that range. Otherwise, it will resolve to \&quot;Down\&quot;.\nThe resolution source for this market is information from Chainlink, specifically the BTC/USD data stream available at https://data.chain.link/streams/btc-usd.\nPlease note that this market is about the price according to Chainlink data stream BTC/USD, not according to other sources or spot markets.&quot;,
+            &quot;question&quot;: &quot;Bitcoin Up or Down - July 9, 6:10AM-6:15AM ET&quot;,
+            &quot;miniTitle&quot;: &quot;&quot;,
+            &quot;sportsMarketType&quot;: null,
+            &quot;sportsDisplayColumn&quot;: null,
+            &quot;groupItemTitle&quot;: null,
+            &quot;groupItemThreshold&quot;: 0,
+            &quot;wdlSlot&quot;: null,
+            &quot;line&quot;: null,
+            &quot;totalVolume&quot;: &quot;1.96078300&quot;,
+            &quot;outcomes&quot;: {
+              &quot;Up&quot;: {
+                &quot;outcomePrice&quot;: &quot;0.63&quot;,
+                &quot;clobTokenId&quot;: &quot;66890408084618955614818738388266015794110365912476986023377682148680606891377&quot;
+              },
+              &quot;Down&quot;: {
+                &quot;outcomePrice&quot;: &quot;0.38&quot;,
+                &quot;clobTokenId&quot;: &quot;101715608928264100530949120224649365525756611309572161520106975836783506294487&quot;
+              }
+            },
+            &quot;tick
+…（已截断，全文 2177 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code 为 0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 分页壳 page/pageSize/total/list</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 列表模式 markets[].rules 为 null（有数据时）</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-8">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>B02 list · updown 叠加字段</span><span class="sum-meta">GET /ce/pm/v1/api/event/list?page=1&amp;pageSize=50&amp;eventStatus=ALL&amp;sortBy=START_TIME_DESC · HTTP 200 · 190 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=1</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>pageSize</b>=50</span></div>
+        </div>
+        <div class="meta">响应体积 1582 字节</div>
+        <div class="meta">http://localhost:8080/ce/pm/v1/api/event/list?page=1&amp;pageSize=50&amp;eventStatus=ALL&amp;sortBy=START_TIME_DESC</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET http://localhost:8080/ce/pm/v1/api/event/list?page=1&amp;pageSize=50&amp;eventStatus=ALL&amp;sortBy=START_TIME_DESC
+lang: zh-Hant</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;page&quot;: 1,
+    &quot;pageSize&quot;: 50,
+    &quot;total&quot;: 1,
+    &quot;list&quot;: [
+      {
+        &quot;id&quot;: &quot;680069&quot;,
+        &quot;title&quot;: &quot;Bitcoin Up or Down - July 9, 6:10AM-6:15AM ET&quot;,
+        &quot;imageUrl&quot;: &quot;https://polymarket-upload.s3.us-east-2.amazonaws.com/BTC+fullsize.png&quot;,
+        &quot;endDate&quot;: 1783592100,
+        &quot;totalVolume&quot;: &quot;1.96078300&quot;,
+        &quot;live&quot;: null,
+        &quot;markets&quot;: [
+          {
+            &quot;id&quot;: &quot;2844198&quot;,
+            &quot;description&quot;: &quot;This market will resolve to \&quot;Up\&quot; if the Bitcoin price at the end of the time range specified in the title is greater than or equal to the price at the beginning of that range. Otherwise, it will resolve to \&quot;Down\&quot;.\nThe resolution source for this market is information from Chainlink, specifically the BTC/USD data stream available at https://data.chain.link/streams/btc-usd.\nPlease note that this market is about the price according to Chainlink data stream BTC/USD, not according to other sources or spot markets.&quot;,
+            &quot;question&quot;: &quot;Bitcoin Up or Down - July 9, 6:10AM-6:15AM ET&quot;,
+            &quot;miniTitle&quot;: &quot;&quot;,
+            &quot;sportsMarketType&quot;: null,
+            &quot;sportsDisplayColumn&quot;: null,
+            &quot;groupItemTitle&quot;: null,
+            &quot;groupItemThreshold&quot;: 0,
+            &quot;wdlSlot&quot;: null,
+            &quot;line&quot;: null,
+            &quot;totalVolume&quot;: &quot;1.96078300&quot;,
+            &quot;outcomes&quot;: {
+              &quot;Up&quot;: {
+                &quot;outcomePrice&quot;: &quot;0.63&quot;,
+                &quot;clobTokenId&quot;: &quot;66890408084618955614818738388266015794110365912476986023377682148680606891377&quot;
+              },
+              &quot;Down&quot;: {
+                &quot;outcomePrice&quot;: &quot;0.38&quot;,
+                &quot;clobTokenId&quot;: &quot;101715608928264100530949120224649365525756611309572161520106975836783506294487&quot;
+              }
+            },
+            &quot;tick
+…（已截断，全文 2177 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code 为 0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — updown 事件含 instantProductId</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-9">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>B03 list · categoryId 筛选</span><span class="sum-meta">GET /ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=10 · HTTP 200 · 1449 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>total</b>=1</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>pageSize</b>=10</span></div>
+        </div>
+        <div class="meta">响应体积 1582 字节</div>
+        <div class="meta">http://localhost:8080/ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=10</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET http://localhost:8080/ce/pm/v1/api/event/list?categoryId=101&amp;page=1&amp;pageSize=10
+lang: zh-Hant</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;page&quot;: 1,
+    &quot;pageSize&quot;: 10,
+    &quot;total&quot;: 1,
+    &quot;list&quot;: [
+      {
+        &quot;id&quot;: &quot;680069&quot;,
+        &quot;title&quot;: &quot;Bitcoin Up or Down - July 9, 6:10AM-6:15AM ET&quot;,
+        &quot;imageUrl&quot;: &quot;https://polymarket-upload.s3.us-east-2.amazonaws.com/BTC+fullsize.png&quot;,
+        &quot;endDate&quot;: 1783592100,
+        &quot;totalVolume&quot;: &quot;1.96078300&quot;,
+        &quot;live&quot;: null,
+        &quot;markets&quot;: [
+          {
+            &quot;id&quot;: &quot;2844198&quot;,
+            &quot;description&quot;: &quot;This market will resolve to \&quot;Up\&quot; if the Bitcoin price at the end of the time range specified in the title is greater than or equal to the price at the beginning of that range. Otherwise, it will resolve to \&quot;Down\&quot;.\nThe resolution source for this market is information from Chainlink, specifically the BTC/USD data stream available at https://data.chain.link/streams/btc-usd.\nPlease note that this market is about the price according to Chainlink data stream BTC/USD, not according to other sources or spot markets.&quot;,
+            &quot;question&quot;: &quot;Bitcoin Up or Down - July 9, 6:10AM-6:15AM ET&quot;,
+            &quot;miniTitle&quot;: &quot;&quot;,
+            &quot;sportsMarketType&quot;: null,
+            &quot;sportsDisplayColumn&quot;: null,
+            &quot;groupItemTitle&quot;: null,
+            &quot;groupItemThreshold&quot;: 0,
+            &quot;wdlSlot&quot;: null,
+            &quot;line&quot;: null,
+            &quot;totalVolume&quot;: &quot;1.96078300&quot;,
+            &quot;outcomes&quot;: {
+              &quot;Up&quot;: {
+                &quot;outcomePrice&quot;: &quot;0.63&quot;,
+                &quot;clobTokenId&quot;: &quot;66890408084618955614818738388266015794110365912476986023377682148680606891377&quot;
+              },
+              &quot;Down&quot;: {
+                &quot;outcomePrice&quot;: &quot;0.38&quot;,
+                &quot;clobTokenId&quot;: &quot;101715608928264100530949120224649365525756611309572161520106975836783506294487&quot;
+              }
+            },
+            &quot;tick
+…（已截断，全文 2177 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code 为 0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — pageSize 与请求一致</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — list 长度不超过 pageSize</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-10">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>B04 detail · GET /event?eventId=</span><span class="sum-meta">GET /ce/pm/v1/api/event?eventId=680069 · HTTP 200 · 1191 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>id</b>=680069</span><span class="kv"><b>title</b>=Bitcoin Up or Down - July 9, 6:10AM-6:15AM ET</span><span class="kv"><b>imageUrl</b>=https://polymarket-upload.s3.us-east-2.amazonaws.com/BTC+fullsize.png</span><span class="kv"><b>endDate</b>=1783592100</span><span class="kv"><b>totalVolume</b>=1.96078300</span><span class="kv"><b>multiMarket</b>=false</span><span class="kv"><b>rules</b>=This market will resolve to &quot;Up&quot; if the Bitcoin price at the end of the time range specified in the title is greater than or equal to the price at the beginning of that range. Otherwise, it will resolve to &quot;Down&quot;.
+The resolution source for this market is information from Chainlink, specifically the BTC/USD data stream available at https://data.chain.link/streams/btc-usd.
+Please note that this market is about the price according to Chainlink data stream BTC/USD, not according to other sources or spot markets.</span><span class="kv"><b>workflowStatus</b>=APPROVED</span><span class="kv"><b>instantProductId</b>=1</span><span class="kv"><b>windowLabel</b>=10:18 - 10:15</span></div>
+        </div>
+        <div class="meta">响应体积 2588 字节</div>
+        <div class="meta">http://localhost:8080/ce/pm/v1/api/event?eventId=680069</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET http://localhost:8080/ce/pm/v1/api/event?eventId=680069
+lang: zh-Hant</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;id&quot;: &quot;680069&quot;,
+    &quot;title&quot;: &quot;Bitcoin Up or Down - July 9, 6:10AM-6:15AM ET&quot;,
+    &quot;imageUrl&quot;: &quot;https://polymarket-upload.s3.us-east-2.amazonaws.com/BTC+fullsize.png&quot;,
+    &quot;endDate&quot;: 1783592100,
+    &quot;totalVolume&quot;: &quot;1.96078300&quot;,
+    &quot;live&quot;: null,
+    &quot;markets&quot;: [
+      {
+        &quot;id&quot;: &quot;2844198&quot;,
+        &quot;description&quot;: &quot;This market will resolve to \&quot;Up\&quot; if the Bitcoin price at the end of the time range specified in the title is greater than or equal to the price at the beginning of that range. Otherwise, it will resolve to \&quot;Down\&quot;.\nThe resolution source for this market is information from Chainlink, specifically the BTC/USD data stream available at https://data.chain.link/streams/btc-usd.\nPlease note that this market is about the price according to Chainlink data stream BTC/USD, not according to other sources or spot markets.&quot;,
+        &quot;question&quot;: &quot;Bitcoin Up or Down - July 9, 6:10AM-6:15AM ET&quot;,
+        &quot;miniTitle&quot;: &quot;&quot;,
+        &quot;sportsMarketType&quot;: null,
+        &quot;sportsDisplayColumn&quot;: null,
+        &quot;groupItemTitle&quot;: null,
+        &quot;groupItemThreshold&quot;: 0,
+        &quot;wdlSlot&quot;: null,
+        &quot;line&quot;: null,
+        &quot;totalVolume&quot;: &quot;1.96078300&quot;,
+        &quot;outcomes&quot;: {
+          &quot;Up&quot;: {
+            &quot;outcomePrice&quot;: &quot;0.63&quot;,
+            &quot;clobTokenId&quot;: &quot;66890408084618955614818738388266015794110365912476986023377682148680606891377&quot;
+          },
+          &quot;Down&quot;: {
+            &quot;outcomePrice&quot;: &quot;0.38&quot;,
+            &quot;clobTokenId&quot;: &quot;101715608928264100530949120224649365525756611309572161520106975836783506294487&quot;
+          }
+        },
+        &quot;tickSize&quot;: &quot;0.01&quot;,
+        &quot;maxOrderAmount&quot;: &quot;1000&quot;,
+        &quot;rules&quot;: &quot;This market will resolve to \&quot;Up\&quot; if the Bitcoin price at the end of the time range specified in the title is greater than or
+…（已截断，全文 2976 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code 为 0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — EventVo 基础字段</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 详情含 rules（与列表不同）</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-11">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>B05 detail · updown 叠加字段</span><span class="sum-meta">GET /ce/pm/v1/api/event?eventId=680069 · HTTP 200 · 981 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>id</b>=680069</span><span class="kv"><b>title</b>=Bitcoin Up or Down - July 9, 6:10AM-6:15AM ET</span><span class="kv"><b>imageUrl</b>=https://polymarket-upload.s3.us-east-2.amazonaws.com/BTC+fullsize.png</span><span class="kv"><b>endDate</b>=1783592100</span><span class="kv"><b>totalVolume</b>=1.96078300</span><span class="kv"><b>multiMarket</b>=false</span><span class="kv"><b>rules</b>=This market will resolve to &quot;Up&quot; if the Bitcoin price at the end of the time range specified in the title is greater than or equal to the price at the beginning of that range. Otherwise, it will resolve to &quot;Down&quot;.
+The resolution source for this market is information from Chainlink, specifically the BTC/USD data stream available at https://data.chain.link/streams/btc-usd.
+Please note that this market is about the price according to Chainlink data stream BTC/USD, not according to other sources or spot markets.</span><span class="kv"><b>workflowStatus</b>=APPROVED</span><span class="kv"><b>instantProductId</b>=1</span><span class="kv"><b>windowLabel</b>=10:18 - 10:15</span></div>
+        </div>
+        <div class="meta">响应体积 2588 字节</div>
+        <div class="meta">http://localhost:8080/ce/pm/v1/api/event?eventId=680069</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET http://localhost:8080/ce/pm/v1/api/event?eventId=680069
+lang: zh-Hant</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;id&quot;: &quot;680069&quot;,
+    &quot;title&quot;: &quot;Bitcoin Up or Down - July 9, 6:10AM-6:15AM ET&quot;,
+    &quot;imageUrl&quot;: &quot;https://polymarket-upload.s3.us-east-2.amazonaws.com/BTC+fullsize.png&quot;,
+    &quot;endDate&quot;: 1783592100,
+    &quot;totalVolume&quot;: &quot;1.96078300&quot;,
+    &quot;live&quot;: null,
+    &quot;markets&quot;: [
+      {
+        &quot;id&quot;: &quot;2844198&quot;,
+        &quot;description&quot;: &quot;This market will resolve to \&quot;Up\&quot; if the Bitcoin price at the end of the time range specified in the title is greater than or equal to the price at the beginning of that range. Otherwise, it will resolve to \&quot;Down\&quot;.\nThe resolution source for this market is information from Chainlink, specifically the BTC/USD data stream available at https://data.chain.link/streams/btc-usd.\nPlease note that this market is about the price according to Chainlink data stream BTC/USD, not according to other sources or spot markets.&quot;,
+        &quot;question&quot;: &quot;Bitcoin Up or Down - July 9, 6:10AM-6:15AM ET&quot;,
+        &quot;miniTitle&quot;: &quot;&quot;,
+        &quot;sportsMarketType&quot;: null,
+        &quot;sportsDisplayColumn&quot;: null,
+        &quot;groupItemTitle&quot;: null,
+        &quot;groupItemThreshold&quot;: 0,
+        &quot;wdlSlot&quot;: null,
+        &quot;line&quot;: null,
+        &quot;totalVolume&quot;: &quot;1.96078300&quot;,
+        &quot;outcomes&quot;: {
+          &quot;Up&quot;: {
+            &quot;outcomePrice&quot;: &quot;0.52&quot;,
+            &quot;clobTokenId&quot;: &quot;66890408084618955614818738388266015794110365912476986023377682148680606891377&quot;
+          },
+          &quot;Down&quot;: {
+            &quot;outcomePrice&quot;: &quot;0.49&quot;,
+            &quot;clobTokenId&quot;: &quot;101715608928264100530949120224649365525756611309572161520106975836783506294487&quot;
+          }
+        },
+        &quot;tickSize&quot;: &quot;0.01&quot;,
+        &quot;maxOrderAmount&quot;: &quot;1000&quot;,
+        &quot;rules&quot;: &quot;This market will resolve to \&quot;Up\&quot; if the Bitcoin price at the end of the time range specified in the title is greater than or
+…（已截断，全文 2976 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code 为 0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — updown 详情叠加字段</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details></div>
+  </details>
+<details class="details-folder">
+    <summary><span class="folder-title">C · 参数校验 / 边界</span><span class="folder-meta">7 个用例 · <span class="ok-inline">断言全过</span></span></summary>
+    <div class="folder-inner"><details class="details-req" id="req-12">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>[err] C01 windows 缺 instantProductId 与 seriesSlug</span><span class="sum-meta">GET /ce/pm/v1/api/event/updown/windows · HTTP 200 · 4 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=10001</span><span class="kv important"><b>ret_msg</b>=instantProductId or seriesSlug is required</span></div>
+        </div>
+        <div class="meta">响应体积 130 字节</div>
+        <div class="meta">http://localhost:8080/ce/pm/v1/api/event/updown/windows</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET http://localhost:8080/ce/pm/v1/api/event/updown/windows
+lang: zh-Hant</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 10001,
+  &quot;ret_msg&quot;: &quot;instantProductId or seriesSlug is required&quot;,
+  &quot;result&quot;: null,
+  &quot;ext_code&quot;: null,
+  &quot;time_now&quot;: &quot;1783591883995&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code 为 10001</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 错误信息含 required</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-13">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>[err] C02 windows 假 seriesSlug</span><span class="sum-meta">GET /ce/pm/v1/api/event/updown/windows?seriesSlug=non-existent-series-slug-xyz · HTTP 200 · 177 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=10001</span><span class="kv important"><b>ret_msg</b>=instant product not found</span></div>
+        </div>
+        <div class="meta">响应体积 113 字节</div>
+        <div class="meta">http://localhost:8080/ce/pm/v1/api/event/updown/windows?seriesSlug=non-existent-series-slug-xyz</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET http://localhost:8080/ce/pm/v1/api/event/updown/windows?seriesSlug=non-existent-series-slug-xyz
+lang: zh-Hant</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 10001,
+  &quot;ret_msg&quot;: &quot;instant product not found&quot;,
+  &quot;result&quot;: null,
+  &quot;ext_code&quot;: null,
+  &quot;time_now&quot;: &quot;1783591884184&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code 为 10001</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — instant product not found</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-14">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>[err] C03 history 缺 instantProductId</span><span class="sum-meta">GET /ce/pm/v1/api/event/updown/history · HTTP 200 · 6 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=50000</span><span class="kv important"><b>ret_msg</b>=Required request parameter 'instantProductId' for method parameter type Long is not present</span></div>
+        </div>
+        <div class="meta">响应体积 179 字节</div>
+        <div class="meta">http://localhost:8080/ce/pm/v1/api/event/updown/history</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET http://localhost:8080/ce/pm/v1/api/event/updown/history
+lang: zh-Hant</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 50000,
+  &quot;ret_msg&quot;: &quot;Required request parameter 'instantProductId' for method parameter type Long is not present&quot;,
+  &quot;result&quot;: null,
+  &quot;ext_code&quot;: null,
+  &quot;time_now&quot;: &quot;1783591884211&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 缺参：HTTP 400 或 ret_code 50000/10001</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-15">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>[err] C04 history 假 instantProductId</span><span class="sum-meta">GET /ce/pm/v1/api/event/updown/history?instantProductId=999999999 · HTTP 200 · 164 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=10001</span><span class="kv important"><b>ret_msg</b>=instant product not found</span></div>
+        </div>
+        <div class="meta">响应体积 113 字节</div>
+        <div class="meta">http://localhost:8080/ce/pm/v1/api/event/updown/history?instantProductId=999999999</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET http://localhost:8080/ce/pm/v1/api/event/updown/history?instantProductId=999999999
+lang: zh-Hant</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 10001,
+  &quot;ret_msg&quot;: &quot;instant product not found&quot;,
+  &quot;result&quot;: null,
+  &quot;ext_code&quot;: null,
+  &quot;time_now&quot;: &quot;1783591884389&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code 为 10001</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-16">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>[err] C05 chart 缺 eventId</span><span class="sum-meta">GET /ce/pm/v1/api/event/updown/chart · HTTP 200 · 3 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=50000</span><span class="kv important"><b>ret_msg</b>=Required request parameter 'eventId' for method parameter type Long is not present</span></div>
+        </div>
+        <div class="meta">响应体积 170 字节</div>
+        <div class="meta">http://localhost:8080/ce/pm/v1/api/event/updown/chart</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET http://localhost:8080/ce/pm/v1/api/event/updown/chart
+lang: zh-Hant</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 50000,
+  &quot;ret_msg&quot;: &quot;Required request parameter 'eventId' for method parameter type Long is not present&quot;,
+  &quot;result&quot;: null,
+  &quot;ext_code&quot;: null,
+  &quot;time_now&quot;: &quot;1783591884404&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 缺参：HTTP 400 或 ret_code 50000/10001</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-17">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>[err] C06 chart 假 eventId</span><span class="sum-meta">GET /ce/pm/v1/api/event/updown/chart?eventId=999999999 · HTTP 200 · 167 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=10001</span><span class="kv important"><b>ret_msg</b>=invalid updown eventId</span></div>
+        </div>
+        <div class="meta">响应体积 110 字节</div>
+        <div class="meta">http://localhost:8080/ce/pm/v1/api/event/updown/chart?eventId=999999999</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET http://localhost:8080/ce/pm/v1/api/event/updown/chart?eventId=999999999
+lang: zh-Hant</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 10001,
+  &quot;ret_msg&quot;: &quot;invalid updown eventId&quot;,
+  &quot;result&quot;: null,
+  &quot;ext_code&quot;: null,
+  &quot;time_now&quot;: &quot;1783591884583&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code 为 10001</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-18">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>[err] C07 detail 假 eventId</span><span class="sum-meta">GET /ce/pm/v1/api/event?eventId=fake-event-id-not-exists · HTTP 200 · 324 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span></div>
+        </div>
+        <div class="meta">响应体积 86 字节</div>
+        <div class="meta">http://localhost:8080/ce/pm/v1/api/event?eventId=fake-event-id-not-exists</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET http://localhost:8080/ce/pm/v1/api/event?eventId=fake-event-id-not-exists
+lang: zh-Hant</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: null,
+  &quot;ext_code&quot;: null,
+  &quot;time_now&quot;: &quot;1783591884922&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 不存在 eventId 时 result 为 null</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details></div>
+  </details>
+  </section></section>
+
+    <footer>由 <code>newman-json-to-zh-html.mjs</code> 生成 · registry <code>pm-ce-updown-local</code></footer>
+  </div>
+</body>
+</html>

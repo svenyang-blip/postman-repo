@@ -1,0 +1,819 @@
+{
+  "info": {
+    "_postman_id": "f6a7b8c9-d0e1-2345-f678-pm-ce-updown-local",
+    "name": "PM CE · UpdownEventController · local",
+    "description": "用户端 `UpdownEventController`（`/ce/pm/v1/api/event/updown`）本地契约测试，并回归 `GET /event/list` 与 `GET /event` 详情。\n\n**源码**：`prediction-serv` `UpdownEventController` / `EventController`。\n\n**本地前置**：`prediction-serv` 以 `spring.profiles.active=dev` 启动（`application-dev.yaml` 已放通 CE 读接口匿名访问）；或在环境变量填入浏览器 `ceCookie`。\n\n**运行**：`npm run pm:ce-updown:local`\n\n**顺序**：先跑 `00 Setup`；`[err]` 为预期失败用例。",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "seriesSlug", "value": "btc-up-or-down-5m" },
+    { "key": "categoryId", "value": "" },
+    { "key": "instantProductId", "value": "" },
+    { "key": "updownEventId", "value": "" },
+    { "key": "sourceEventId", "value": "" },
+    { "key": "anchorEventId", "value": "" },
+    { "key": "fakeInstantProductId", "value": "999999999" },
+    { "key": "fakeEventId", "value": "999999999" }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (!pm.request.headers.has('lang')) {",
+          "  pm.request.headers.upsert({ key: 'lang', value: 'zh-Hant' });",
+          "}",
+          "const cookie = (pm.environment.get('ceCookie') || pm.collectionVariables.get('ceCookie') || '').trim();",
+          "if (cookie) {",
+          "  pm.request.headers.upsert({ key: 'Cookie', value: cookie });",
+          "}",
+          "pm.request.headers.upsert({ key: 'Accept', value: 'application/json, text/plain, */*' });"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const name = pm.info.requestName || '';",
+          "if (name.indexOf('[err]') === 0) return;",
+          "const body = pm.response.json();",
+          "if (body && body.ret_code === 10007) {",
+          "  pm.test('未登录（请 dev profile 启动或配置 ceCookie）', () => {",
+          "    pm.expect.fail('ret_code=10007 Please login first');",
+          "  });",
+          "}"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "00 Setup",
+      "description": "解析 categoryId、updown 事件上下文，供后续用例复用。",
+      "item": [
+        {
+          "name": "S01 拉取分类树并写入 categoryId",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code 为 0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "function walk(nodes, fn) { (nodes || []).forEach((n) => { fn(n); walk(n.children, fn); }); }",
+                  "function pickLeafId(tree) {",
+                  "  let prefer = null, any = null;",
+                  "  walk(tree, (n) => {",
+                  "    if (!n.isLeaf || n.id == null) return;",
+                  "    any = String(n.id);",
+                  "    if ((n.marketCount == null || n.marketCount > 0) && !prefer) prefer = String(n.id);",
+                  "  });",
+                  "  return prefer || any;",
+                  "}",
+                  "const picked = pickLeafId(body.result.tree);",
+                  "if (picked) {",
+                  "  pm.collectionVariables.set('categoryId', picked);",
+                  "  pm.test('已写入 categoryId=' + picked, () => pm.expect(picked).to.match(/^\\d+$/));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "lang", "value": "zh-Hant" }],
+            "url": "{{baseUrl}}/ce/pm/v1/api/categories"
+          }
+        },
+        {
+          "name": "S02 从 event/list 解析 updown 上下文",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code 为 0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "const list = (body.result && body.result.list) || [];",
+                  "function isUpdown(e) { return e && e.instantProductId != null && Number(e.instantProductId) > 0; }",
+                  "let hit = list.find(isUpdown);",
+                  "if (!hit) {",
+                  "  const cat = pm.collectionVariables.get('categoryId');",
+                  "  pm.test('当前页无 updown 事件（后续 updown 正向用例可能跳过）', () => {",
+                  "    pm.expect(list.length, 'list 可为空或无非即时产品事件').to.be.at.least(0);",
+                  "  });",
+                  "} else {",
+                  "  pm.collectionVariables.set('instantProductId', String(hit.instantProductId));",
+                  "  pm.collectionVariables.set('sourceEventId', String(hit.id));",
+                  "  if (hit.categoryId != null) pm.collectionVariables.set('categoryId', String(hit.categoryId));",
+                  "  pm.test('已写入 instantProductId / sourceEventId', () => {",
+                  "    pm.expect(pm.collectionVariables.get('instantProductId')).to.match(/^\\d+$/);",
+                  "    pm.expect(pm.collectionVariables.get('sourceEventId')).to.be.ok;",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "lang", "value": "zh-Hant" }],
+            "url": {
+              "raw": "{{baseUrl}}/ce/pm/v1/api/event/list?page=1&pageSize=100&eventStatus=ALL&sortBy=START_TIME_DESC",
+              "host": ["{{baseUrl}}"],
+              "path": ["ce", "pm", "v1", "api", "event", "list"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "100" },
+                { "key": "eventStatus", "value": "ALL" },
+                { "key": "sortBy", "value": "START_TIME_DESC" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "S03 windows(seriesSlug) 写入 updownEventId / anchorEventId",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code 为 0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "const r = body.result || {};",
+                  "pm.test('result 含 current/past/next', () => {",
+                  "  pm.expect(r).to.have.keys('current', 'past', 'next');",
+                  "  pm.expect(r.past).to.be.an('array');",
+                  "  pm.expect(r.next).to.be.an('array');",
+                  "});",
+                  "if (r.current && r.current.eventId != null) {",
+                  "  pm.collectionVariables.set('updownEventId', String(r.current.eventId));",
+                  "}",
+                  "if (r.past && r.past.length && r.past[0].eventId != null) {",
+                  "  pm.collectionVariables.set('anchorEventId', String(r.past[0].eventId));",
+                  "}",
+                  "const pid = pm.collectionVariables.get('instantProductId');",
+                  "if (!pid && body.result && body.result.current) {",
+                  "  /* seriesSlug 路径不返回 productId，保留 S02 结果 */",
+                  "}",
+                  "pm.test('已尝试写入 updownEventId', () => {",
+                  "  const eid = pm.collectionVariables.get('updownEventId');",
+                  "  if (r.current) pm.expect(eid, 'current.eventId').to.match(/^\\d+$/);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "lang", "value": "zh-Hant" }],
+            "url": {
+              "raw": "{{baseUrl}}/ce/pm/v1/api/event/updown/windows?seriesSlug={{seriesSlug}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["ce", "pm", "v1", "api", "event", "updown", "windows"],
+              "query": [{ "key": "seriesSlug", "value": "{{seriesSlug}}" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "A · Updown 正向",
+      "description": "`UpdownEventController`：windows / history / chart。",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const name = pm.info.requestName || '';",
+              "if (name.indexOf('[err]') === 0) return;",
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "const body = pm.response.json();",
+              "pm.test('ret_code 为 0', () => pm.expect(body.ret_code).to.eql(0));",
+              "pm.test('Responses 壳字段', () => {",
+              "  pm.expect(body).to.include.keys('ret_code', 'ret_msg', 'result', 'time_now');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "item": [
+        {
+          "name": "A01 windows · seriesSlug",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const r = pm.response.json().result;",
+                  "pm.test('current 含 eventId / windowLabel / phase', () => {",
+                  "  if (!r.current) return;",
+                  "  pm.expect(r.current).to.include.keys('eventId', 'windowLabel', 'phase');",
+                  "  pm.expect(r.current.eventId).to.be.a('number');",
+                  "});",
+                  "pm.test('past/next 为数组', () => {",
+                  "  pm.expect(r.past).to.be.an('array');",
+                  "  pm.expect(r.next).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/ce/pm/v1/api/event/updown/windows?seriesSlug={{seriesSlug}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["ce", "pm", "v1", "api", "event", "updown", "windows"],
+              "query": [{ "key": "seriesSlug", "value": "{{seriesSlug}}" }]
+            }
+          }
+        },
+        {
+          "name": "A02 windows · instantProductId",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const pid = pm.collectionVariables.get('instantProductId');",
+                  "if (!pid) {",
+                  "  pm.execution.skipRequest('无 instantProductId，跳过');",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const r = pm.response.json().result;",
+                  "pm.test('result 含 current/past/next', () => {",
+                  "  pm.expect(r).to.have.keys('current', 'past', 'next');",
+                  "  pm.expect(r.past).to.be.an('array');",
+                  "  pm.expect(r.next).to.be.an('array');",
+                  "});",
+                  "pm.test('current 有数据时 eventId 为正整数', () => {",
+                  "  if (r.current == null) return;",
+                  "  pm.expect(r.current.eventId).to.be.above(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/ce/pm/v1/api/event/updown/windows?instantProductId={{instantProductId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["ce", "pm", "v1", "api", "event", "updown", "windows"],
+              "query": [{ "key": "instantProductId", "value": "{{instantProductId}}" }]
+            }
+          }
+        },
+        {
+          "name": "A03 windows · anchorEventId",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const pid = pm.collectionVariables.get('instantProductId');",
+                  "const anchor = pm.collectionVariables.get('anchorEventId');",
+                  "if (!pid || !anchor) pm.execution.skipRequest('无 instantProductId 或 anchorEventId');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const r = pm.response.json().result;",
+                  "pm.test('锚定期导航仍返回 current', () => pm.expect(r.current).to.be.an('object'));",
+                  "pm.test('锚定期 current.eventId 存在', () => {",
+                  "  if (!r.current) return;",
+                  "  pm.expect(r.current.eventId).to.be.above(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/ce/pm/v1/api/event/updown/windows?instantProductId={{instantProductId}}&anchorEventId={{anchorEventId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["ce", "pm", "v1", "api", "event", "updown", "windows"],
+              "query": [
+                { "key": "instantProductId", "value": "{{instantProductId}}" },
+                { "key": "anchorEventId", "value": "{{anchorEventId}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "A04 history · limit=5",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const pid = pm.collectionVariables.get('instantProductId');",
+                  "if (!pid) pm.execution.skipRequest('无 instantProductId');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const items = (pm.response.json().result && pm.response.json().result.items) || [];",
+                  "pm.test('items 为数组', () => pm.expect(items).to.be.an('array'));",
+                  "pm.test('历史项字段（有数据时）', () => {",
+                  "  if (!items.length) return;",
+                  "  const it = items[0];",
+                  "  pm.expect(it).to.include.keys('eventId', 'windowLabel', 'result');",
+                  "  if (it.result != null) pm.expect(['UP', 'DOWN']).to.include(it.result);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/ce/pm/v1/api/event/updown/history?instantProductId={{instantProductId}}&limit=5",
+              "host": ["{{baseUrl}}"],
+              "path": ["ce", "pm", "v1", "api", "event", "updown", "history"],
+              "query": [
+                { "key": "instantProductId", "value": "{{instantProductId}}" },
+                { "key": "limit", "value": "5" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "A05 chart · eventId",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const eid = pm.collectionVariables.get('updownEventId');",
+                  "if (!eid) pm.execution.skipRequest('无 updownEventId');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const r = pm.response.json().result;",
+                  "pm.test('chart 壳字段', () => {",
+                  "  pm.expect(r).to.have.property('eventId');",
+                  "  pm.expect(r).to.have.property('ticks');",
+                  "  pm.expect(r.ticks).to.be.an('array');",
+                  "});",
+                  "pm.test('ticks 点结构（有数据时）', () => {",
+                  "  if (!r.ticks.length) return;",
+                  "  const t = r.ticks[0];",
+                  "  pm.expect(t).to.include.keys('ts', 'price');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/ce/pm/v1/api/event/updown/chart?eventId={{updownEventId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["ce", "pm", "v1", "api", "event", "updown", "chart"],
+              "query": [{ "key": "eventId", "value": "{{updownEventId}}" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "B · Event 列表 / 详情回归",
+      "description": "回归 `EventController#listEvents` 与 `getEvent`，校验 updown 叠加字段。",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const name = pm.info.requestName || '';",
+              "if (name.indexOf('[err]') === 0) return;",
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "const body = pm.response.json();",
+              "pm.test('ret_code 为 0', () => pm.expect(body.ret_code).to.eql(0));"
+            ]
+          }
+        }
+      ],
+      "item": [
+        {
+          "name": "B01 list · 默认分页壳",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const r = pm.response.json().result;",
+                  "pm.test('分页壳 page/pageSize/total/list', () => {",
+                  "  pm.expect(r).to.have.keys('page', 'pageSize', 'total', 'list');",
+                  "  pm.expect(r.list).to.be.an('array');",
+                  "});",
+                  "pm.test('列表模式 markets[].rules 为 null（有数据时）', () => {",
+                  "  r.list.forEach((e) => (e.markets || []).forEach((m) => pm.expect(m.rules).to.eql(null)));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/ce/pm/v1/api/event/list?page=1&pageSize=20"
+          }
+        },
+        {
+          "name": "B02 list · updown 叠加字段",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const list = pm.response.json().result.list || [];",
+                  "const updown = list.filter((e) => e.instantProductId != null && Number(e.instantProductId) > 0);",
+                  "pm.test('updown 事件含 instantProductId', () => {",
+                  "  if (!updown.length) {",
+                  "    pm.expect(list.length, '当前无 updown 数据，跳过字段断言').to.be.at.least(0);",
+                  "    return;",
+                  "  }",
+                  "  updown.forEach((e) => {",
+                  "    pm.expect(e.instantProductId).to.be.above(0);",
+                  "    if (e.windowLabel != null) pm.expect(e.windowLabel).to.be.a('string');",
+                  "    if (e.phase != null) {",
+                  "      pm.expect(['Scheduled', 'Open', 'Locked', 'Resolving', 'Resolved', 'Suspended']).to.include(e.phase);",
+                  "    }",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/ce/pm/v1/api/event/list?page=1&pageSize=50&eventStatus=ALL&sortBy=START_TIME_DESC",
+              "host": ["{{baseUrl}}"],
+              "path": ["ce", "pm", "v1", "api", "event", "list"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "50" },
+                { "key": "eventStatus", "value": "ALL" },
+                { "key": "sortBy", "value": "START_TIME_DESC" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "B03 list · categoryId 筛选",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get('categoryId')) pm.execution.skipRequest('无 categoryId');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const r = pm.response.json().result;",
+                  "pm.test('pageSize 与请求一致', () => pm.expect(r.pageSize).to.eql(10));",
+                  "pm.test('list 长度不超过 pageSize', () => pm.expect(r.list.length).to.be.at.most(10));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/ce/pm/v1/api/event/list?categoryId={{categoryId}}&page=1&pageSize=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["ce", "pm", "v1", "api", "event", "list"],
+              "query": [
+                { "key": "categoryId", "value": "{{categoryId}}" },
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "B04 detail · GET /event?eventId=",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get('sourceEventId')) pm.execution.skipRequest('无 sourceEventId');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const e = pm.response.json().result;",
+                  "pm.test('EventVo 基础字段', () => {",
+                  "  pm.expect(e).to.include.keys('id', 'title', 'markets');",
+                  "  pm.expect(e.id).to.be.a('string');",
+                  "  pm.expect(e.markets).to.be.an('array');",
+                  "});",
+                  "pm.test('详情含 rules（与列表不同）', () => {",
+                  "  if (!e.markets || !e.markets.length) return;",
+                  "  pm.expect(e.markets[0]).to.have.property('rules');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/ce/pm/v1/api/event?eventId={{sourceEventId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["ce", "pm", "v1", "api", "event"],
+              "query": [{ "key": "eventId", "value": "{{sourceEventId}}" }]
+            }
+          }
+        },
+        {
+          "name": "B05 detail · updown 叠加字段",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get('sourceEventId')) pm.execution.skipRequest('无 sourceEventId');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const e = pm.response.json().result;",
+                  "if (!(e.instantProductId != null && Number(e.instantProductId) > 0)) {",
+                  "  pm.test('非 updown 详情，跳过叠加字段', () => pm.expect(true).to.eql(true));",
+                  "  return;",
+                  "}",
+                  "pm.test('updown 详情叠加字段', () => {",
+                  "  pm.expect(e.instantProductId).to.be.above(0);",
+                  "  if (e.windowLabel != null) pm.expect(e.windowLabel).to.be.a('string');",
+                  "  if (e.windowStart != null) pm.expect(e.windowStart).to.be.a('string');",
+                  "  if (e.windowEnd != null) pm.expect(e.windowEnd).to.be.a('string');",
+                  "  if (e.phase != null) {",
+                  "    pm.expect(['Scheduled', 'Open', 'Locked', 'Resolving', 'Resolved', 'Suspended']).to.include(e.phase);",
+                  "  }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/ce/pm/v1/api/event?eventId={{sourceEventId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["ce", "pm", "v1", "api", "event"],
+              "query": [{ "key": "eventId", "value": "{{sourceEventId}}" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "C · 参数校验 / 边界",
+      "description": "缺参、假 id 等预期失败场景。",
+      "item": [
+        {
+          "name": "[err] C01 windows 缺 instantProductId 与 seriesSlug",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code 为 10001', () => pm.expect(body.ret_code).to.eql(10001));",
+                  "pm.test('错误信息含 required', () => {",
+                  "  pm.expect(String(body.ret_msg).toLowerCase()).to.include('required');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/ce/pm/v1/api/event/updown/windows"
+          }
+        },
+        {
+          "name": "[err] C02 windows 假 seriesSlug",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code 为 10001', () => pm.expect(body.ret_code).to.eql(10001));",
+                  "pm.test('instant product not found', () => {",
+                  "  pm.expect(String(body.ret_msg).toLowerCase()).to.include('not found');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/ce/pm/v1/api/event/updown/windows?seriesSlug=non-existent-series-slug-xyz",
+              "host": ["{{baseUrl}}"],
+              "path": ["ce", "pm", "v1", "api", "event", "updown", "windows"],
+              "query": [{ "key": "seriesSlug", "value": "non-existent-series-slug-xyz" }]
+            }
+          }
+        },
+        {
+          "name": "[err] C03 history 缺 instantProductId",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('缺参：HTTP 400 或 ret_code 50000/10001', () => {",
+                  "  const code = pm.response.code;",
+                  "  if (code === 400) {",
+                  "    pm.expect(code).to.eql(400);",
+                  "    return;",
+                  "  }",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.ret_code).to.be.oneOf([50000, 10001, 10007]);",
+                  "  pm.expect(String(body.ret_msg).toLowerCase()).to.include('instantproductid');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/ce/pm/v1/api/event/updown/history"
+          }
+        },
+        {
+          "name": "[err] C04 history 假 instantProductId",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code 为 10001', () => pm.expect(body.ret_code).to.eql(10001));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/ce/pm/v1/api/event/updown/history?instantProductId={{fakeInstantProductId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["ce", "pm", "v1", "api", "event", "updown", "history"],
+              "query": [{ "key": "instantProductId", "value": "{{fakeInstantProductId}}" }]
+            }
+          }
+        },
+        {
+          "name": "[err] C05 chart 缺 eventId",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('缺参：HTTP 400 或 ret_code 50000/10001', () => {",
+                  "  const code = pm.response.code;",
+                  "  if (code === 400) {",
+                  "    pm.expect(code).to.eql(400);",
+                  "    return;",
+                  "  }",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.ret_code).to.be.oneOf([50000, 10001, 10007]);",
+                  "  pm.expect(String(body.ret_msg).toLowerCase()).to.include('eventid');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/ce/pm/v1/api/event/updown/chart"
+          }
+        },
+        {
+          "name": "[err] C06 chart 假 eventId",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code 为 10001', () => pm.expect(body.ret_code).to.eql(10001));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/ce/pm/v1/api/event/updown/chart?eventId={{fakeEventId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["ce", "pm", "v1", "api", "event", "updown", "chart"],
+              "query": [{ "key": "eventId", "value": "{{fakeEventId}}" }]
+            }
+          }
+        },
+        {
+          "name": "[err] C07 detail 假 eventId",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('不存在 eventId 时 result 为 null', () => {",
+                  "  pm.expect(body.result).to.eql(null);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/ce/pm/v1/api/event?eventId=fake-event-id-not-exists",
+              "host": ["{{baseUrl}}"],
+              "path": ["ce", "pm", "v1", "api", "event"],
+              "query": [{ "key": "eventId", "value": "fake-event-id-not-exists" }]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

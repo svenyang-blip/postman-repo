@@ -72,14 +72,14 @@
   <div class="topbar">
     <p><a href="../index.html">← 返回汇总</a></p>
     <h1>PmInstantProductController</h1>
-    <div class="sub">即时产品同步 A1–A7 · local :8080 · PM Admin · PmInstantProductController · /private/v1/pm/instant-products · 生成 2026/7/9 19:06:50</div>
+    <div class="sub">即时产品同步 A1–A7 · testnet 网关 · PM Admin · PmInstantProductController · /private/v1/pm/instant-products · 生成 2026/7/8 18:55:28</div>
   </div>
   <div class="page">
     <div class="widgets">
       <div class="widget"><h3>请求</h3><div class="val">40</div></div>
-      <div class="widget"><h3>断言</h3><div class="val">112</div></div>
+      <div class="widget"><h3>断言</h3><div class="val">145</div></div>
       <div class="widget passed"><h3>失败断言</h3><div class="val">0</div></div>
-      <div class="widget"><h3>平均耗时</h3><div class="val" style="font-size:1rem">365 ms</div></div>
+      <div class="widget"><h3>平均耗时</h3><div class="val" style="font-size:1rem">180 ms</div></div>
     </div>
     <span class="badge ok">全部通过</span>
 
@@ -94,442 +94,442 @@
         <tbody><tr class="">
     <td>1</td>
     <td><a href="#req-1">S01 拉取叶子分类 leafCategoryId</a><div class="row-folder">00 Setup</div></td>
-    <td><code class="api-code">GET /private/v1/pm/categories/tree</code></td>
+    <td><code class="api-code">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/categories/tree</code></td>
     <td>200</td>
     <td><span class="assert-ok">0</span></td>
     <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>result</b>=数组 3 条</span><span class="kv"><b>[0].id</b>=100</span><span class="kv"><b>[0].name</b>=加密资产</span></td>
-    <td>3</td>
+    <td>4</td>
     <td class="assert-ok">0</td>
-    <td>627 ms</td>
+    <td>536 ms</td>
   </tr>
 <tr class="">
     <td>2</td>
     <td><a href="#req-2">S02 GET /instant-products 解析 instantProductId</a><div class="row-folder">00 Setup</div></td>
-    <td><code class="api-code">GET /private/v1/pm/instant-products</code></td>
+    <td><code class="api-code">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products</code></td>
     <td>200</td>
     <td><span class="assert-ok">0</span></td>
     <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=1 条</span><span class="kv"><b>items[0].id</b>=1</span><span class="kv"><b>items[0].status</b>=STOPPED</span><span class="kv"><b>items[0].seriesSlug</b>=btc-up-or-down-5m</span><span class="kv"><b>items[0].asset</b>=BTC</span></td>
     <td>5</td>
     <td class="assert-ok">0</td>
-    <td>201 ms</td>
+    <td>143 ms</td>
   </tr>
 <tr class="">
     <td>3</td>
     <td><a href="#req-3">S03 A1 validate series slug 缓存</a><div class="row-folder">00 Setup</div></td>
-    <td><code class="api-code">GET /private/v1/pm/instant-products/polymarket/series/validate?slug=btc-up-or-down-5m</code></td>
+    <td><code class="api-code">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/polymarket/series/validate?slug=btc-up-or-down-5m</code></td>
     <td>200</td>
     <td><span class="assert-ok">0</span></td>
-    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>valid</b>=true</span><span class="kv"><b>sourceSeriesId</b>=10684</span><span class="kv"><b>slug</b>=btc-up-or-down-5m</span><span class="kv"><b>title</b>=BTC Up or Down 5m</span><span class="kv"><b>recurrence</b>=5m</span><span class="kv"><b>suggestedName</b>=BTC Up or Down 5m · 5m</span><span class="kv"><b>suggestedAsset</b>=BTC</span><span class="kv"><b>iconUrl</b>=</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>valid</b>=true</span><span class="kv"><b>sourceSeriesId</b>=10684</span><span class="kv"><b>slug</b>=btc-up-or-down-5m</span><span class="kv"><b>title</b>=BTC Up or Down 5m</span><span class="kv"><b>recurrence</b>=5m</span><span class="kv"><b>suggestedName</b>=BTC Up or Down 5m · 5m</span><span class="kv"><b>suggestedAsset</b>=BTC</span></td>
     <td>4</td>
     <td class="assert-ok">0</td>
-    <td>758 ms</td>
+    <td>169 ms</td>
   </tr>
 <tr class="">
     <td>4</td>
     <td><a href="#req-4">A01 A1 validate 有效 slug</a><div class="row-folder">A · GET 正向 [ok]</div></td>
-    <td><code class="api-code">GET /private/v1/pm/instant-products/polymarket/series/validate?slug=btc-up-or-down-5m</code></td>
+    <td><code class="api-code">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/polymarket/series/validate?slug=btc-up-or-down-5m</code></td>
     <td>200</td>
     <td><span class="assert-ok">0</span></td>
-    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>valid</b>=true</span><span class="kv"><b>sourceSeriesId</b>=10684</span><span class="kv"><b>slug</b>=btc-up-or-down-5m</span><span class="kv"><b>title</b>=BTC Up or Down 5m</span><span class="kv"><b>recurrence</b>=5m</span><span class="kv"><b>suggestedName</b>=BTC Up or Down 5m · 5m</span><span class="kv"><b>suggestedAsset</b>=BTC</span><span class="kv"><b>iconUrl</b>=</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>valid</b>=true</span><span class="kv"><b>sourceSeriesId</b>=10684</span><span class="kv"><b>slug</b>=btc-up-or-down-5m</span><span class="kv"><b>title</b>=BTC Up or Down 5m</span><span class="kv"><b>recurrence</b>=5m</span><span class="kv"><b>suggestedName</b>=BTC Up or Down 5m · 5m</span><span class="kv"><b>suggestedAsset</b>=BTC</span></td>
     <td>4</td>
     <td class="assert-ok">0</td>
-    <td>200 ms</td>
+    <td>149 ms</td>
   </tr>
 <tr class="">
     <td>5</td>
     <td><a href="#req-5">A02 A1 validate 无效 slug（valid=false）</a><div class="row-folder">A · GET 正向 [ok]</div></td>
-    <td><code class="api-code">GET /private/v1/pm/instant-products/polymarket/series/validate?slug=non-existent-series-slug-xyz</code></td>
+    <td><code class="api-code">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/polymarket/series/validate?slug=non-existent-series-slug-xyz</code></td>
     <td>200</td>
     <td><span class="assert-ok">0</span></td>
     <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>valid</b>=false</span><span class="kv"><b>slug</b>=non-existent-series-slug-xyz</span></td>
     <td>4</td>
     <td class="assert-ok">0</td>
-    <td>412 ms</td>
+    <td>195 ms</td>
   </tr>
 <tr class="">
     <td>6</td>
     <td><a href="#req-6">A03 A2 list 全量</a><div class="row-folder">A · GET 正向 [ok]</div></td>
-    <td><code class="api-code">GET /private/v1/pm/instant-products</code></td>
+    <td><code class="api-code">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products</code></td>
     <td>200</td>
     <td><span class="assert-ok">0</span></td>
     <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=1 条</span><span class="kv"><b>items[0].id</b>=1</span><span class="kv"><b>items[0].status</b>=STOPPED</span><span class="kv"><b>items[0].seriesSlug</b>=btc-up-or-down-5m</span><span class="kv"><b>items[0].asset</b>=BTC</span></td>
     <td>4</td>
     <td class="assert-ok">0</td>
-    <td>260 ms</td>
+    <td>146 ms</td>
   </tr>
 <tr class="">
     <td>7</td>
     <td><a href="#req-7">A04 A2 list status=STOPPED</a><div class="row-folder">A · GET 正向 [ok]</div></td>
-    <td><code class="api-code">GET /private/v1/pm/instant-products?status=STOPPED</code></td>
+    <td><code class="api-code">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products?status=STOPPED</code></td>
     <td>200</td>
     <td><span class="assert-ok">0</span></td>
     <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=1 条</span><span class="kv"><b>items[0].id</b>=1</span><span class="kv"><b>items[0].status</b>=STOPPED</span><span class="kv"><b>items[0].seriesSlug</b>=btc-up-or-down-5m</span><span class="kv"><b>items[0].asset</b>=BTC</span></td>
-    <td>3</td>
+    <td>4</td>
     <td class="assert-ok">0</td>
-    <td>174 ms</td>
+    <td>137 ms</td>
   </tr>
 <tr class="">
     <td>8</td>
     <td><a href="#req-8">A05 A2 list asset=BTC</a><div class="row-folder">A · GET 正向 [ok]</div></td>
-    <td><code class="api-code">GET /private/v1/pm/instant-products?asset=BTC</code></td>
+    <td><code class="api-code">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products?asset=BTC</code></td>
     <td>200</td>
     <td><span class="assert-ok">0</span></td>
     <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=1 条</span><span class="kv"><b>items[0].id</b>=1</span><span class="kv"><b>items[0].status</b>=STOPPED</span><span class="kv"><b>items[0].seriesSlug</b>=btc-up-or-down-5m</span><span class="kv"><b>items[0].asset</b>=BTC</span></td>
-    <td>3</td>
+    <td>4</td>
     <td class="assert-ok">0</td>
-    <td>172 ms</td>
+    <td>153 ms</td>
   </tr>
 <tr class="">
     <td>9</td>
     <td><a href="#req-9">A06 A2 list keyword=btc</a><div class="row-folder">A · GET 正向 [ok]</div></td>
-    <td><code class="api-code">GET /private/v1/pm/instant-products?keyword=btc</code></td>
+    <td><code class="api-code">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products?keyword=btc</code></td>
     <td>200</td>
     <td><span class="assert-ok">0</span></td>
     <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=1 条</span><span class="kv"><b>items[0].id</b>=1</span><span class="kv"><b>items[0].status</b>=STOPPED</span><span class="kv"><b>items[0].seriesSlug</b>=btc-up-or-down-5m</span><span class="kv"><b>items[0].asset</b>=BTC</span></td>
-    <td>3</td>
+    <td>4</td>
     <td class="assert-ok">0</td>
-    <td>167 ms</td>
+    <td>184 ms</td>
   </tr>
 <tr class="">
     <td>10</td>
     <td><a href="#req-10">A07 A6-1 list sync-runs</a><div class="row-folder">A · GET 正向 [ok]</div></td>
-    <td><code class="api-code">GET /private/v1/pm/instant-products/1/sync-runs?limit=20</code></td>
+    <td><code class="api-code">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/sync-runs?limit=20</code></td>
     <td>200</td>
     <td><span class="assert-ok">0</span></td>
-    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=2 条</span><span class="kv"><b>items[0].id</b>=2</span><span class="kv"><b>items[0].status</b>=PARTIAL</span><span class="kv"><b>items[0].failedCount</b>=101</span></td>
-    <td>3</td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=1 条</span><span class="kv"><b>items[0].id</b>=1</span><span class="kv"><b>items[0].status</b>=PARTIAL</span><span class="kv"><b>items[0].failedCount</b>=101</span></td>
+    <td>4</td>
     <td class="assert-ok">0</td>
-    <td>328 ms</td>
+    <td>153 ms</td>
   </tr>
 <tr class="">
     <td>11</td>
     <td><a href="#req-11">A08 A6-2 get sync-run 详情</a><div class="row-folder">A · GET 正向 [ok]</div></td>
-    <td><code class="api-code">GET /private/v1/pm/instant-products/1/sync-runs/2</code></td>
+    <td><code class="api-code">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/sync-runs/1</code></td>
     <td>200</td>
     <td><span class="assert-ok">0</span></td>
-    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>id</b>=2</span><span class="kv important"><b>status</b>=PARTIAL</span><span class="kv"><b>failedCount</b>=101</span><span class="kv"><b>triggerType</b>=MANUAL</span><span class="kv"><b>fetchedCount</b>=288</span><span class="kv"><b>insertedCount</b>=187</span><span class="kv"><b>updatedCount</b>=0</span><span class="kv"><b>failedCount</b>=101</span><span class="kv"><b>startedAt</b>=2026-07-09T11:03:26.184+00:00</span><span class="kv"><b>finishedAt</b>=2026-07-09T11:03:47.102+00:00</span></td>
-    <td>3</td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>id</b>=1</span><span class="kv important"><b>status</b>=PARTIAL</span><span class="kv"><b>failedCount</b>=101</span><span class="kv"><b>triggerType</b>=MANUAL</span><span class="kv"><b>fetchedCount</b>=287</span><span class="kv"><b>insertedCount</b>=186</span><span class="kv"><b>updatedCount</b>=0</span><span class="kv"><b>failedCount</b>=101</span><span class="kv"><b>startedAt</b>=2026-07-08T10:55:00.619+00:00</span><span class="kv"><b>finishedAt</b>=2026-07-08T10:55:03.862+00:00</span></td>
+    <td>4</td>
     <td class="assert-ok">0</td>
-    <td>336 ms</td>
+    <td>151 ms</td>
   </tr>
 <tr class="">
     <td>12</td>
     <td><a href="#req-12">A09 A7-1 list events source=local</a><div class="row-folder">A · GET 正向 [ok]</div></td>
-    <td><code class="api-code">GET /private/v1/pm/instant-products/1/events?source=local&amp;limit=50</code></td>
+    <td><code class="api-code">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/events?source=local&amp;limit=50</code></td>
     <td>200</td>
     <td><span class="assert-ok">0</span></td>
-    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=50 条</span><span class="kv"><b>items[0].eventId</b>=575</span><span class="kv"><b>items[0].workflowStatus</b>=APPROVED</span><span class="kv"><b>items[0].captureStatus</b>=PENDING</span></td>
-    <td>3</td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=50 条</span><span class="kv"><b>items[0].eventId</b>=776</span><span class="kv"><b>items[0].workflowStatus</b>=APPROVED</span><span class="kv"><b>items[0].captureStatus</b>=PENDING</span></td>
+    <td>4</td>
     <td class="assert-ok">0</td>
-    <td>591 ms</td>
+    <td>163 ms</td>
   </tr>
 <tr class="">
     <td>13</td>
     <td><a href="#req-13">A10 A7-1 list events source=gamma</a><div class="row-folder">A · GET 正向 [ok]</div></td>
-    <td><code class="api-code">GET /private/v1/pm/instant-products/1/events?source=gamma&amp;limit=10</code></td>
+    <td><code class="api-code">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/events?source=gamma&amp;limit=10</code></td>
     <td>200</td>
     <td><span class="assert-ok">0</span></td>
     <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=0 条</span></td>
-    <td>3</td>
+    <td>4</td>
     <td class="assert-ok">0</td>
-    <td>370 ms</td>
+    <td>512 ms</td>
   </tr>
 <tr class="">
     <td>14</td>
     <td><a href="#req-14">A11 A7-2 list window-prices</a><div class="row-folder">A · GET 正向 [ok]</div></td>
-    <td><code class="api-code">GET /private/v1/pm/instant-products/1/window-prices?limit=50</code></td>
+    <td><code class="api-code">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/window-prices?limit=50</code></td>
     <td>200</td>
     <td><span class="assert-ok">0</span></td>
-    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=50 条</span><span class="kv"><b>items[0].id</b>=374</span><span class="kv"><b>items[0].eventId</b>=474</span><span class="kv"><b>items[0].asset</b>=BTC</span><span class="kv"><b>items[0].captureStatus</b>=PENDING</span></td>
-    <td>3</td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=50 条</span><span class="kv"><b>items[0].id</b>=186</span><span class="kv"><b>items[0].eventId</b>=675</span><span class="kv"><b>items[0].asset</b>=BTC</span><span class="kv"><b>items[0].captureStatus</b>=PENDING</span></td>
+    <td>4</td>
     <td class="assert-ok">0</td>
-    <td>359 ms</td>
+    <td>155 ms</td>
   </tr>
 <tr class="">
     <td>15</td>
     <td><a href="#req-15">A12 A7-2 list window-prices captureStatus=PENDING</a><div class="row-folder">A · GET 正向 [ok]</div></td>
-    <td><code class="api-code">GET /private/v1/pm/instant-products/1/window-prices?captureStatus=PENDING&amp;limit=20</code></td>
+    <td><code class="api-code">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/window-prices?captureStatus=PENDING&amp;limit=20</code></td>
     <td>200</td>
     <td><span class="assert-ok">0</span></td>
-    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=20 条</span><span class="kv"><b>items[0].id</b>=374</span><span class="kv"><b>items[0].eventId</b>=474</span><span class="kv"><b>items[0].asset</b>=BTC</span><span class="kv"><b>items[0].captureStatus</b>=PENDING</span></td>
-    <td>3</td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=20 条</span><span class="kv"><b>items[0].id</b>=186</span><span class="kv"><b>items[0].eventId</b>=675</span><span class="kv"><b>items[0].asset</b>=BTC</span><span class="kv"><b>items[0].captureStatus</b>=PENDING</span></td>
+    <td>4</td>
     <td class="assert-ok">0</td>
-    <td>337 ms</td>
+    <td>143 ms</td>
   </tr>
 <tr class="">
     <td>16</td>
     <td><a href="#req-16">B01 A1 validate 缺 slug → 10001</a><div class="row-folder">B · 参数校验 [err]</div></td>
-    <td><code class="api-code">GET /private/v1/pm/instant-products/polymarket/series/validate</code></td>
+    <td><code class="api-code">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/polymarket/series/validate</code></td>
     <td>200</td>
     <td><span class="assert-bad">50000</span></td>
     <td class="focus-cell"><span class="kv important"><b>ret_code</b>=50000</span><span class="kv important"><b>ret_msg</b>=Required request parameter 'slug' for method parameter type String is not present</span></td>
-    <td>3</td>
+    <td>4</td>
     <td class="assert-ok">0</td>
-    <td>7 ms</td>
+    <td>139 ms</td>
   </tr>
 <tr class="row-fail">
     <td>17</td>
     <td><a href="#req-17">B02 A3 create 缺 seriesSlug → HTTP 400</a><div class="row-folder">B · 参数校验 [err]</div></td>
-    <td><code class="api-code">POST /private/v1/pm/instant-products</code></td>
+    <td><code class="api-code">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products</code></td>
     <td>400</td>
     <td>—</td>
     <td class="focus-cell"><span class="muted">—</span></td>
-    <td>2</td>
+    <td>3</td>
     <td class="assert-ok">0</td>
-    <td>31 ms</td>
+    <td>149 ms</td>
   </tr>
 <tr class="row-fail">
     <td>18</td>
     <td><a href="#req-18">B03 A3 create 缺 categoryId → HTTP 400</a><div class="row-folder">B · 参数校验 [err]</div></td>
-    <td><code class="api-code">POST /private/v1/pm/instant-products</code></td>
+    <td><code class="api-code">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products</code></td>
     <td>400</td>
     <td>—</td>
     <td class="focus-cell"><span class="muted">—</span></td>
-    <td>2</td>
+    <td>3</td>
     <td class="assert-ok">0</td>
-    <td>25 ms</td>
+    <td>138 ms</td>
   </tr>
 <tr class="row-fail">
     <td>19</td>
     <td><a href="#req-19">B04 A3 create 缺 operator → HTTP 400</a><div class="row-folder">B · 参数校验 [err]</div></td>
-    <td><code class="api-code">POST /private/v1/pm/instant-products</code></td>
+    <td><code class="api-code">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products</code></td>
     <td>400</td>
     <td>—</td>
     <td class="focus-cell"><span class="muted">—</span></td>
-    <td>2</td>
+    <td>3</td>
     <td class="assert-ok">0</td>
-    <td>19 ms</td>
+    <td>180 ms</td>
   </tr>
 <tr class="row-fail">
     <td>20</td>
     <td><a href="#req-20">B05 A4-1 start 缺 operator → HTTP 400</a><div class="row-folder">B · 参数校验 [err]</div></td>
-    <td><code class="api-code">POST /private/v1/pm/instant-products/1/start</code></td>
+    <td><code class="api-code">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/start</code></td>
     <td>400</td>
     <td>—</td>
     <td class="focus-cell"><span class="muted">—</span></td>
-    <td>2</td>
+    <td>3</td>
     <td class="assert-ok">0</td>
-    <td>3 ms</td>
+    <td>175 ms</td>
   </tr>
 <tr class="row-fail">
     <td>21</td>
     <td><a href="#req-21">B06 A4-2 stop 缺 operator → HTTP 400</a><div class="row-folder">B · 参数校验 [err]</div></td>
-    <td><code class="api-code">POST /private/v1/pm/instant-products/1/stop</code></td>
+    <td><code class="api-code">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/stop</code></td>
     <td>400</td>
     <td>—</td>
     <td class="focus-cell"><span class="muted">—</span></td>
-    <td>2</td>
+    <td>3</td>
     <td class="assert-ok">0</td>
-    <td>2 ms</td>
+    <td>176 ms</td>
   </tr>
 <tr class="row-fail">
     <td>22</td>
     <td><a href="#req-22">B07 A5 sync 缺 operator → HTTP 400</a><div class="row-folder">B · 参数校验 [err]</div></td>
-    <td><code class="api-code">POST /private/v1/pm/instant-products/1/sync</code></td>
+    <td><code class="api-code">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/sync</code></td>
     <td>400</td>
     <td>—</td>
     <td class="focus-cell"><span class="muted">—</span></td>
-    <td>2</td>
+    <td>3</td>
     <td class="assert-ok">0</td>
-    <td>5 ms</td>
+    <td>156 ms</td>
   </tr>
 <tr class="">
     <td>23</td>
     <td><a href="#req-23">C01 A4-1 start 不存在 id</a><div class="row-folder">C · 边界与异常</div></td>
-    <td><code class="api-code">POST /private/v1/pm/instant-products/999999999/start</code></td>
+    <td><code class="api-code">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/999999999/start</code></td>
     <td>200</td>
     <td><span class="assert-bad">10001</span></td>
     <td class="focus-cell"><span class="kv important"><b>ret_code</b>=10001</span><span class="kv important"><b>ret_msg</b>=instant product not found</span></td>
-    <td>2</td>
+    <td>3</td>
     <td class="assert-ok">0</td>
-    <td>419 ms</td>
+    <td>211 ms</td>
   </tr>
 <tr class="">
     <td>24</td>
     <td><a href="#req-24">C02 A4-2 stop 不存在 id</a><div class="row-folder">C · 边界与异常</div></td>
-    <td><code class="api-code">POST /private/v1/pm/instant-products/999999999/stop</code></td>
+    <td><code class="api-code">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/999999999/stop</code></td>
     <td>200</td>
     <td><span class="assert-bad">10001</span></td>
     <td class="focus-cell"><span class="kv important"><b>ret_code</b>=10001</span><span class="kv important"><b>ret_msg</b>=instant product not found</span></td>
-    <td>2</td>
+    <td>3</td>
     <td class="assert-ok">0</td>
-    <td>421 ms</td>
+    <td>159 ms</td>
   </tr>
 <tr class="">
     <td>25</td>
     <td><a href="#req-25">C03 A5 sync 不存在 id</a><div class="row-folder">C · 边界与异常</div></td>
-    <td><code class="api-code">POST /private/v1/pm/instant-products/999999999/sync</code></td>
+    <td><code class="api-code">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/999999999/sync</code></td>
     <td>200</td>
     <td><span class="assert-bad">10001</span></td>
     <td class="focus-cell"><span class="kv important"><b>ret_code</b>=10001</span><span class="kv important"><b>ret_msg</b>=instant product not found</span></td>
-    <td>2</td>
+    <td>3</td>
     <td class="assert-ok">0</td>
-    <td>438 ms</td>
+    <td>143 ms</td>
   </tr>
 <tr class="">
     <td>26</td>
     <td><a href="#req-26">C04 A6-1 list sync-runs 不存在 id</a><div class="row-folder">C · 边界与异常</div></td>
-    <td><code class="api-code">GET /private/v1/pm/instant-products/999999999/sync-runs</code></td>
+    <td><code class="api-code">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/999999999/sync-runs</code></td>
     <td>200</td>
     <td><span class="assert-bad">10001</span></td>
     <td class="focus-cell"><span class="kv important"><b>ret_code</b>=10001</span><span class="kv important"><b>ret_msg</b>=instant product not found</span></td>
-    <td>2</td>
+    <td>3</td>
     <td class="assert-ok">0</td>
-    <td>167 ms</td>
+    <td>148 ms</td>
   </tr>
 <tr class="">
     <td>27</td>
     <td><a href="#req-27">C05 A6-2 get sync-run 不存在 runId</a><div class="row-folder">C · 边界与异常</div></td>
-    <td><code class="api-code">GET /private/v1/pm/instant-products/1/sync-runs/999999999</code></td>
+    <td><code class="api-code">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/sync-runs/999999999</code></td>
     <td>200</td>
     <td><span class="assert-bad">10001</span></td>
     <td class="focus-cell"><span class="kv important"><b>ret_code</b>=10001</span><span class="kv important"><b>ret_msg</b>=sync run not found</span></td>
-    <td>2</td>
+    <td>3</td>
     <td class="assert-ok">0</td>
-    <td>336 ms</td>
+    <td>173 ms</td>
   </tr>
 <tr class="">
     <td>28</td>
     <td><a href="#req-28">C06 A7-1 list events 不存在 id</a><div class="row-folder">C · 边界与异常</div></td>
-    <td><code class="api-code">GET /private/v1/pm/instant-products/999999999/events</code></td>
+    <td><code class="api-code">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/999999999/events</code></td>
     <td>200</td>
     <td><span class="assert-bad">10001</span></td>
     <td class="focus-cell"><span class="kv important"><b>ret_code</b>=10001</span><span class="kv important"><b>ret_msg</b>=instant product not found</span></td>
-    <td>2</td>
+    <td>3</td>
     <td class="assert-ok">0</td>
-    <td>175 ms</td>
+    <td>154 ms</td>
   </tr>
 <tr class="">
     <td>29</td>
     <td><a href="#req-29">C07 A7-2 list window-prices 不存在 id</a><div class="row-folder">C · 边界与异常</div></td>
-    <td><code class="api-code">GET /private/v1/pm/instant-products/999999999/window-prices</code></td>
+    <td><code class="api-code">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/999999999/window-prices</code></td>
     <td>200</td>
     <td><span class="assert-bad">10001</span></td>
     <td class="focus-cell"><span class="kv important"><b>ret_code</b>=10001</span><span class="kv important"><b>ret_msg</b>=instant product not found</span></td>
-    <td>2</td>
+    <td>3</td>
     <td class="assert-ok">0</td>
-    <td>174 ms</td>
+    <td>144 ms</td>
   </tr>
 <tr class="">
     <td>30</td>
     <td><a href="#req-30">C08 A3 create 重复 seriesSlug</a><div class="row-folder">C · 边界与异常</div></td>
-    <td><code class="api-code">POST /private/v1/pm/instant-products</code></td>
+    <td><code class="api-code">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products</code></td>
     <td>200</td>
     <td><span class="assert-bad">10001</span></td>
     <td class="focus-cell"><span class="kv important"><b>ret_code</b>=10001</span><span class="kv important"><b>ret_msg</b>=series slug already exists</span></td>
-    <td>2</td>
+    <td>3</td>
     <td class="assert-ok">0</td>
-    <td>612 ms</td>
+    <td>167 ms</td>
   </tr>
 <tr class="">
     <td>31</td>
     <td><a href="#req-31">C09 A3 create 无效 seriesSlug</a><div class="row-folder">C · 边界与异常</div></td>
-    <td><code class="api-code">POST /private/v1/pm/instant-products</code></td>
+    <td><code class="api-code">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products</code></td>
     <td>200</td>
     <td><span class="assert-bad">10001</span></td>
     <td class="focus-cell"><span class="kv important"><b>ret_code</b>=10001</span><span class="kv important"><b>ret_msg</b>=invalid series slug</span></td>
-    <td>2</td>
+    <td>3</td>
     <td class="assert-ok">0</td>
-    <td>385 ms</td>
+    <td>163 ms</td>
   </tr>
 <tr class="">
     <td>32</td>
     <td><a href="#req-32">D02 A4-1 start 启用</a><div class="row-folder">D · POST 正向 [ok]</div></td>
-    <td><code class="api-code">POST /private/v1/pm/instant-products/1/start</code></td>
+    <td><code class="api-code">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/start</code></td>
     <td>200</td>
     <td><span class="assert-ok">0</span></td>
     <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>id</b>=1</span><span class="kv important"><b>status</b>=RUNNING</span><span class="kv"><b>name</b>=BTC Up or Down 5m · 5m</span><span class="kv"><b>seriesSlug</b>=btc-up-or-down-5m</span><span class="kv"><b>asset</b>=BTC</span><span class="kv"><b>categoryId</b>=101</span><span class="kv"><b>recurrenceMinutes</b>=5</span><span class="kv"><b>syncEnabled</b>=true</span><span class="kv"><b>iconUrl</b>=</span><span class="kv"><b>resolutionSource</b>=</span></td>
     <td>4</td>
     <td class="assert-ok">0</td>
-    <td>1096 ms</td>
+    <td>179 ms</td>
   </tr>
 <tr class="">
     <td>33</td>
     <td><a href="#req-33">D03 A5 sync 立即同步</a><div class="row-folder">D · POST 正向 [ok]</div></td>
-    <td><code class="api-code">POST /private/v1/pm/instant-products/1/sync</code></td>
+    <td><code class="api-code">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/sync</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>status</b>=RUNNING</span><span class="kv important"><b>syncRunId</b>=2</span><span class="kv"><b>message</b>=同步任务已提交</span></td>
+    <td>4</td>
+    <td class="assert-ok">0</td>
+    <td>184 ms</td>
+  </tr>
+<tr class="">
+    <td>34</td>
+    <td><a href="#req-34">D04 A6-2 get sync-run（提交后查询）</a><div class="row-folder">D · POST 正向 [ok]</div></td>
+    <td><code class="api-code">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/sync-runs/2</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>id</b>=2</span><span class="kv important"><b>status</b>=RUNNING</span><span class="kv"><b>failedCount</b>=0</span><span class="kv"><b>triggerType</b>=MANUAL</span><span class="kv"><b>fetchedCount</b>=0</span><span class="kv"><b>insertedCount</b>=0</span><span class="kv"><b>updatedCount</b>=0</span><span class="kv"><b>failedCount</b>=0</span><span class="kv"><b>startedAt</b>=2026-07-08T10:55:27.106+00:00</span><span class="kv"><b>finishedAt</b>=1970-01-01T00:00:00.000+00:00</span></td>
+    <td>4</td>
+    <td class="assert-ok">0</td>
+    <td>191 ms</td>
+  </tr>
+<tr class="">
+    <td>35</td>
+    <td><a href="#req-35">D05 A5 sync 重复提交（sync already running）</a><div class="row-folder">D · POST 正向 [ok]</div></td>
+    <td><code class="api-code">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/sync</code></td>
     <td>200</td>
     <td><span class="assert-ok">0</span></td>
     <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>status</b>=RUNNING</span><span class="kv important"><b>syncRunId</b>=3</span><span class="kv"><b>message</b>=同步任务已提交</span></td>
     <td>3</td>
     <td class="assert-ok">0</td>
-    <td>1135 ms</td>
-  </tr>
-<tr class="">
-    <td>34</td>
-    <td><a href="#req-34">D04 A6-2 get sync-run（提交后查询）</a><div class="row-folder">D · POST 正向 [ok]</div></td>
-    <td><code class="api-code">GET /private/v1/pm/instant-products/1/sync-runs/3</code></td>
-    <td>200</td>
-    <td><span class="assert-ok">0</span></td>
-    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>id</b>=3</span><span class="kv important"><b>status</b>=RUNNING</span><span class="kv"><b>failedCount</b>=0</span><span class="kv"><b>triggerType</b>=MANUAL</span><span class="kv"><b>fetchedCount</b>=0</span><span class="kv"><b>insertedCount</b>=0</span><span class="kv"><b>updatedCount</b>=0</span><span class="kv"><b>failedCount</b>=0</span><span class="kv"><b>startedAt</b>=2026-07-09T11:06:45.755+00:00</span><span class="kv"><b>finishedAt</b>=1970-01-01T00:00:00.000+00:00</span></td>
-    <td>3</td>
-    <td class="assert-ok">0</td>
-    <td>331 ms</td>
-  </tr>
-<tr class="">
-    <td>35</td>
-    <td><a href="#req-35">D05 A5 sync 重复提交（sync already running）</a><div class="row-folder">D · POST 正向 [ok]</div></td>
-    <td><code class="api-code">POST /private/v1/pm/instant-products/1/sync</code></td>
-    <td>200</td>
-    <td><span class="assert-bad">10001</span></td>
-    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=10001</span><span class="kv important"><b>ret_msg</b>=sync already running</span></td>
-    <td>2</td>
-    <td class="assert-ok">0</td>
-    <td>610 ms</td>
+    <td>176 ms</td>
   </tr>
 <tr class="">
     <td>36</td>
     <td><a href="#req-36">D06 A6-1 list sync-runs</a><div class="row-folder">D · POST 正向 [ok]</div></td>
-    <td><code class="api-code">GET /private/v1/pm/instant-products/1/sync-runs?limit=5</code></td>
+    <td><code class="api-code">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/sync-runs?limit=5</code></td>
     <td>200</td>
     <td><span class="assert-ok">0</span></td>
     <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=3 条</span><span class="kv"><b>items[0].id</b>=3</span><span class="kv"><b>items[0].status</b>=RUNNING</span><span class="kv"><b>items[0].failedCount</b>=0</span></td>
-    <td>3</td>
+    <td>4</td>
     <td class="assert-ok">0</td>
-    <td>324 ms</td>
+    <td>156 ms</td>
   </tr>
 <tr class="">
     <td>37</td>
     <td><a href="#req-37">D07 A7-1 list events local</a><div class="row-folder">D · POST 正向 [ok]</div></td>
-    <td><code class="api-code">GET /private/v1/pm/instant-products/1/events?source=local&amp;limit=20</code></td>
+    <td><code class="api-code">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/events?source=local&amp;limit=20</code></td>
     <td>200</td>
     <td><span class="assert-ok">0</span></td>
-    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=20 条</span><span class="kv"><b>items[0].eventId</b>=575</span><span class="kv"><b>items[0].workflowStatus</b>=APPROVED</span><span class="kv"><b>items[0].captureStatus</b>=PENDING</span></td>
-    <td>3</td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=20 条</span><span class="kv"><b>items[0].eventId</b>=776</span><span class="kv"><b>items[0].workflowStatus</b>=APPROVED</span><span class="kv"><b>items[0].captureStatus</b>=PENDING</span></td>
+    <td>4</td>
     <td class="assert-ok">0</td>
-    <td>518 ms</td>
+    <td>151 ms</td>
   </tr>
 <tr class="">
     <td>38</td>
     <td><a href="#req-38">D08 A7-1 list events gamma 预览</a><div class="row-folder">D · POST 正向 [ok]</div></td>
-    <td><code class="api-code">GET /private/v1/pm/instant-products/1/events?source=gamma&amp;limit=5</code></td>
+    <td><code class="api-code">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/events?source=gamma&amp;limit=5</code></td>
     <td>200</td>
     <td><span class="assert-ok">0</span></td>
     <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=0 条</span></td>
-    <td>3</td>
+    <td>4</td>
     <td class="assert-ok">0</td>
-    <td>625 ms</td>
+    <td>166 ms</td>
   </tr>
 <tr class="">
     <td>39</td>
     <td><a href="#req-39">D09 A7-2 list window-prices</a><div class="row-folder">D · POST 正向 [ok]</div></td>
-    <td><code class="api-code">GET /private/v1/pm/instant-products/1/window-prices?limit=20</code></td>
+    <td><code class="api-code">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/window-prices?limit=20</code></td>
     <td>200</td>
     <td><span class="assert-ok">0</span></td>
-    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=20 条</span><span class="kv"><b>items[0].id</b>=374</span><span class="kv"><b>items[0].eventId</b>=474</span><span class="kv"><b>items[0].asset</b>=BTC</span><span class="kv"><b>items[0].captureStatus</b>=PENDING</span></td>
-    <td>3</td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=20 条</span><span class="kv"><b>items[0].id</b>=186</span><span class="kv"><b>items[0].eventId</b>=675</span><span class="kv"><b>items[0].asset</b>=BTC</span><span class="kv"><b>items[0].captureStatus</b>=PENDING</span></td>
+    <td>4</td>
     <td class="assert-ok">0</td>
-    <td>330 ms</td>
+    <td>146 ms</td>
   </tr>
 <tr class="">
     <td>40</td>
     <td><a href="#req-40">D10 A4-2 stop 停用</a><div class="row-folder">D · POST 正向 [ok]</div></td>
-    <td><code class="api-code">POST /private/v1/pm/instant-products/1/stop</code></td>
+    <td><code class="api-code">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/stop</code></td>
     <td>200</td>
     <td><span class="assert-ok">0</span></td>
     <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>id</b>=1</span><span class="kv important"><b>status</b>=STOPPED</span><span class="kv"><b>name</b>=BTC Up or Down 5m · 5m</span><span class="kv"><b>seriesSlug</b>=btc-up-or-down-5m</span><span class="kv"><b>asset</b>=BTC</span><span class="kv"><b>categoryId</b>=101</span><span class="kv"><b>recurrenceMinutes</b>=5</span><span class="kv"><b>syncEnabled</b>=true</span><span class="kv"><b>iconUrl</b>=</span><span class="kv"><b>resolutionSource</b>=</span></td>
     <td>4</td>
     <td class="assert-ok">0</td>
-    <td>1108 ms</td>
+    <td>183 ms</td>
   </tr></tbody>
       </table>
     </section>
@@ -541,25 +541,24 @@
         <tbody><tr>
     <td><code>A1 validate slug</code></td>
     <td>4</td>
-    <td>15</td>
+    <td>16</td>
     <td>0</td>
     <td class="assert-ok">全通过</td>
   </tr>
 <tr>
     <td><code>A2 list（筛选）</code></td>
     <td>3</td>
-    <td>9</td>
+    <td>12</td>
     <td>0</td>
     <td class="assert-ok">全通过</td>
   </tr>
 <tr>
     <td><code>A2 list</code></td>
     <td>32</td>
-    <td>85</td>
+    <td>113</td>
     <td>0</td>
     <td class="assert-ok">全通过</td>
   </tr>
-
 
 
 
@@ -568,13 +567,12 @@
 
 
 <tr>
-    <td><code>Setup categories</code></td>
+    <td><code>其它</code></td>
     <td>1</td>
-    <td>3</td>
+    <td>4</td>
     <td>0</td>
     <td class="assert-ok">全通过</td>
-  </tr>
-</tbody>
+  </tr></tbody>
       </table>
     </section>
 
@@ -595,22 +593,30 @@
     <details class="details-folder">
     <summary><span class="folder-title">C · 边界与异常</span><span class="folder-meta">9 个用例 · <span class="ok-inline">断言全过</span></span></summary>
     <div class="folder-inner"><details class="details-req" id="req-23">
-      <summary><span class="sum-title"><span class="status-dot passed"></span>C01 A4-1 start 不存在 id</span><span class="sum-meta">POST /private/v1/pm/instant-products/999999999/start · HTTP 200 · 419 ms</span></summary>
+      <summary><span class="sum-title"><span class="status-dot passed"></span>C01 A4-1 start 不存在 id</span><span class="sum-meta">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/999999999/start · HTTP 200 · 211 ms</span></summary>
       <div class="details-body">
         <div class="focus-card">
           <div class="focus-title">测试要点</div>
           <div class="kv-grid"><span class="kv important"><b>ret_code</b>=10001</span><span class="kv important"><b>ret_msg</b>=instant product not found</span></div>
         </div>
         <div class="meta">响应体积 113 字节</div>
-        <div class="meta">http://localhost:8080/private/v1/pm/instant-products/999999999/start</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/999999999/start</div>
         <div class="payload-block">
         <div class="payload-label">请求</div>
-        <pre class="payload">POST http://localhost:8080/private/v1/pm/instant-products/999999999/start
+        <pre class="payload">POST https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/999999999/start
 Content-Type: application/json
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/create-market-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Not;A=Brand&quot;;v=&quot;8&quot;, &quot;Chromium&quot;;v=&quot;150&quot;, &quot;Google Chrome&quot;;v=&quot;150&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
 Accept-Language: zh-CN,zh;q=0.9
 
 {
-  &quot;operator&quot;: &quot;postman-cli&quot;,
+  &quot;operator&quot;: &quot;sven.yang&quot;,
   &quot;remark&quot;: &quot;postman&quot;
 }</pre>
       </div><div class="payload-block">
@@ -623,12 +629,16 @@ Content-Type: application/json
   &quot;ret_msg&quot;: &quot;instant product not found&quot;,
   &quot;result&quot;: null,
   &quot;ext_code&quot;: null,
-  &quot;time_now&quot;: &quot;1783595201332&quot;
+  &quot;time_now&quot;: &quot;1783508125301&quot;
 }</pre>
       </div>
         <table>
           <tbody>
             
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 响应为 JSON</td>
+            </tr>
             <tr>
               <th>断言</th>
               <td class="assert-ok">通过 — HTTP 200</td>
@@ -642,22 +652,30 @@ Content-Type: application/json
       </div>
     </details>
 <details class="details-req" id="req-24">
-      <summary><span class="sum-title"><span class="status-dot passed"></span>C02 A4-2 stop 不存在 id</span><span class="sum-meta">POST /private/v1/pm/instant-products/999999999/stop · HTTP 200 · 421 ms</span></summary>
+      <summary><span class="sum-title"><span class="status-dot passed"></span>C02 A4-2 stop 不存在 id</span><span class="sum-meta">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/999999999/stop · HTTP 200 · 159 ms</span></summary>
       <div class="details-body">
         <div class="focus-card">
           <div class="focus-title">测试要点</div>
           <div class="kv-grid"><span class="kv important"><b>ret_code</b>=10001</span><span class="kv important"><b>ret_msg</b>=instant product not found</span></div>
         </div>
         <div class="meta">响应体积 113 字节</div>
-        <div class="meta">http://localhost:8080/private/v1/pm/instant-products/999999999/stop</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/999999999/stop</div>
         <div class="payload-block">
         <div class="payload-label">请求</div>
-        <pre class="payload">POST http://localhost:8080/private/v1/pm/instant-products/999999999/stop
+        <pre class="payload">POST https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/999999999/stop
 Content-Type: application/json
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/create-market-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Not;A=Brand&quot;;v=&quot;8&quot;, &quot;Chromium&quot;;v=&quot;150&quot;, &quot;Google Chrome&quot;;v=&quot;150&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
 Accept-Language: zh-CN,zh;q=0.9
 
 {
-  &quot;operator&quot;: &quot;postman-cli&quot;
+  &quot;operator&quot;: &quot;sven.yang&quot;
 }</pre>
       </div><div class="payload-block">
         <div class="payload-label">响应</div>
@@ -669,12 +687,16 @@ Content-Type: application/json
   &quot;ret_msg&quot;: &quot;instant product not found&quot;,
   &quot;result&quot;: null,
   &quot;ext_code&quot;: null,
-  &quot;time_now&quot;: &quot;1783595201774&quot;
+  &quot;time_now&quot;: &quot;1783508125474&quot;
 }</pre>
       </div>
         <table>
           <tbody>
             
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 响应为 JSON</td>
+            </tr>
             <tr>
               <th>断言</th>
               <td class="assert-ok">通过 — HTTP 200</td>
@@ -688,22 +710,30 @@ Content-Type: application/json
       </div>
     </details>
 <details class="details-req" id="req-25">
-      <summary><span class="sum-title"><span class="status-dot passed"></span>C03 A5 sync 不存在 id</span><span class="sum-meta">POST /private/v1/pm/instant-products/999999999/sync · HTTP 200 · 438 ms</span></summary>
+      <summary><span class="sum-title"><span class="status-dot passed"></span>C03 A5 sync 不存在 id</span><span class="sum-meta">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/999999999/sync · HTTP 200 · 143 ms</span></summary>
       <div class="details-body">
         <div class="focus-card">
           <div class="focus-title">测试要点</div>
           <div class="kv-grid"><span class="kv important"><b>ret_code</b>=10001</span><span class="kv important"><b>ret_msg</b>=instant product not found</span></div>
         </div>
         <div class="meta">响应体积 113 字节</div>
-        <div class="meta">http://localhost:8080/private/v1/pm/instant-products/999999999/sync</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/999999999/sync</div>
         <div class="payload-block">
         <div class="payload-label">请求</div>
-        <pre class="payload">POST http://localhost:8080/private/v1/pm/instant-products/999999999/sync
+        <pre class="payload">POST https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/999999999/sync
 Content-Type: application/json
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/create-market-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Not;A=Brand&quot;;v=&quot;8&quot;, &quot;Chromium&quot;;v=&quot;150&quot;, &quot;Google Chrome&quot;;v=&quot;150&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
 Accept-Language: zh-CN,zh;q=0.9
 
 {
-  &quot;operator&quot;: &quot;postman-cli&quot;
+  &quot;operator&quot;: &quot;sven.yang&quot;
 }</pre>
       </div><div class="payload-block">
         <div class="payload-label">响应</div>
@@ -715,12 +745,16 @@ Content-Type: application/json
   &quot;ret_msg&quot;: &quot;instant product not found&quot;,
   &quot;result&quot;: null,
   &quot;ext_code&quot;: null,
-  &quot;time_now&quot;: &quot;1783595202231&quot;
+  &quot;time_now&quot;: &quot;1783508125646&quot;
 }</pre>
       </div>
         <table>
           <tbody>
             
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 响应为 JSON</td>
+            </tr>
             <tr>
               <th>断言</th>
               <td class="assert-ok">通过 — HTTP 200</td>
@@ -734,17 +768,25 @@ Content-Type: application/json
       </div>
     </details>
 <details class="details-req" id="req-26">
-      <summary><span class="sum-title"><span class="status-dot passed"></span>C04 A6-1 list sync-runs 不存在 id</span><span class="sum-meta">GET /private/v1/pm/instant-products/999999999/sync-runs · HTTP 200 · 167 ms</span></summary>
+      <summary><span class="sum-title"><span class="status-dot passed"></span>C04 A6-1 list sync-runs 不存在 id</span><span class="sum-meta">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/999999999/sync-runs · HTTP 200 · 148 ms</span></summary>
       <div class="details-body">
         <div class="focus-card">
           <div class="focus-title">测试要点</div>
           <div class="kv-grid"><span class="kv important"><b>ret_code</b>=10001</span><span class="kv important"><b>ret_msg</b>=instant product not found</span></div>
         </div>
         <div class="meta">响应体积 113 字节</div>
-        <div class="meta">http://localhost:8080/private/v1/pm/instant-products/999999999/sync-runs</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/999999999/sync-runs</div>
         <div class="payload-block">
         <div class="payload-label">请求</div>
-        <pre class="payload">GET http://localhost:8080/private/v1/pm/instant-products/999999999/sync-runs
+        <pre class="payload">GET https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/999999999/sync-runs
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/create-market-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Not;A=Brand&quot;;v=&quot;8&quot;, &quot;Chromium&quot;;v=&quot;150&quot;, &quot;Google Chrome&quot;;v=&quot;150&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
 Accept-Language: zh-CN,zh;q=0.9</pre>
       </div><div class="payload-block">
         <div class="payload-label">响应</div>
@@ -756,12 +798,16 @@ Content-Type: application/json
   &quot;ret_msg&quot;: &quot;instant product not found&quot;,
   &quot;result&quot;: null,
   &quot;ext_code&quot;: null,
-  &quot;time_now&quot;: &quot;1783595202420&quot;
+  &quot;time_now&quot;: &quot;1783508125805&quot;
 }</pre>
       </div>
         <table>
           <tbody>
             
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 响应为 JSON</td>
+            </tr>
             <tr>
               <th>断言</th>
               <td class="assert-ok">通过 — HTTP 200</td>
@@ -775,17 +821,25 @@ Content-Type: application/json
       </div>
     </details>
 <details class="details-req" id="req-27">
-      <summary><span class="sum-title"><span class="status-dot passed"></span>C05 A6-2 get sync-run 不存在 runId</span><span class="sum-meta">GET /private/v1/pm/instant-products/1/sync-runs/999999999 · HTTP 200 · 336 ms</span></summary>
+      <summary><span class="sum-title"><span class="status-dot passed"></span>C05 A6-2 get sync-run 不存在 runId</span><span class="sum-meta">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/sync-runs/999999999 · HTTP 200 · 173 ms</span></summary>
       <div class="details-body">
         <div class="focus-card">
           <div class="focus-title">测试要点</div>
           <div class="kv-grid"><span class="kv important"><b>ret_code</b>=10001</span><span class="kv important"><b>ret_msg</b>=sync run not found</span></div>
         </div>
         <div class="meta">响应体积 106 字节</div>
-        <div class="meta">http://localhost:8080/private/v1/pm/instant-products/1/sync-runs/999999999</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/sync-runs/999999999</div>
         <div class="payload-block">
         <div class="payload-label">请求</div>
-        <pre class="payload">GET http://localhost:8080/private/v1/pm/instant-products/1/sync-runs/999999999
+        <pre class="payload">GET https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/sync-runs/999999999
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/create-market-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Not;A=Brand&quot;;v=&quot;8&quot;, &quot;Chromium&quot;;v=&quot;150&quot;, &quot;Google Chrome&quot;;v=&quot;150&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
 Accept-Language: zh-CN,zh;q=0.9</pre>
       </div><div class="payload-block">
         <div class="payload-label">响应</div>
@@ -797,12 +851,16 @@ Content-Type: application/json
   &quot;ret_msg&quot;: &quot;sync run not found&quot;,
   &quot;result&quot;: null,
   &quot;ext_code&quot;: null,
-  &quot;time_now&quot;: &quot;1783595202769&quot;
+  &quot;time_now&quot;: &quot;1783508126010&quot;
 }</pre>
       </div>
         <table>
           <tbody>
             
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 响应为 JSON</td>
+            </tr>
             <tr>
               <th>断言</th>
               <td class="assert-ok">通过 — HTTP 200</td>
@@ -816,17 +874,25 @@ Content-Type: application/json
       </div>
     </details>
 <details class="details-req" id="req-28">
-      <summary><span class="sum-title"><span class="status-dot passed"></span>C06 A7-1 list events 不存在 id</span><span class="sum-meta">GET /private/v1/pm/instant-products/999999999/events · HTTP 200 · 175 ms</span></summary>
+      <summary><span class="sum-title"><span class="status-dot passed"></span>C06 A7-1 list events 不存在 id</span><span class="sum-meta">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/999999999/events · HTTP 200 · 154 ms</span></summary>
       <div class="details-body">
         <div class="focus-card">
           <div class="focus-title">测试要点</div>
           <div class="kv-grid"><span class="kv important"><b>ret_code</b>=10001</span><span class="kv important"><b>ret_msg</b>=instant product not found</span></div>
         </div>
         <div class="meta">响应体积 113 字节</div>
-        <div class="meta">http://localhost:8080/private/v1/pm/instant-products/999999999/events</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/999999999/events</div>
         <div class="payload-block">
         <div class="payload-label">请求</div>
-        <pre class="payload">GET http://localhost:8080/private/v1/pm/instant-products/999999999/events
+        <pre class="payload">GET https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/999999999/events
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/create-market-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Not;A=Brand&quot;;v=&quot;8&quot;, &quot;Chromium&quot;;v=&quot;150&quot;, &quot;Google Chrome&quot;;v=&quot;150&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
 Accept-Language: zh-CN,zh;q=0.9</pre>
       </div><div class="payload-block">
         <div class="payload-label">响应</div>
@@ -838,12 +904,16 @@ Content-Type: application/json
   &quot;ret_msg&quot;: &quot;instant product not found&quot;,
   &quot;result&quot;: null,
   &quot;ext_code&quot;: null,
-  &quot;time_now&quot;: &quot;1783595202957&quot;
+  &quot;time_now&quot;: &quot;1783508126181&quot;
 }</pre>
       </div>
         <table>
           <tbody>
             
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 响应为 JSON</td>
+            </tr>
             <tr>
               <th>断言</th>
               <td class="assert-ok">通过 — HTTP 200</td>
@@ -857,17 +927,25 @@ Content-Type: application/json
       </div>
     </details>
 <details class="details-req" id="req-29">
-      <summary><span class="sum-title"><span class="status-dot passed"></span>C07 A7-2 list window-prices 不存在 id</span><span class="sum-meta">GET /private/v1/pm/instant-products/999999999/window-prices · HTTP 200 · 174 ms</span></summary>
+      <summary><span class="sum-title"><span class="status-dot passed"></span>C07 A7-2 list window-prices 不存在 id</span><span class="sum-meta">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/999999999/window-prices · HTTP 200 · 144 ms</span></summary>
       <div class="details-body">
         <div class="focus-card">
           <div class="focus-title">测试要点</div>
           <div class="kv-grid"><span class="kv important"><b>ret_code</b>=10001</span><span class="kv important"><b>ret_msg</b>=instant product not found</span></div>
         </div>
         <div class="meta">响应体积 113 字节</div>
-        <div class="meta">http://localhost:8080/private/v1/pm/instant-products/999999999/window-prices</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/999999999/window-prices</div>
         <div class="payload-block">
         <div class="payload-label">请求</div>
-        <pre class="payload">GET http://localhost:8080/private/v1/pm/instant-products/999999999/window-prices
+        <pre class="payload">GET https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/999999999/window-prices
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/create-market-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Not;A=Brand&quot;;v=&quot;8&quot;, &quot;Chromium&quot;;v=&quot;150&quot;, &quot;Google Chrome&quot;;v=&quot;150&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
 Accept-Language: zh-CN,zh;q=0.9</pre>
       </div><div class="payload-block">
         <div class="payload-label">响应</div>
@@ -879,12 +957,16 @@ Content-Type: application/json
   &quot;ret_msg&quot;: &quot;instant product not found&quot;,
   &quot;result&quot;: null,
   &quot;ext_code&quot;: null,
-  &quot;time_now&quot;: &quot;1783595203151&quot;
+  &quot;time_now&quot;: &quot;1783508126349&quot;
 }</pre>
       </div>
         <table>
           <tbody>
             
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 响应为 JSON</td>
+            </tr>
             <tr>
               <th>断言</th>
               <td class="assert-ok">通过 — HTTP 200</td>
@@ -898,24 +980,32 @@ Content-Type: application/json
       </div>
     </details>
 <details class="details-req" id="req-30">
-      <summary><span class="sum-title"><span class="status-dot passed"></span>C08 A3 create 重复 seriesSlug</span><span class="sum-meta">POST /private/v1/pm/instant-products · HTTP 200 · 612 ms</span></summary>
+      <summary><span class="sum-title"><span class="status-dot passed"></span>C08 A3 create 重复 seriesSlug</span><span class="sum-meta">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products · HTTP 200 · 167 ms</span></summary>
       <div class="details-body">
         <div class="focus-card">
           <div class="focus-title">测试要点</div>
           <div class="kv-grid"><span class="kv important"><b>ret_code</b>=10001</span><span class="kv important"><b>ret_msg</b>=series slug already exists</span></div>
         </div>
         <div class="meta">响应体积 114 字节</div>
-        <div class="meta">http://localhost:8080/private/v1/pm/instant-products</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products</div>
         <div class="payload-block">
         <div class="payload-label">请求</div>
-        <pre class="payload">POST http://localhost:8080/private/v1/pm/instant-products
+        <pre class="payload">POST https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products
 Content-Type: application/json
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/create-market-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Not;A=Brand&quot;;v=&quot;8&quot;, &quot;Chromium&quot;;v=&quot;150&quot;, &quot;Google Chrome&quot;;v=&quot;150&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
 Accept-Language: zh-CN,zh;q=0.9
 
 {
   &quot;seriesSlug&quot;: &quot;btc-up-or-down-5m&quot;,
   &quot;categoryId&quot;: 101,
-  &quot;operator&quot;: &quot;postman-cli&quot;
+  &quot;operator&quot;: &quot;sven.yang&quot;
 }</pre>
       </div><div class="payload-block">
         <div class="payload-label">响应</div>
@@ -927,12 +1017,16 @@ Content-Type: application/json
   &quot;ret_msg&quot;: &quot;series slug already exists&quot;,
   &quot;result&quot;: null,
   &quot;ext_code&quot;: null,
-  &quot;time_now&quot;: &quot;1783595203788&quot;
+  &quot;time_now&quot;: &quot;1783508126547&quot;
 }</pre>
       </div>
         <table>
           <tbody>
             
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 响应为 JSON</td>
+            </tr>
             <tr>
               <th>断言</th>
               <td class="assert-ok">通过 — HTTP 200</td>
@@ -946,24 +1040,32 @@ Content-Type: application/json
       </div>
     </details>
 <details class="details-req" id="req-31">
-      <summary><span class="sum-title"><span class="status-dot passed"></span>C09 A3 create 无效 seriesSlug</span><span class="sum-meta">POST /private/v1/pm/instant-products · HTTP 200 · 385 ms</span></summary>
+      <summary><span class="sum-title"><span class="status-dot passed"></span>C09 A3 create 无效 seriesSlug</span><span class="sum-meta">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products · HTTP 200 · 163 ms</span></summary>
       <div class="details-body">
         <div class="focus-card">
           <div class="focus-title">测试要点</div>
           <div class="kv-grid"><span class="kv important"><b>ret_code</b>=10001</span><span class="kv important"><b>ret_msg</b>=invalid series slug</span></div>
         </div>
         <div class="meta">响应体积 107 字节</div>
-        <div class="meta">http://localhost:8080/private/v1/pm/instant-products</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products</div>
         <div class="payload-block">
         <div class="payload-label">请求</div>
-        <pre class="payload">POST http://localhost:8080/private/v1/pm/instant-products
+        <pre class="payload">POST https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products
 Content-Type: application/json
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/create-market-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Not;A=Brand&quot;;v=&quot;8&quot;, &quot;Chromium&quot;;v=&quot;150&quot;, &quot;Google Chrome&quot;;v=&quot;150&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
 Accept-Language: zh-CN,zh;q=0.9
 
 {
   &quot;seriesSlug&quot;: &quot;non-existent-series-slug-xyz&quot;,
   &quot;categoryId&quot;: 101,
-  &quot;operator&quot;: &quot;postman-cli&quot;
+  &quot;operator&quot;: &quot;sven.yang&quot;
 }</pre>
       </div><div class="payload-block">
         <div class="payload-label">响应</div>
@@ -975,12 +1077,16 @@ Content-Type: application/json
   &quot;ret_msg&quot;: &quot;invalid series slug&quot;,
   &quot;result&quot;: null,
   &quot;ext_code&quot;: null,
-  &quot;time_now&quot;: &quot;1783595204185&quot;
+  &quot;time_now&quot;: &quot;1783508126727&quot;
 }</pre>
       </div>
         <table>
           <tbody>
             
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 响应为 JSON</td>
+            </tr>
             <tr>
               <th>断言</th>
               <td class="assert-ok">通过 — HTTP 200</td>
@@ -997,22 +1103,30 @@ Content-Type: application/json
 <details class="details-folder">
     <summary><span class="folder-title">D · POST 正向 [ok]</span><span class="folder-meta">9 个用例 · <span class="ok-inline">断言全过</span></span></summary>
     <div class="folder-inner"><details class="details-req" id="req-32">
-      <summary><span class="sum-title"><span class="status-dot passed"></span>D02 A4-1 start 启用</span><span class="sum-meta">POST /private/v1/pm/instant-products/1/start · HTTP 200 · 1096 ms</span></summary>
+      <summary><span class="sum-title"><span class="status-dot passed"></span>D02 A4-1 start 启用</span><span class="sum-meta">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/start · HTTP 200 · 179 ms</span></summary>
       <div class="details-body">
         <div class="focus-card">
           <div class="focus-title">测试要点</div>
           <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>id</b>=1</span><span class="kv important"><b>status</b>=RUNNING</span><span class="kv"><b>name</b>=BTC Up or Down 5m · 5m</span><span class="kv"><b>seriesSlug</b>=btc-up-or-down-5m</span><span class="kv"><b>asset</b>=BTC</span><span class="kv"><b>categoryId</b>=101</span><span class="kv"><b>recurrenceMinutes</b>=5</span><span class="kv"><b>syncEnabled</b>=true</span><span class="kv"><b>iconUrl</b>=</span><span class="kv"><b>resolutionSource</b>=</span></div>
         </div>
-        <div class="meta">响应体积 595 字节</div>
-        <div class="meta">http://localhost:8080/private/v1/pm/instant-products/1/start</div>
+        <div class="meta">响应体积 591 字节</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/start</div>
         <div class="payload-block">
         <div class="payload-label">请求</div>
-        <pre class="payload">POST http://localhost:8080/private/v1/pm/instant-products/1/start
+        <pre class="payload">POST https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/start
 Content-Type: application/json
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/create-market-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Not;A=Brand&quot;;v=&quot;8&quot;, &quot;Chromium&quot;;v=&quot;150&quot;, &quot;Google Chrome&quot;;v=&quot;150&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
 Accept-Language: zh-CN,zh;q=0.9
 
 {
-  &quot;operator&quot;: &quot;postman-cli&quot;,
+  &quot;operator&quot;: &quot;sven.yang&quot;,
   &quot;remark&quot;: &quot;postman start&quot;
 }</pre>
       </div><div class="payload-block">
@@ -1034,24 +1148,28 @@ Content-Type: application/json
     &quot;syncEnabled&quot;: true,
     &quot;iconUrl&quot;: &quot;&quot;,
     &quot;resolutionSource&quot;: &quot;&quot;,
-    &quot;lastSyncAt&quot;: &quot;2026-07-09T11:03:47.357+00:00&quot;,
+    &quot;lastSyncAt&quot;: &quot;2026-07-08T10:55:03.888+00:00&quot;,
     &quot;lastSyncStatus&quot;: &quot;PARTIAL&quot;,
-    &quot;lastSyncRunId&quot;: 2,
-    &quot;todaySyncedCount&quot;: 187,
+    &quot;lastSyncRunId&quot;: 1,
+    &quot;todaySyncedCount&quot;: 186,
     &quot;nextSyncAt&quot;: &quot;1970-01-01T00:00:00.000+00:00&quot;,
     &quot;lastError&quot;: &quot;&quot;,
-    &quot;createdBy&quot;: &quot;postman-cli&quot;,
-    &quot;updatedBy&quot;: &quot;postman-cli&quot;,
-    &quot;createdAt&quot;: &quot;2026-07-08T10:43:17.430+00:00&quot;,
-    &quot;updatedAt&quot;: &quot;2026-07-09T11:06:44.698+00:00&quot;
+    &quot;createdBy&quot;: &quot;sven.yang&quot;,
+    &quot;updatedBy&quot;: &quot;sven.yang&quot;,
+    &quot;createdAt&quot;: &quot;2026-07-08T10:55:00.115+00:00&quot;,
+    &quot;updatedAt&quot;: &quot;2026-07-08T10:55:26.907+00:00&quot;
   },
   &quot;ext_code&quot;: null,
-  &quot;time_now&quot;: &quot;1783595205310&quot;
+  &quot;time_now&quot;: &quot;1783508126937&quot;
 }</pre>
       </div>
         <table>
           <tbody>
             
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 响应为 JSON</td>
+            </tr>
             <tr>
               <th>断言</th>
               <td class="assert-ok">通过 — HTTP 200</td>
@@ -1064,31 +1182,35 @@ Content-Type: application/json
               <th>断言</th>
               <td class="assert-ok">通过 — status=RUNNING</td>
             </tr>
-            <tr>
-              <th>断言</th>
-              <td class="assert-ok">通过 — start 后 iconUrl 不变</td>
-            </tr>
           </tbody>
         </table>
       </div>
     </details>
 <details class="details-req" id="req-33">
-      <summary><span class="sum-title"><span class="status-dot passed"></span>D03 A5 sync 立即同步</span><span class="sum-meta">POST /private/v1/pm/instant-products/1/sync · HTTP 200 · 1135 ms</span></summary>
+      <summary><span class="sum-title"><span class="status-dot passed"></span>D03 A5 sync 立即同步</span><span class="sum-meta">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/sync · HTTP 200 · 184 ms</span></summary>
       <div class="details-body">
         <div class="focus-card">
           <div class="focus-title">测试要点</div>
-          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>status</b>=RUNNING</span><span class="kv important"><b>syncRunId</b>=3</span><span class="kv"><b>message</b>=同步任务已提交</span></div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>status</b>=RUNNING</span><span class="kv important"><b>syncRunId</b>=2</span><span class="kv"><b>message</b>=同步任务已提交</span></div>
         </div>
         <div class="meta">响应体积 150 字节</div>
-        <div class="meta">http://localhost:8080/private/v1/pm/instant-products/1/sync</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/sync</div>
         <div class="payload-block">
         <div class="payload-label">请求</div>
-        <pre class="payload">POST http://localhost:8080/private/v1/pm/instant-products/1/sync
+        <pre class="payload">POST https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/sync
 Content-Type: application/json
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/create-market-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Not;A=Brand&quot;;v=&quot;8&quot;, &quot;Chromium&quot;;v=&quot;150&quot;, &quot;Google Chrome&quot;;v=&quot;150&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
 Accept-Language: zh-CN,zh;q=0.9
 
 {
-  &quot;operator&quot;: &quot;postman-cli&quot;,
+  &quot;operator&quot;: &quot;sven.yang&quot;,
   &quot;remark&quot;: &quot;postman sync&quot;
 }</pre>
       </div><div class="payload-block">
@@ -1100,17 +1222,21 @@ Content-Type: application/json
   &quot;ret_code&quot;: 0,
   &quot;ret_msg&quot;: &quot;OK&quot;,
   &quot;result&quot;: {
-    &quot;syncRunId&quot;: 3,
+    &quot;syncRunId&quot;: 2,
     &quot;status&quot;: &quot;RUNNING&quot;,
     &quot;message&quot;: &quot;同步任务已提交&quot;
   },
   &quot;ext_code&quot;: null,
-  &quot;time_now&quot;: &quot;1783595206460&quot;
+  &quot;time_now&quot;: &quot;1783508127137&quot;
 }</pre>
       </div>
         <table>
           <tbody>
             
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 响应为 JSON</td>
+            </tr>
             <tr>
               <th>断言</th>
               <td class="assert-ok">通过 — HTTP 200</td>
@@ -1128,17 +1254,25 @@ Content-Type: application/json
       </div>
     </details>
 <details class="details-req" id="req-34">
-      <summary><span class="sum-title"><span class="status-dot passed"></span>D04 A6-2 get sync-run（提交后查询）</span><span class="sum-meta">GET /private/v1/pm/instant-products/1/sync-runs/3 · HTTP 200 · 331 ms</span></summary>
+      <summary><span class="sum-title"><span class="status-dot passed"></span>D04 A6-2 get sync-run（提交后查询）</span><span class="sum-meta">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/sync-runs/2 · HTTP 200 · 191 ms</span></summary>
       <div class="details-body">
         <div class="focus-card">
           <div class="focus-title">测试要点</div>
-          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>id</b>=3</span><span class="kv important"><b>status</b>=RUNNING</span><span class="kv"><b>failedCount</b>=0</span><span class="kv"><b>triggerType</b>=MANUAL</span><span class="kv"><b>fetchedCount</b>=0</span><span class="kv"><b>insertedCount</b>=0</span><span class="kv"><b>updatedCount</b>=0</span><span class="kv"><b>failedCount</b>=0</span><span class="kv"><b>startedAt</b>=2026-07-09T11:06:45.755+00:00</span><span class="kv"><b>finishedAt</b>=1970-01-01T00:00:00.000+00:00</span></div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>id</b>=2</span><span class="kv important"><b>status</b>=RUNNING</span><span class="kv"><b>failedCount</b>=0</span><span class="kv"><b>triggerType</b>=MANUAL</span><span class="kv"><b>fetchedCount</b>=0</span><span class="kv"><b>insertedCount</b>=0</span><span class="kv"><b>updatedCount</b>=0</span><span class="kv"><b>failedCount</b>=0</span><span class="kv"><b>startedAt</b>=2026-07-08T10:55:27.106+00:00</span><span class="kv"><b>finishedAt</b>=1970-01-01T00:00:00.000+00:00</span></div>
         </div>
         <div class="meta">响应体积 366 字节</div>
-        <div class="meta">http://localhost:8080/private/v1/pm/instant-products/1/sync-runs/3</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/sync-runs/2</div>
         <div class="payload-block">
         <div class="payload-label">请求</div>
-        <pre class="payload">GET http://localhost:8080/private/v1/pm/instant-products/1/sync-runs/3
+        <pre class="payload">GET https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/sync-runs/2
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/create-market-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Not;A=Brand&quot;;v=&quot;8&quot;, &quot;Chromium&quot;;v=&quot;150&quot;, &quot;Google Chrome&quot;;v=&quot;150&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
 Accept-Language: zh-CN,zh;q=0.9</pre>
       </div><div class="payload-block">
         <div class="payload-label">响应</div>
@@ -1149,10 +1283,10 @@ Content-Type: application/json
   &quot;ret_code&quot;: 0,
   &quot;ret_msg&quot;: &quot;OK&quot;,
   &quot;result&quot;: {
-    &quot;id&quot;: 3,
+    &quot;id&quot;: 2,
     &quot;triggerType&quot;: &quot;MANUAL&quot;,
     &quot;status&quot;: &quot;RUNNING&quot;,
-    &quot;startedAt&quot;: &quot;2026-07-09T11:06:45.755+00:00&quot;,
+    &quot;startedAt&quot;: &quot;2026-07-08T10:55:27.106+00:00&quot;,
     &quot;finishedAt&quot;: &quot;1970-01-01T00:00:00.000+00:00&quot;,
     &quot;gammaCursorStart&quot;: &quot;&quot;,
     &quot;gammaCursorEnd&quot;: &quot;&quot;,
@@ -1164,12 +1298,16 @@ Content-Type: application/json
     &quot;errorMessage&quot;: &quot;&quot;
   },
   &quot;ext_code&quot;: null,
-  &quot;time_now&quot;: &quot;1783595206807&quot;
+  &quot;time_now&quot;: &quot;1783508127359&quot;
 }</pre>
       </div>
         <table>
           <tbody>
             
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 响应为 JSON</td>
+            </tr>
             <tr>
               <th>断言</th>
               <td class="assert-ok">通过 — HTTP 200</td>
@@ -1187,22 +1325,30 @@ Content-Type: application/json
       </div>
     </details>
 <details class="details-req" id="req-35">
-      <summary><span class="sum-title"><span class="status-dot passed"></span>D05 A5 sync 重复提交（sync already running）</span><span class="sum-meta">POST /private/v1/pm/instant-products/1/sync · HTTP 200 · 610 ms</span></summary>
+      <summary><span class="sum-title"><span class="status-dot passed"></span>D05 A5 sync 重复提交（sync already running）</span><span class="sum-meta">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/sync · HTTP 200 · 176 ms</span></summary>
       <div class="details-body">
         <div class="focus-card">
           <div class="focus-title">测试要点</div>
-          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=10001</span><span class="kv important"><b>ret_msg</b>=sync already running</span></div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>status</b>=RUNNING</span><span class="kv important"><b>syncRunId</b>=3</span><span class="kv"><b>message</b>=同步任务已提交</span></div>
         </div>
-        <div class="meta">响应体积 108 字节</div>
-        <div class="meta">http://localhost:8080/private/v1/pm/instant-products/1/sync</div>
+        <div class="meta">响应体积 150 字节</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/sync</div>
         <div class="payload-block">
         <div class="payload-label">请求</div>
-        <pre class="payload">POST http://localhost:8080/private/v1/pm/instant-products/1/sync
+        <pre class="payload">POST https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/sync
 Content-Type: application/json
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/create-market-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Not;A=Brand&quot;;v=&quot;8&quot;, &quot;Chromium&quot;;v=&quot;150&quot;, &quot;Google Chrome&quot;;v=&quot;150&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
 Accept-Language: zh-CN,zh;q=0.9
 
 {
-  &quot;operator&quot;: &quot;postman-cli&quot;
+  &quot;operator&quot;: &quot;sven.yang&quot;
 }</pre>
       </div><div class="payload-block">
         <div class="payload-label">响应</div>
@@ -1210,11 +1356,15 @@ Accept-Language: zh-CN,zh;q=0.9
 Content-Type: application/json
 
 {
-  &quot;ret_code&quot;: 10001,
-  &quot;ret_msg&quot;: &quot;sync already running&quot;,
-  &quot;result&quot;: null,
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;OK&quot;,
+  &quot;result&quot;: {
+    &quot;syncRunId&quot;: 3,
+    &quot;status&quot;: &quot;RUNNING&quot;,
+    &quot;message&quot;: &quot;同步任务已提交&quot;
+  },
   &quot;ext_code&quot;: null,
-  &quot;time_now&quot;: &quot;1783595207432&quot;
+  &quot;time_now&quot;: &quot;1783508127542&quot;
 }</pre>
       </div>
         <table>
@@ -1222,28 +1372,40 @@ Content-Type: application/json
             
             <tr>
               <th>断言</th>
+              <td class="assert-ok">通过 — 响应为 JSON</td>
+            </tr>
+            <tr>
+              <th>断言</th>
               <td class="assert-ok">通过 — HTTP 200</td>
             </tr>
             <tr>
               <th>断言</th>
-              <td class="assert-ok">通过 — sync already running</td>
+              <td class="assert-ok">通过 — 上一轮 sync 已结束，允许再次提交</td>
             </tr>
           </tbody>
         </table>
       </div>
     </details>
 <details class="details-req" id="req-36">
-      <summary><span class="sum-title"><span class="status-dot passed"></span>D06 A6-1 list sync-runs</span><span class="sum-meta">GET /private/v1/pm/instant-products/1/sync-runs?limit=5 · HTTP 200 · 324 ms</span></summary>
+      <summary><span class="sum-title"><span class="status-dot passed"></span>D06 A6-1 list sync-runs</span><span class="sum-meta">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/sync-runs?limit=5 · HTTP 200 · 156 ms</span></summary>
       <div class="details-body">
         <div class="focus-card">
           <div class="focus-title">测试要点</div>
           <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=3 条</span><span class="kv"><b>items[0].id</b>=3</span><span class="kv"><b>items[0].status</b>=RUNNING</span><span class="kv"><b>items[0].failedCount</b>=0</span></div>
         </div>
-        <div class="meta">响应体积 992 字节</div>
-        <div class="meta">http://localhost:8080/private/v1/pm/instant-products/1/sync-runs?limit=5</div>
+        <div class="meta">响应体积 959 字节</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/sync-runs?limit=5</div>
         <div class="payload-block">
         <div class="payload-label">请求</div>
-        <pre class="payload">GET http://localhost:8080/private/v1/pm/instant-products/1/sync-runs?limit=5
+        <pre class="payload">GET https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/sync-runs?limit=5
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/create-market-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Not;A=Brand&quot;;v=&quot;8&quot;, &quot;Chromium&quot;;v=&quot;150&quot;, &quot;Google Chrome&quot;;v=&quot;150&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
 Accept-Language: zh-CN,zh;q=0.9</pre>
       </div><div class="payload-block">
         <div class="payload-label">响应</div>
@@ -1259,7 +1421,7 @@ Content-Type: application/json
         &quot;id&quot;: 3,
         &quot;triggerType&quot;: &quot;MANUAL&quot;,
         &quot;status&quot;: &quot;RUNNING&quot;,
-        &quot;startedAt&quot;: &quot;2026-07-09T11:06:45.755+00:00&quot;,
+        &quot;startedAt&quot;: &quot;2026-07-08T10:55:27.514+00:00&quot;,
         &quot;finishedAt&quot;: &quot;1970-01-01T00:00:00.000+00:00&quot;,
         &quot;gammaCursorStart&quot;: &quot;&quot;,
         &quot;gammaCursorEnd&quot;: &quot;&quot;,
@@ -1273,42 +1435,46 @@ Content-Type: application/json
       {
         &quot;id&quot;: 2,
         &quot;triggerType&quot;: &quot;MANUAL&quot;,
-        &quot;status&quot;: &quot;PARTIAL&quot;,
-        &quot;startedAt&quot;: &quot;2026-07-09T11:03:26.184+00:00&quot;,
-        &quot;finishedAt&quot;: &quot;2026-07-09T11:03:47.102+00:00&quot;,
+        &quot;status&quot;: &quot;SUCCESS&quot;,
+        &quot;startedAt&quot;: &quot;2026-07-08T10:55:27.106+00:00&quot;,
+        &quot;finishedAt&quot;: &quot;2026-07-08T10:55:27.405+00:00&quot;,
         &quot;gammaCursorStart&quot;: &quot;&quot;,
         &quot;gammaCursorEnd&quot;: &quot;&quot;,
-        &quot;fetchedCount&quot;: 288,
-        &quot;insertedCount&quot;: 187,
+        &quot;fetchedCount&quot;: 287,
+        &quot;insertedCount&quot;: 0,
         &quot;updatedCount&quot;: 0,
-        &quot;skippedCount&quot;: 13,
-        &quot;failedCount&quot;: 101,
+        &quot;skippedCount&quot;: 301,
+        &quot;failedCount&quot;: 0,
         &quot;errorMessage&quot;: &quot;&quot;
       },
       {
         &quot;id&quot;: 1,
         &quot;triggerType&quot;: &quot;MANUAL&quot;,
-        &quot;status&quot;: &quot;FAILED&quot;,
-        &quot;startedAt&quot;: &quot;2026-07-08T10:43:19.930+00:00&quot;,
-        &quot;finishedAt&quot;: &quot;2026-07-09T11:03:25.765+00:00&quot;,
+        &quot;status&quot;: &quot;PARTIAL&quot;,
+        &quot;startedAt&quot;: &quot;2026-07-08T10:55:00.619+00:00&quot;,
+        &quot;finishedAt&quot;: &quot;2026-07-08T10:55:03.862+00:00&quot;,
         &quot;gammaCursorStart&quot;: &quot;&quot;,
         &quot;gammaCursorEnd&quot;: &quot;&quot;,
-        &quot;fetchedCount&quot;: 0,
-        &quot;insertedCount&quot;: 0,
+        &quot;fetchedCount&quot;: 287,
+        &quot;insertedCount&quot;: 186,
         &quot;updatedCount&quot;: 0,
-        &quot;skippedCount&quot;: 0,
-        &quot;failedCount&quot;: 1,
-        &quot;errorMessage&quot;: &quot;stale sync run recovered after timeout&quot;
+        &quot;skippedCount&quot;: 14,
+        &quot;failedCount&quot;: 101,
+        &quot;errorMessage&quot;: &quot;&quot;
       }
     ]
   },
   &quot;ext_code&quot;: null,
-  &quot;time_now&quot;: &quot;1783595207781&quot;
+  &quot;time_now&quot;: &quot;1783508127705&quot;
 }</pre>
       </div>
         <table>
           <tbody>
             
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 响应为 JSON</td>
+            </tr>
             <tr>
               <th>断言</th>
               <td class="assert-ok">通过 — HTTP 200</td>
@@ -1326,17 +1492,25 @@ Content-Type: application/json
       </div>
     </details>
 <details class="details-req" id="req-37">
-      <summary><span class="sum-title"><span class="status-dot passed"></span>D07 A7-1 list events local</span><span class="sum-meta">GET /private/v1/pm/instant-products/1/events?source=local&amp;limit=20 · HTTP 200 · 518 ms</span></summary>
+      <summary><span class="sum-title"><span class="status-dot passed"></span>D07 A7-1 list events local</span><span class="sum-meta">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/events?source=local&amp;limit=20 · HTTP 200 · 151 ms</span></summary>
       <div class="details-body">
         <div class="focus-card">
           <div class="focus-title">测试要点</div>
-          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=20 条</span><span class="kv"><b>items[0].eventId</b>=575</span><span class="kv"><b>items[0].workflowStatus</b>=APPROVED</span><span class="kv"><b>items[0].captureStatus</b>=PENDING</span></div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=20 条</span><span class="kv"><b>items[0].eventId</b>=776</span><span class="kv"><b>items[0].workflowStatus</b>=APPROVED</span><span class="kv"><b>items[0].captureStatus</b>=PENDING</span></div>
         </div>
         <div class="meta">响应体积 5112 字节</div>
-        <div class="meta">http://localhost:8080/private/v1/pm/instant-products/1/events?source=local&amp;limit=20</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/events?source=local&amp;limit=20</div>
         <div class="payload-block">
         <div class="payload-label">请求</div>
-        <pre class="payload">GET http://localhost:8080/private/v1/pm/instant-products/1/events?source=local&amp;limit=20
+        <pre class="payload">GET https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/events?source=local&amp;limit=20
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/create-market-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Not;A=Brand&quot;;v=&quot;8&quot;, &quot;Chromium&quot;;v=&quot;150&quot;, &quot;Google Chrome&quot;;v=&quot;150&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
 Accept-Language: zh-CN,zh;q=0.9</pre>
       </div><div class="payload-block">
         <div class="payload-label">响应</div>
@@ -1349,9 +1523,9 @@ Content-Type: application/json
   &quot;result&quot;: {
     &quot;items&quot;: [
       {
-        &quot;eventId&quot;: 575,
-        &quot;sourceEventId&quot;: &quot;683915&quot;,
-        &quot;slug&quot;: &quot;btc-updown-5m-1783680900&quot;,
+        &quot;eventId&quot;: 776,
+        &quot;sourceEventId&quot;: &quot;680132&quot;,
+        &quot;slug&quot;: &quot;btc-updown-5m-1783593900&quot;,
         &quot;windowLabel&quot;: &quot;&quot;,
         &quot;windowStart&quot;: null,
         &quot;windowEnd&quot;: null,
@@ -1363,9 +1537,9 @@ Content-Type: application/json
         &quot;result&quot;: &quot;&quot;
       },
       {
-        &quot;eventId&quot;: 574,
-        &quot;sourceEventId&quot;: &quot;683901&quot;,
-        &quot;slug&quot;: &quot;btc-updown-5m-1783680600&quot;,
+        &quot;eventId&quot;: 775,
+        &quot;sourceEventId&quot;: &quot;680125&quot;,
+        &quot;slug&quot;: &quot;btc-updown-5m-1783593600&quot;,
         &quot;windowLabel&quot;: &quot;&quot;,
         &quot;windowStart&quot;: null,
         &quot;windowEnd&quot;: null,
@@ -1377,9 +1551,9 @@ Content-Type: application/json
         &quot;result&quot;: &quot;&quot;
       },
       {
-        &quot;eventId&quot;: 572,
-        &quot;sourceEventId&quot;: &quot;683889&quot;,
-        &quot;slug&quot;: &quot;btc-updown-5m-1783680300&quot;,
+        &quot;eventId&quot;: 774,
+        &quot;sourceEventId&quot;: &quot;680122&quot;,
+        &quot;slug&quot;: &quot;btc-updown-5m-1783593300&quot;,
         &quot;windowLabel&quot;: &quot;&quot;,
         &quot;windowStart&quot;: null,
         &quot;windowEnd&quot;: null,
@@ -1391,9 +1565,9 @@ Content-Type: application/json
         &quot;result&quot;: &quot;&quot;
       },
       {
-        &quot;eventId&quot;: 573,
-        &quot;sourceEventId&quot;: &quot;683880&quot;,
-        &quot;slug&quot;: &quot;btc-updown-5m-1783680000&quot;,
+        &quot;eventId&quot;: 773,
+        &quot;sourceEventId&quot;: &quot;680106&quot;,
+        &quot;slug&quot;: &quot;btc-updown-5m-1783593000&quot;,
         &quot;windowLabel&quot;: &quot;&quot;,
         &quot;windowStart&quot;: null,
         &quot;windowEnd&quot;: null,
@@ -1405,9 +1579,9 @@ Content-Type: application/json
         &quot;result&quot;: &quot;&quot;
       },
       {
-        &quot;eventId&quot;: 571,
-        &quot;sourceEventId&quot;: &quot;683875&quot;,
-        &quot;slug&quot;: &quot;btc-updown-5m-1783679700&quot;,
+        &quot;eventId&quot;: 772,
+        &quot;sourceEventId&quot;: &quot;680092&quot;,
+        &quot;slug&quot;: &quot;btc-updown-5m-1783592700&quot;,
         &quot;windowLabel&quot;: &quot;&quot;,
         &quot;windowStart&quot;: null,
         &quot;windowEnd&quot;: null,
@@ -1417,6 +1591,10 @@ Content-Type: application/json
         <table>
           <tbody>
             
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 响应为 JSON</td>
+            </tr>
             <tr>
               <th>断言</th>
               <td class="assert-ok">通过 — HTTP 200</td>
@@ -1434,17 +1612,25 @@ Content-Type: application/json
       </div>
     </details>
 <details class="details-req" id="req-38">
-      <summary><span class="sum-title"><span class="status-dot passed"></span>D08 A7-1 list events gamma 预览</span><span class="sum-meta">GET /private/v1/pm/instant-products/1/events?source=gamma&amp;limit=5 · HTTP 200 · 625 ms</span></summary>
+      <summary><span class="sum-title"><span class="status-dot passed"></span>D08 A7-1 list events gamma 预览</span><span class="sum-meta">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/events?source=gamma&amp;limit=5 · HTTP 200 · 166 ms</span></summary>
       <div class="details-body">
         <div class="focus-card">
           <div class="focus-title">测试要点</div>
           <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=0 条</span></div>
         </div>
         <div class="meta">响应体积 378 字节</div>
-        <div class="meta">http://localhost:8080/private/v1/pm/instant-products/1/events?source=gamma&amp;limit=5</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/events?source=gamma&amp;limit=5</div>
         <div class="payload-block">
         <div class="payload-label">请求</div>
-        <pre class="payload">GET http://localhost:8080/private/v1/pm/instant-products/1/events?source=gamma&amp;limit=5
+        <pre class="payload">GET https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/events?source=gamma&amp;limit=5
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/create-market-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Not;A=Brand&quot;;v=&quot;8&quot;, &quot;Chromium&quot;;v=&quot;150&quot;, &quot;Google Chrome&quot;;v=&quot;150&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
 Accept-Language: zh-CN,zh;q=0.9</pre>
       </div><div class="payload-block">
         <div class="payload-label">响应</div>
@@ -1459,12 +1645,16 @@ Content-Type: application/json
     &quot;nextCursor&quot;: &quot;orxGNd0cS2b_Ox2eiHdnMThHGfYRi4MfclFuKunKDI97InYiOjEsImsiOiJldmVudHMiLCJvaCI6ImFlNjJmZmE1NzcwYmY4YmZmOWViNDYwZGJjNTAyN2I4YjY5MTgyYjMwOTU3N2RjMzhmYjgxNjdlN2I3NWM4YzYiLCJrZXlzIjpbeyJ0IjoidGltZSIsInYiOiIyMDI1LTEyLTE4VDE3OjAxOjU0WiJ9LHsidCI6InN0cmluZyIsInYiOiIxMTAwMDgifV19&quot;
   },
   &quot;ext_code&quot;: null,
-  &quot;time_now&quot;: &quot;1783595208963&quot;
+  &quot;time_now&quot;: &quot;1783508128078&quot;
 }</pre>
       </div>
         <table>
           <tbody>
             
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 响应为 JSON</td>
+            </tr>
             <tr>
               <th>断言</th>
               <td class="assert-ok">通过 — HTTP 200</td>
@@ -1482,17 +1672,25 @@ Content-Type: application/json
       </div>
     </details>
 <details class="details-req" id="req-39">
-      <summary><span class="sum-title"><span class="status-dot passed"></span>D09 A7-2 list window-prices</span><span class="sum-meta">GET /private/v1/pm/instant-products/1/window-prices?limit=20 · HTTP 200 · 330 ms</span></summary>
+      <summary><span class="sum-title"><span class="status-dot passed"></span>D09 A7-2 list window-prices</span><span class="sum-meta">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/window-prices?limit=20 · HTTP 200 · 146 ms</span></summary>
       <div class="details-body">
         <div class="focus-card">
           <div class="focus-title">测试要点</div>
-          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=20 条</span><span class="kv"><b>items[0].id</b>=374</span><span class="kv"><b>items[0].eventId</b>=474</span><span class="kv"><b>items[0].asset</b>=BTC</span><span class="kv"><b>items[0].captureStatus</b>=PENDING</span></div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=20 条</span><span class="kv"><b>items[0].id</b>=186</span><span class="kv"><b>items[0].eventId</b>=675</span><span class="kv"><b>items[0].asset</b>=BTC</span><span class="kv"><b>items[0].captureStatus</b>=PENDING</span></div>
         </div>
         <div class="meta">响应体积 5893 字节</div>
-        <div class="meta">http://localhost:8080/private/v1/pm/instant-products/1/window-prices?limit=20</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/window-prices?limit=20</div>
         <div class="payload-block">
         <div class="payload-label">请求</div>
-        <pre class="payload">GET http://localhost:8080/private/v1/pm/instant-products/1/window-prices?limit=20
+        <pre class="payload">GET https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/window-prices?limit=20
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/create-market-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Not;A=Brand&quot;;v=&quot;8&quot;, &quot;Chromium&quot;;v=&quot;150&quot;, &quot;Google Chrome&quot;;v=&quot;150&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
 Accept-Language: zh-CN,zh;q=0.9</pre>
       </div><div class="payload-block">
         <div class="payload-label">响应</div>
@@ -1505,13 +1703,13 @@ Content-Type: application/json
   &quot;result&quot;: {
     &quot;items&quot;: [
       {
-        &quot;id&quot;: 374,
-        &quot;eventId&quot;: 474,
-        &quot;sourceEventId&quot;: &quot;682653&quot;,
+        &quot;id&quot;: 186,
+        &quot;eventId&quot;: 675,
+        &quot;sourceEventId&quot;: &quot;678870&quot;,
         &quot;asset&quot;: &quot;BTC&quot;,
-        &quot;windowStart&quot;: &quot;2026-07-10T02:30:00.000+00:00&quot;,
-        &quot;windowEnd&quot;: &quot;2026-07-10T02:35:00.000+00:00&quot;,
-        &quot;lockAt&quot;: &quot;2026-07-10T02:34:50.000+00:00&quot;,
+        &quot;windowStart&quot;: &quot;2026-07-09T02:20:00.000+00:00&quot;,
+        &quot;windowEnd&quot;: &quot;2026-07-09T02:25:00.000+00:00&quot;,
+        &quot;lockAt&quot;: &quot;2026-07-09T02:24:50.000+00:00&quot;,
         &quot;priceToBeat&quot;: 0,
         &quot;endPrice&quot;: 0,
         &quot;captureStatus&quot;: &quot;PENDING&quot;,
@@ -1519,13 +1717,13 @@ Content-Type: application/json
         &quot;isListCurrent&quot;: false
       },
       {
-        &quot;id&quot;: 373,
-        &quot;eventId&quot;: 473,
-        &quot;sourceEventId&quot;: &quot;682646&quot;,
+        &quot;id&quot;: 185,
+        &quot;eventId&quot;: 674,
+        &quot;sourceEventId&quot;: &quot;678852&quot;,
         &quot;asset&quot;: &quot;BTC&quot;,
-        &quot;windowStart&quot;: &quot;2026-07-10T02:25:00.000+00:00&quot;,
-        &quot;windowEnd&quot;: &quot;2026-07-10T02:30:00.000+00:00&quot;,
-        &quot;lockAt&quot;: &quot;2026-07-10T02:29:50.000+00:00&quot;,
+        &quot;windowStart&quot;: &quot;2026-07-09T02:15:00.000+00:00&quot;,
+        &quot;windowEnd&quot;: &quot;2026-07-09T02:20:00.000+00:00&quot;,
+        &quot;lockAt&quot;: &quot;2026-07-09T02:19:50.000+00:00&quot;,
         &quot;priceToBeat&quot;: 0,
         &quot;endPrice&quot;: 0,
         &quot;captureStatus&quot;: &quot;PENDING&quot;,
@@ -1533,13 +1731,13 @@ Content-Type: application/json
         &quot;isListCurrent&quot;: false
       },
       {
-        &quot;id&quot;: 372,
-        &quot;eventId&quot;: 472,
-        &quot;sourceEventId&quot;: &quot;682636&quot;,
+        &quot;id&quot;: 184,
+        &quot;eventId&quot;: 673,
+        &quot;sourceEventId&quot;: &quot;678844&quot;,
         &quot;asset&quot;: &quot;BTC&quot;,
-        &quot;windowStart&quot;: &quot;2026-07-10T02:20:00.000+00:00&quot;,
-        &quot;windowEnd&quot;: &quot;2026-07-10T02:25:00.000+00:00&quot;,
-        &quot;lockAt&quot;: &quot;2026-07-10T02:24:50.000+00:00&quot;,
+        &quot;windowStart&quot;: &quot;2026-07-09T02:10:00.000+00:00&quot;,
+        &quot;windowEnd&quot;: &quot;2026-07-09T02:15:00.000+00:00&quot;,
+        &quot;lockAt&quot;: &quot;2026-07-09T02:14:50.000+00:00&quot;,
         &quot;priceToBeat&quot;: 0,
         &quot;endPrice&quot;: 0,
         &quot;captureStatus&quot;: &quot;PENDING&quot;,
@@ -1547,13 +1745,13 @@ Content-Type: application/json
         &quot;isListCurrent&quot;: false
       },
       {
-        &quot;id&quot;: 371,
-        &quot;eventId&quot;: 471,
-        &quot;sourceEventId&quot;: &quot;682628&quot;,
+        &quot;id&quot;: 183,
+        &quot;eventId&quot;: 672,
+        &quot;sourceEventId&quot;: &quot;678835&quot;,
         &quot;asset&quot;: &quot;BTC&quot;,
-        &quot;windowStart&quot;: &quot;2026-07-10T02:15:00.000+00:00&quot;,
-        &quot;windowEnd&quot;: &quot;2026-07-10T02:20:00.000+00:00&quot;,
-        &quot;lockAt&quot;: &quot;2026-07-10T02:19:50.000+00:00&quot;,
+        &quot;windowStart&quot;: &quot;2026-07-09T02:05:00.000+00:00&quot;,
+        &quot;windowEnd&quot;: &quot;2026-07-09T02:10:00.000+00:00&quot;,
+        &quot;lockAt&quot;: &quot;2026-07-09T02:09:50.000+00:00&quot;,
         &quot;priceToBeat&quot;: 0,
         &quot;endPrice&quot;: 0,
         &quot;captureStatus&quot;: &quot;PENDING&quot;,
@@ -1561,14 +1759,18 @@ Content-Type: application/json
         &quot;isListCurrent&quot;: false
       },
       {
-        &quot;id&quot;: 370,
-        &quot;eventId&quot;: 470,
+        &quot;id&quot;: 182,
+        &quot;eventId&quot;: 671,
         &quot;s
 …（已截断，全文 8488 字符）</pre>
       </div>
         <table>
           <tbody>
             
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 响应为 JSON</td>
+            </tr>
             <tr>
               <th>断言</th>
               <td class="assert-ok">通过 — HTTP 200</td>
@@ -1586,22 +1788,30 @@ Content-Type: application/json
       </div>
     </details>
 <details class="details-req" id="req-40">
-      <summary><span class="sum-title"><span class="status-dot passed"></span>D10 A4-2 stop 停用</span><span class="sum-meta">POST /private/v1/pm/instant-products/1/stop · HTTP 200 · 1108 ms</span></summary>
+      <summary><span class="sum-title"><span class="status-dot passed"></span>D10 A4-2 stop 停用</span><span class="sum-meta">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/stop · HTTP 200 · 183 ms</span></summary>
       <div class="details-body">
         <div class="focus-card">
           <div class="focus-title">测试要点</div>
           <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>id</b>=1</span><span class="kv important"><b>status</b>=STOPPED</span><span class="kv"><b>name</b>=BTC Up or Down 5m · 5m</span><span class="kv"><b>seriesSlug</b>=btc-up-or-down-5m</span><span class="kv"><b>asset</b>=BTC</span><span class="kv"><b>categoryId</b>=101</span><span class="kv"><b>recurrenceMinutes</b>=5</span><span class="kv"><b>syncEnabled</b>=true</span><span class="kv"><b>iconUrl</b>=</span><span class="kv"><b>resolutionSource</b>=</span></div>
         </div>
-        <div class="meta">响应体积 595 字节</div>
-        <div class="meta">http://localhost:8080/private/v1/pm/instant-products/1/stop</div>
+        <div class="meta">响应体积 589 字节</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/stop</div>
         <div class="payload-block">
         <div class="payload-label">请求</div>
-        <pre class="payload">POST http://localhost:8080/private/v1/pm/instant-products/1/stop
+        <pre class="payload">POST https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/stop
 Content-Type: application/json
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/create-market-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Not;A=Brand&quot;;v=&quot;8&quot;, &quot;Chromium&quot;;v=&quot;150&quot;, &quot;Google Chrome&quot;;v=&quot;150&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
 Accept-Language: zh-CN,zh;q=0.9
 
 {
-  &quot;operator&quot;: &quot;postman-cli&quot;,
+  &quot;operator&quot;: &quot;sven.yang&quot;,
   &quot;remark&quot;: &quot;postman stop&quot;
 }</pre>
       </div><div class="payload-block">
@@ -1623,24 +1833,28 @@ Content-Type: application/json
     &quot;syncEnabled&quot;: true,
     &quot;iconUrl&quot;: &quot;&quot;,
     &quot;resolutionSource&quot;: &quot;&quot;,
-    &quot;lastSyncAt&quot;: &quot;2026-07-09T11:03:47.357+00:00&quot;,
-    &quot;lastSyncStatus&quot;: &quot;PARTIAL&quot;,
-    &quot;lastSyncRunId&quot;: 2,
-    &quot;todaySyncedCount&quot;: 187,
+    &quot;lastSyncAt&quot;: &quot;2026-07-08T10:55:27.836+00:00&quot;,
+    &quot;lastSyncStatus&quot;: &quot;SUCCESS&quot;,
+    &quot;lastSyncRunId&quot;: 3,
+    &quot;todaySyncedCount&quot;: 0,
     &quot;nextSyncAt&quot;: &quot;1970-01-01T00:00:00.000+00:00&quot;,
     &quot;lastError&quot;: &quot;&quot;,
-    &quot;createdBy&quot;: &quot;postman-cli&quot;,
-    &quot;updatedBy&quot;: &quot;postman-cli&quot;,
-    &quot;createdAt&quot;: &quot;2026-07-08T10:43:17.430+00:00&quot;,
-    &quot;updatedAt&quot;: &quot;2026-07-09T11:06:49.817+00:00&quot;
+    &quot;createdBy&quot;: &quot;sven.yang&quot;,
+    &quot;updatedBy&quot;: &quot;sven.yang&quot;,
+    &quot;createdAt&quot;: &quot;2026-07-08T10:55:00.115+00:00&quot;,
+    &quot;updatedAt&quot;: &quot;2026-07-08T10:55:28.411+00:00&quot;
   },
   &quot;ext_code&quot;: null,
-  &quot;time_now&quot;: &quot;1783595210427&quot;
+  &quot;time_now&quot;: &quot;1783508128442&quot;
 }</pre>
       </div>
         <table>
           <tbody>
             
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 响应为 JSON</td>
+            </tr>
             <tr>
               <th>断言</th>
               <td class="assert-ok">通过 — HTTP 200</td>
@@ -1653,10 +1867,6 @@ Content-Type: application/json
               <th>断言</th>
               <td class="assert-ok">通过 — status=STOPPED</td>
             </tr>
-            <tr>
-              <th>断言</th>
-              <td class="assert-ok">通过 — stop 后 iconUrl 不变</td>
-            </tr>
           </tbody>
         </table>
       </div>
@@ -1664,48 +1874,38 @@ Content-Type: application/json
   </details>
   </section>
 
-<section id="api-create">
-    <h2>四、A3 create</h2>
-    <p class="hint">（本运行无此类请求）</p>
-  </section>
-
 <section id="api-start">
-    <h2>五、A4-1 start</h2>
+    <h2>四、A4-1 start</h2>
     <p class="hint">（本运行无此类请求）</p>
   </section>
 
 <section id="api-stop">
-    <h2>六、A4-2 stop</h2>
+    <h2>五、A4-2 stop</h2>
     <p class="hint">（本运行无此类请求）</p>
   </section>
 
 <section id="api-sync">
-    <h2>七、A5 sync</h2>
+    <h2>六、A5 sync</h2>
     <p class="hint">（本运行无此类请求）</p>
   </section>
 
 <section id="api-syncRuns">
-    <h2>八、A6-2 sync-run 详情</h2>
+    <h2>七、A6-2 sync-run 详情</h2>
     <p class="hint">（本运行无此类请求）</p>
   </section>
 
 <section id="api-syncRunsList">
-    <h2>九、A6-1 sync-runs</h2>
+    <h2>八、A6-1 sync-runs</h2>
     <p class="hint">（本运行无此类请求）</p>
   </section>
 
 <section id="api-events">
-    <h2>十、A7-1 events</h2>
+    <h2>九、A7-1 events</h2>
     <p class="hint">（本运行无此类请求）</p>
   </section>
 
 <section id="api-windowPrices">
-    <h2>11. A7-2 window-prices</h2>
-    <p class="hint">（本运行无此类请求）</p>
-  </section>
-
-<section id="api-categories">
-    <h2>12. Setup categories</h2>
+    <h2>十、A7-2 window-prices</h2>
     <p class="hint">（本运行无此类请求）</p>
   </section>
 
@@ -1714,17 +1914,25 @@ Content-Type: application/json
     <details class="details-folder">
     <summary><span class="folder-title">00 Setup</span><span class="folder-meta">3 个用例 · <span class="ok-inline">断言全过</span></span></summary>
     <div class="folder-inner"><details class="details-req" id="req-1">
-      <summary><span class="sum-title"><span class="status-dot passed"></span>S01 拉取叶子分类 leafCategoryId</span><span class="sum-meta">GET /private/v1/pm/categories/tree · HTTP 200 · 627 ms</span></summary>
+      <summary><span class="sum-title"><span class="status-dot passed"></span>S01 拉取叶子分类 leafCategoryId</span><span class="sum-meta">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/categories/tree · HTTP 200 · 536 ms</span></summary>
       <div class="details-body">
         <div class="focus-card">
           <div class="focus-title">测试要点</div>
           <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv"><b>result</b>=数组 3 条</span><span class="kv"><b>[0].id</b>=100</span><span class="kv"><b>[0].name</b>=加密资产</span></div>
         </div>
-        <div class="meta">响应体积 48812 字节</div>
-        <div class="meta">http://localhost:8080/private/v1/pm/categories/tree</div>
+        <div class="meta">响应体积 48816 字节</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/categories/tree</div>
         <div class="payload-block">
         <div class="payload-label">请求</div>
-        <pre class="payload">GET http://localhost:8080/private/v1/pm/categories/tree
+        <pre class="payload">GET https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/categories/tree
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/create-market-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Not;A=Brand&quot;;v=&quot;8&quot;, &quot;Chromium&quot;;v=&quot;150&quot;, &quot;Google Chrome&quot;;v=&quot;150&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
 Accept-Language: zh-CN,zh;q=0.9</pre>
       </div><div class="payload-block">
         <div class="payload-label">响应</div>
@@ -1818,11 +2026,15 @@ Content-Type: application/json
               &quot;name&quot;: &quot;英超&quot;,
               &quot;isLeaf&quot;: false,
               &quot;children&quot;: 
-…（已截断，全文 125002 字符）</pre>
+…（已截断，全文 125034 字符）</pre>
       </div>
         <table>
           <tbody>
             
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 响应为 JSON</td>
+            </tr>
             <tr>
               <th>断言</th>
               <td class="assert-ok">通过 — HTTP 200</td>
@@ -1840,17 +2052,25 @@ Content-Type: application/json
       </div>
     </details>
 <details class="details-req" id="req-2">
-      <summary><span class="sum-title"><span class="status-dot passed"></span>S02 GET /instant-products 解析 instantProductId</span><span class="sum-meta">GET /private/v1/pm/instant-products · HTTP 200 · 201 ms</span></summary>
+      <summary><span class="sum-title"><span class="status-dot passed"></span>S02 GET /instant-products 解析 instantProductId</span><span class="sum-meta">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products · HTTP 200 · 143 ms</span></summary>
       <div class="details-body">
         <div class="focus-card">
           <div class="focus-title">测试要点</div>
           <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=1 条</span><span class="kv"><b>items[0].id</b>=1</span><span class="kv"><b>items[0].status</b>=STOPPED</span><span class="kv"><b>items[0].seriesSlug</b>=btc-up-or-down-5m</span><span class="kv"><b>items[0].asset</b>=BTC</span></div>
         </div>
-        <div class="meta">响应体积 607 字节</div>
-        <div class="meta">http://localhost:8080/private/v1/pm/instant-products</div>
+        <div class="meta">响应体积 603 字节</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products</div>
         <div class="payload-block">
         <div class="payload-label">请求</div>
-        <pre class="payload">GET http://localhost:8080/private/v1/pm/instant-products
+        <pre class="payload">GET https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/create-market-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Not;A=Brand&quot;;v=&quot;8&quot;, &quot;Chromium&quot;;v=&quot;150&quot;, &quot;Google Chrome&quot;;v=&quot;150&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
 Accept-Language: zh-CN,zh;q=0.9</pre>
       </div><div class="payload-block">
         <div class="payload-label">响应</div>
@@ -1873,26 +2093,30 @@ Content-Type: application/json
         &quot;syncEnabled&quot;: true,
         &quot;iconUrl&quot;: &quot;&quot;,
         &quot;resolutionSource&quot;: &quot;&quot;,
-        &quot;lastSyncAt&quot;: &quot;2026-07-09T11:03:47.357+00:00&quot;,
+        &quot;lastSyncAt&quot;: &quot;2026-07-08T10:55:03.888+00:00&quot;,
         &quot;lastSyncStatus&quot;: &quot;PARTIAL&quot;,
-        &quot;lastSyncRunId&quot;: 2,
-        &quot;todaySyncedCount&quot;: 187,
+        &quot;lastSyncRunId&quot;: 1,
+        &quot;todaySyncedCount&quot;: 186,
         &quot;nextSyncAt&quot;: &quot;1970-01-01T00:00:00.000+00:00&quot;,
         &quot;lastError&quot;: &quot;&quot;,
-        &quot;createdBy&quot;: &quot;postman-cli&quot;,
-        &quot;updatedBy&quot;: &quot;postman-cli&quot;,
-        &quot;createdAt&quot;: &quot;2026-07-08T10:43:17.430+00:00&quot;,
-        &quot;updatedAt&quot;: &quot;2026-07-09T11:03:47.590+00:00&quot;
+        &quot;createdBy&quot;: &quot;sven.yang&quot;,
+        &quot;updatedBy&quot;: &quot;sven.yang&quot;,
+        &quot;createdAt&quot;: &quot;2026-07-08T10:55:00.115+00:00&quot;,
+        &quot;updatedAt&quot;: &quot;2026-07-08T10:55:03.897+00:00&quot;
       }
     ]
   },
   &quot;ext_code&quot;: null,
-  &quot;time_now&quot;: &quot;1783595195820&quot;
+  &quot;time_now&quot;: &quot;1783508121095&quot;
 }</pre>
       </div>
         <table>
           <tbody>
             
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 响应为 JSON</td>
+            </tr>
             <tr>
               <th>断言</th>
               <td class="assert-ok">通过 — HTTP 200</td>
@@ -1909,26 +2133,30 @@ Content-Type: application/json
               <th>断言</th>
               <td class="assert-ok">通过 — instantProductId=1</td>
             </tr>
-            <tr>
-              <th>断言</th>
-              <td class="assert-ok">通过 — 列表项含 iconUrl</td>
-            </tr>
           </tbody>
         </table>
       </div>
     </details>
 <details class="details-req" id="req-3">
-      <summary><span class="sum-title"><span class="status-dot passed"></span>S03 A1 validate series slug 缓存</span><span class="sum-meta">GET /private/v1/pm/instant-products/polymarket/series/validate?slug=btc-up-or-down-5m · HTTP 200 · 758 ms</span></summary>
+      <summary><span class="sum-title"><span class="status-dot passed"></span>S03 A1 validate series slug 缓存</span><span class="sum-meta">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/polymarket/series/validate?slug=btc-up-or-down-5m · HTTP 200 · 169 ms</span></summary>
       <div class="details-body">
         <div class="focus-card">
           <div class="focus-title">测试要点</div>
-          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>valid</b>=true</span><span class="kv"><b>sourceSeriesId</b>=10684</span><span class="kv"><b>slug</b>=btc-up-or-down-5m</span><span class="kv"><b>title</b>=BTC Up or Down 5m</span><span class="kv"><b>recurrence</b>=5m</span><span class="kv"><b>suggestedName</b>=BTC Up or Down 5m · 5m</span><span class="kv"><b>suggestedAsset</b>=BTC</span><span class="kv"><b>iconUrl</b>=</span></div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>valid</b>=true</span><span class="kv"><b>sourceSeriesId</b>=10684</span><span class="kv"><b>slug</b>=btc-up-or-down-5m</span><span class="kv"><b>title</b>=BTC Up or Down 5m</span><span class="kv"><b>recurrence</b>=5m</span><span class="kv"><b>suggestedName</b>=BTC Up or Down 5m · 5m</span><span class="kv"><b>suggestedAsset</b>=BTC</span></div>
         </div>
-        <div class="meta">响应体积 272 字节</div>
-        <div class="meta">http://localhost:8080/private/v1/pm/instant-products/polymarket/series/validate?slug=btc-up-or-down-5m</div>
+        <div class="meta">响应体积 259 字节</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/polymarket/series/validate?slug=btc-up-or-down-5m</div>
         <div class="payload-block">
         <div class="payload-label">请求</div>
-        <pre class="payload">GET http://localhost:8080/private/v1/pm/instant-products/polymarket/series/validate?slug=btc-up-or-down-5m
+        <pre class="payload">GET https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/polymarket/series/validate?slug=btc-up-or-down-5m
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/create-market-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Not;A=Brand&quot;;v=&quot;8&quot;, &quot;Chromium&quot;;v=&quot;150&quot;, &quot;Google Chrome&quot;;v=&quot;150&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
 Accept-Language: zh-CN,zh;q=0.9</pre>
       </div><div class="payload-block">
         <div class="payload-label">响应</div>
@@ -1945,16 +2173,19 @@ Content-Type: application/json
     &quot;title&quot;: &quot;BTC Up or Down 5m&quot;,
     &quot;recurrence&quot;: &quot;5m&quot;,
     &quot;suggestedName&quot;: &quot;BTC Up or Down 5m · 5m&quot;,
-    &quot;suggestedAsset&quot;: &quot;BTC&quot;,
-    &quot;iconUrl&quot;: &quot;&quot;
+    &quot;suggestedAsset&quot;: &quot;BTC&quot;
   },
   &quot;ext_code&quot;: null,
-  &quot;time_now&quot;: &quot;1783595196589&quot;
+  &quot;time_now&quot;: &quot;1783508121287&quot;
 }</pre>
       </div>
         <table>
           <tbody>
             
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 响应为 JSON</td>
+            </tr>
             <tr>
               <th>断言</th>
               <td class="assert-ok">通过 — HTTP 200</td>
@@ -1967,10 +2198,6 @@ Content-Type: application/json
               <th>断言</th>
               <td class="assert-ok">通过 — SeriesSlugValidateResponse 结构</td>
             </tr>
-            <tr>
-              <th>断言</th>
-              <td class="assert-ok">通过 — validate iconUrl（Gamma series.image）</td>
-            </tr>
           </tbody>
         </table>
       </div>
@@ -1979,17 +2206,25 @@ Content-Type: application/json
 <details class="details-folder">
     <summary><span class="folder-title">A · GET 正向 [ok]</span><span class="folder-meta">12 个用例 · <span class="ok-inline">断言全过</span></span></summary>
     <div class="folder-inner"><details class="details-req" id="req-4">
-      <summary><span class="sum-title"><span class="status-dot passed"></span>A01 A1 validate 有效 slug</span><span class="sum-meta">GET /private/v1/pm/instant-products/polymarket/series/validate?slug=btc-up-or-down-5m · HTTP 200 · 200 ms</span></summary>
+      <summary><span class="sum-title"><span class="status-dot passed"></span>A01 A1 validate 有效 slug</span><span class="sum-meta">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/polymarket/series/validate?slug=btc-up-or-down-5m · HTTP 200 · 149 ms</span></summary>
       <div class="details-body">
         <div class="focus-card">
           <div class="focus-title">测试要点</div>
-          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>valid</b>=true</span><span class="kv"><b>sourceSeriesId</b>=10684</span><span class="kv"><b>slug</b>=btc-up-or-down-5m</span><span class="kv"><b>title</b>=BTC Up or Down 5m</span><span class="kv"><b>recurrence</b>=5m</span><span class="kv"><b>suggestedName</b>=BTC Up or Down 5m · 5m</span><span class="kv"><b>suggestedAsset</b>=BTC</span><span class="kv"><b>iconUrl</b>=</span></div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>valid</b>=true</span><span class="kv"><b>sourceSeriesId</b>=10684</span><span class="kv"><b>slug</b>=btc-up-or-down-5m</span><span class="kv"><b>title</b>=BTC Up or Down 5m</span><span class="kv"><b>recurrence</b>=5m</span><span class="kv"><b>suggestedName</b>=BTC Up or Down 5m · 5m</span><span class="kv"><b>suggestedAsset</b>=BTC</span></div>
         </div>
-        <div class="meta">响应体积 272 字节</div>
-        <div class="meta">http://localhost:8080/private/v1/pm/instant-products/polymarket/series/validate?slug=btc-up-or-down-5m</div>
+        <div class="meta">响应体积 259 字节</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/polymarket/series/validate?slug=btc-up-or-down-5m</div>
         <div class="payload-block">
         <div class="payload-label">请求</div>
-        <pre class="payload">GET http://localhost:8080/private/v1/pm/instant-products/polymarket/series/validate?slug=btc-up-or-down-5m
+        <pre class="payload">GET https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/polymarket/series/validate?slug=btc-up-or-down-5m
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/create-market-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Not;A=Brand&quot;;v=&quot;8&quot;, &quot;Chromium&quot;;v=&quot;150&quot;, &quot;Google Chrome&quot;;v=&quot;150&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
 Accept-Language: zh-CN,zh;q=0.9</pre>
       </div><div class="payload-block">
         <div class="payload-label">响应</div>
@@ -2006,16 +2241,19 @@ Content-Type: application/json
     &quot;title&quot;: &quot;BTC Up or Down 5m&quot;,
     &quot;recurrence&quot;: &quot;5m&quot;,
     &quot;suggestedName&quot;: &quot;BTC Up or Down 5m · 5m&quot;,
-    &quot;suggestedAsset&quot;: &quot;BTC&quot;,
-    &quot;iconUrl&quot;: &quot;&quot;
+    &quot;suggestedAsset&quot;: &quot;BTC&quot;
   },
   &quot;ext_code&quot;: null,
-  &quot;time_now&quot;: &quot;1783595196823&quot;
+  &quot;time_now&quot;: &quot;1783508121461&quot;
 }</pre>
       </div>
         <table>
           <tbody>
             
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 响应为 JSON</td>
+            </tr>
             <tr>
               <th>断言</th>
               <td class="assert-ok">通过 — HTTP 200</td>
@@ -2028,26 +2266,30 @@ Content-Type: application/json
               <th>断言</th>
               <td class="assert-ok">通过 — validate 响应字段</td>
             </tr>
-            <tr>
-              <th>断言</th>
-              <td class="assert-ok">通过 — validate iconUrl（Gamma series.image）</td>
-            </tr>
           </tbody>
         </table>
       </div>
     </details>
 <details class="details-req" id="req-5">
-      <summary><span class="sum-title"><span class="status-dot passed"></span>A02 A1 validate 无效 slug（valid=false）</span><span class="sum-meta">GET /private/v1/pm/instant-products/polymarket/series/validate?slug=non-existent-series-slug-xyz · HTTP 200 · 412 ms</span></summary>
+      <summary><span class="sum-title"><span class="status-dot passed"></span>A02 A1 validate 无效 slug（valid=false）</span><span class="sum-meta">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/polymarket/series/validate?slug=non-existent-series-slug-xyz · HTTP 200 · 195 ms</span></summary>
       <div class="details-body">
         <div class="focus-card">
           <div class="focus-title">测试要点</div>
           <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>valid</b>=false</span><span class="kv"><b>slug</b>=non-existent-series-slug-xyz</span></div>
         </div>
-        <div class="meta">响应体积 246 字节</div>
-        <div class="meta">http://localhost:8080/private/v1/pm/instant-products/polymarket/series/validate?slug=non-existent-series-slug-xyz</div>
+        <div class="meta">响应体积 231 字节</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/polymarket/series/validate?slug=non-existent-series-slug-xyz</div>
         <div class="payload-block">
         <div class="payload-label">请求</div>
-        <pre class="payload">GET http://localhost:8080/private/v1/pm/instant-products/polymarket/series/validate?slug=non-existent-series-slug-xyz
+        <pre class="payload">GET https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/polymarket/series/validate?slug=non-existent-series-slug-xyz
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/create-market-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Not;A=Brand&quot;;v=&quot;8&quot;, &quot;Chromium&quot;;v=&quot;150&quot;, &quot;Google Chrome&quot;;v=&quot;150&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
 Accept-Language: zh-CN,zh;q=0.9</pre>
       </div><div class="payload-block">
         <div class="payload-label">响应</div>
@@ -2064,16 +2306,19 @@ Content-Type: application/json
     &quot;title&quot;: null,
     &quot;recurrence&quot;: null,
     &quot;suggestedName&quot;: null,
-    &quot;suggestedAsset&quot;: null,
-    &quot;iconUrl&quot;: null
+    &quot;suggestedAsset&quot;: null
   },
   &quot;ext_code&quot;: null,
-  &quot;time_now&quot;: &quot;1783595197256&quot;
+  &quot;time_now&quot;: &quot;1783508121680&quot;
 }</pre>
       </div>
         <table>
           <tbody>
             
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 响应为 JSON</td>
+            </tr>
             <tr>
               <th>断言</th>
               <td class="assert-ok">通过 — HTTP 200</td>
@@ -2086,26 +2331,30 @@ Content-Type: application/json
               <th>断言</th>
               <td class="assert-ok">通过 — valid=false</td>
             </tr>
-            <tr>
-              <th>断言</th>
-              <td class="assert-ok">通过 — valid=false 时 iconUrl 为 null</td>
-            </tr>
           </tbody>
         </table>
       </div>
     </details>
 <details class="details-req" id="req-6">
-      <summary><span class="sum-title"><span class="status-dot passed"></span>A03 A2 list 全量</span><span class="sum-meta">GET /private/v1/pm/instant-products · HTTP 200 · 260 ms</span></summary>
+      <summary><span class="sum-title"><span class="status-dot passed"></span>A03 A2 list 全量</span><span class="sum-meta">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products · HTTP 200 · 146 ms</span></summary>
       <div class="details-body">
         <div class="focus-card">
           <div class="focus-title">测试要点</div>
           <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=1 条</span><span class="kv"><b>items[0].id</b>=1</span><span class="kv"><b>items[0].status</b>=STOPPED</span><span class="kv"><b>items[0].seriesSlug</b>=btc-up-or-down-5m</span><span class="kv"><b>items[0].asset</b>=BTC</span></div>
         </div>
-        <div class="meta">响应体积 607 字节</div>
-        <div class="meta">http://localhost:8080/private/v1/pm/instant-products</div>
+        <div class="meta">响应体积 603 字节</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products</div>
         <div class="payload-block">
         <div class="payload-label">请求</div>
-        <pre class="payload">GET http://localhost:8080/private/v1/pm/instant-products
+        <pre class="payload">GET https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/create-market-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Not;A=Brand&quot;;v=&quot;8&quot;, &quot;Chromium&quot;;v=&quot;150&quot;, &quot;Google Chrome&quot;;v=&quot;150&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
 Accept-Language: zh-CN,zh;q=0.9</pre>
       </div><div class="payload-block">
         <div class="payload-label">响应</div>
@@ -2128,26 +2377,30 @@ Content-Type: application/json
         &quot;syncEnabled&quot;: true,
         &quot;iconUrl&quot;: &quot;&quot;,
         &quot;resolutionSource&quot;: &quot;&quot;,
-        &quot;lastSyncAt&quot;: &quot;2026-07-09T11:03:47.357+00:00&quot;,
+        &quot;lastSyncAt&quot;: &quot;2026-07-08T10:55:03.888+00:00&quot;,
         &quot;lastSyncStatus&quot;: &quot;PARTIAL&quot;,
-        &quot;lastSyncRunId&quot;: 2,
-        &quot;todaySyncedCount&quot;: 187,
+        &quot;lastSyncRunId&quot;: 1,
+        &quot;todaySyncedCount&quot;: 186,
         &quot;nextSyncAt&quot;: &quot;1970-01-01T00:00:00.000+00:00&quot;,
         &quot;lastError&quot;: &quot;&quot;,
-        &quot;createdBy&quot;: &quot;postman-cli&quot;,
-        &quot;updatedBy&quot;: &quot;postman-cli&quot;,
-        &quot;createdAt&quot;: &quot;2026-07-08T10:43:17.430+00:00&quot;,
-        &quot;updatedAt&quot;: &quot;2026-07-09T11:03:47.590+00:00&quot;
+        &quot;createdBy&quot;: &quot;sven.yang&quot;,
+        &quot;updatedBy&quot;: &quot;sven.yang&quot;,
+        &quot;createdAt&quot;: &quot;2026-07-08T10:55:00.115+00:00&quot;,
+        &quot;updatedAt&quot;: &quot;2026-07-08T10:55:03.897+00:00&quot;
       }
     ]
   },
   &quot;ext_code&quot;: null,
-  &quot;time_now&quot;: &quot;1783595197534&quot;
+  &quot;time_now&quot;: &quot;1783508121844&quot;
 }</pre>
       </div>
         <table>
           <tbody>
             
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 响应为 JSON</td>
+            </tr>
             <tr>
               <th>断言</th>
               <td class="assert-ok">通过 — HTTP 200</td>
@@ -2160,26 +2413,30 @@ Content-Type: application/json
               <th>断言</th>
               <td class="assert-ok">通过 — ItemsResponse&lt;InstantProductResponse&gt;</td>
             </tr>
-            <tr>
-              <th>断言</th>
-              <td class="assert-ok">通过 — seriesSlug 命中项 iconUrl 与 validate 一致</td>
-            </tr>
           </tbody>
         </table>
       </div>
     </details>
 <details class="details-req" id="req-7">
-      <summary><span class="sum-title"><span class="status-dot passed"></span>A04 A2 list status=STOPPED</span><span class="sum-meta">GET /private/v1/pm/instant-products?status=STOPPED · HTTP 200 · 174 ms</span></summary>
+      <summary><span class="sum-title"><span class="status-dot passed"></span>A04 A2 list status=STOPPED</span><span class="sum-meta">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products?status=STOPPED · HTTP 200 · 137 ms</span></summary>
       <div class="details-body">
         <div class="focus-card">
           <div class="focus-title">测试要点</div>
           <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=1 条</span><span class="kv"><b>items[0].id</b>=1</span><span class="kv"><b>items[0].status</b>=STOPPED</span><span class="kv"><b>items[0].seriesSlug</b>=btc-up-or-down-5m</span><span class="kv"><b>items[0].asset</b>=BTC</span></div>
         </div>
-        <div class="meta">响应体积 607 字节</div>
-        <div class="meta">http://localhost:8080/private/v1/pm/instant-products?status=STOPPED</div>
+        <div class="meta">响应体积 603 字节</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products?status=STOPPED</div>
         <div class="payload-block">
         <div class="payload-label">请求</div>
-        <pre class="payload">GET http://localhost:8080/private/v1/pm/instant-products?status=STOPPED
+        <pre class="payload">GET https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products?status=STOPPED
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/create-market-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Not;A=Brand&quot;;v=&quot;8&quot;, &quot;Chromium&quot;;v=&quot;150&quot;, &quot;Google Chrome&quot;;v=&quot;150&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
 Accept-Language: zh-CN,zh;q=0.9</pre>
       </div><div class="payload-block">
         <div class="payload-label">响应</div>
@@ -2202,26 +2459,30 @@ Content-Type: application/json
         &quot;syncEnabled&quot;: true,
         &quot;iconUrl&quot;: &quot;&quot;,
         &quot;resolutionSource&quot;: &quot;&quot;,
-        &quot;lastSyncAt&quot;: &quot;2026-07-09T11:03:47.357+00:00&quot;,
+        &quot;lastSyncAt&quot;: &quot;2026-07-08T10:55:03.888+00:00&quot;,
         &quot;lastSyncStatus&quot;: &quot;PARTIAL&quot;,
-        &quot;lastSyncRunId&quot;: 2,
-        &quot;todaySyncedCount&quot;: 187,
+        &quot;lastSyncRunId&quot;: 1,
+        &quot;todaySyncedCount&quot;: 186,
         &quot;nextSyncAt&quot;: &quot;1970-01-01T00:00:00.000+00:00&quot;,
         &quot;lastError&quot;: &quot;&quot;,
-        &quot;createdBy&quot;: &quot;postman-cli&quot;,
-        &quot;updatedBy&quot;: &quot;postman-cli&quot;,
-        &quot;createdAt&quot;: &quot;2026-07-08T10:43:17.430+00:00&quot;,
-        &quot;updatedAt&quot;: &quot;2026-07-09T11:03:47.590+00:00&quot;
+        &quot;createdBy&quot;: &quot;sven.yang&quot;,
+        &quot;updatedBy&quot;: &quot;sven.yang&quot;,
+        &quot;createdAt&quot;: &quot;2026-07-08T10:55:00.115+00:00&quot;,
+        &quot;updatedAt&quot;: &quot;2026-07-08T10:55:03.897+00:00&quot;
       }
     ]
   },
   &quot;ext_code&quot;: null,
-  &quot;time_now&quot;: &quot;1783595197735&quot;
+  &quot;time_now&quot;: &quot;1783508122005&quot;
 }</pre>
       </div>
         <table>
           <tbody>
             
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 响应为 JSON</td>
+            </tr>
             <tr>
               <th>断言</th>
               <td class="assert-ok">通过 — HTTP 200</td>
@@ -2239,17 +2500,25 @@ Content-Type: application/json
       </div>
     </details>
 <details class="details-req" id="req-8">
-      <summary><span class="sum-title"><span class="status-dot passed"></span>A05 A2 list asset=BTC</span><span class="sum-meta">GET /private/v1/pm/instant-products?asset=BTC · HTTP 200 · 172 ms</span></summary>
+      <summary><span class="sum-title"><span class="status-dot passed"></span>A05 A2 list asset=BTC</span><span class="sum-meta">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products?asset=BTC · HTTP 200 · 153 ms</span></summary>
       <div class="details-body">
         <div class="focus-card">
           <div class="focus-title">测试要点</div>
           <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=1 条</span><span class="kv"><b>items[0].id</b>=1</span><span class="kv"><b>items[0].status</b>=STOPPED</span><span class="kv"><b>items[0].seriesSlug</b>=btc-up-or-down-5m</span><span class="kv"><b>items[0].asset</b>=BTC</span></div>
         </div>
-        <div class="meta">响应体积 607 字节</div>
-        <div class="meta">http://localhost:8080/private/v1/pm/instant-products?asset=BTC</div>
+        <div class="meta">响应体积 603 字节</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products?asset=BTC</div>
         <div class="payload-block">
         <div class="payload-label">请求</div>
-        <pre class="payload">GET http://localhost:8080/private/v1/pm/instant-products?asset=BTC
+        <pre class="payload">GET https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products?asset=BTC
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/create-market-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Not;A=Brand&quot;;v=&quot;8&quot;, &quot;Chromium&quot;;v=&quot;150&quot;, &quot;Google Chrome&quot;;v=&quot;150&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
 Accept-Language: zh-CN,zh;q=0.9</pre>
       </div><div class="payload-block">
         <div class="payload-label">响应</div>
@@ -2272,26 +2541,30 @@ Content-Type: application/json
         &quot;syncEnabled&quot;: true,
         &quot;iconUrl&quot;: &quot;&quot;,
         &quot;resolutionSource&quot;: &quot;&quot;,
-        &quot;lastSyncAt&quot;: &quot;2026-07-09T11:03:47.357+00:00&quot;,
+        &quot;lastSyncAt&quot;: &quot;2026-07-08T10:55:03.888+00:00&quot;,
         &quot;lastSyncStatus&quot;: &quot;PARTIAL&quot;,
-        &quot;lastSyncRunId&quot;: 2,
-        &quot;todaySyncedCount&quot;: 187,
+        &quot;lastSyncRunId&quot;: 1,
+        &quot;todaySyncedCount&quot;: 186,
         &quot;nextSyncAt&quot;: &quot;1970-01-01T00:00:00.000+00:00&quot;,
         &quot;lastError&quot;: &quot;&quot;,
-        &quot;createdBy&quot;: &quot;postman-cli&quot;,
-        &quot;updatedBy&quot;: &quot;postman-cli&quot;,
-        &quot;createdAt&quot;: &quot;2026-07-08T10:43:17.430+00:00&quot;,
-        &quot;updatedAt&quot;: &quot;2026-07-09T11:03:47.590+00:00&quot;
+        &quot;createdBy&quot;: &quot;sven.yang&quot;,
+        &quot;updatedBy&quot;: &quot;sven.yang&quot;,
+        &quot;createdAt&quot;: &quot;2026-07-08T10:55:00.115+00:00&quot;,
+        &quot;updatedAt&quot;: &quot;2026-07-08T10:55:03.897+00:00&quot;
       }
     ]
   },
   &quot;ext_code&quot;: null,
-  &quot;time_now&quot;: &quot;1783595197921&quot;
+  &quot;time_now&quot;: &quot;1783508122173&quot;
 }</pre>
       </div>
         <table>
           <tbody>
             
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 响应为 JSON</td>
+            </tr>
             <tr>
               <th>断言</th>
               <td class="assert-ok">通过 — HTTP 200</td>
@@ -2309,17 +2582,25 @@ Content-Type: application/json
       </div>
     </details>
 <details class="details-req" id="req-9">
-      <summary><span class="sum-title"><span class="status-dot passed"></span>A06 A2 list keyword=btc</span><span class="sum-meta">GET /private/v1/pm/instant-products?keyword=btc · HTTP 200 · 167 ms</span></summary>
+      <summary><span class="sum-title"><span class="status-dot passed"></span>A06 A2 list keyword=btc</span><span class="sum-meta">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products?keyword=btc · HTTP 200 · 184 ms</span></summary>
       <div class="details-body">
         <div class="focus-card">
           <div class="focus-title">测试要点</div>
           <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=1 条</span><span class="kv"><b>items[0].id</b>=1</span><span class="kv"><b>items[0].status</b>=STOPPED</span><span class="kv"><b>items[0].seriesSlug</b>=btc-up-or-down-5m</span><span class="kv"><b>items[0].asset</b>=BTC</span></div>
         </div>
-        <div class="meta">响应体积 607 字节</div>
-        <div class="meta">http://localhost:8080/private/v1/pm/instant-products?keyword=btc</div>
+        <div class="meta">响应体积 603 字节</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products?keyword=btc</div>
         <div class="payload-block">
         <div class="payload-label">请求</div>
-        <pre class="payload">GET http://localhost:8080/private/v1/pm/instant-products?keyword=btc
+        <pre class="payload">GET https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products?keyword=btc
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/create-market-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Not;A=Brand&quot;;v=&quot;8&quot;, &quot;Chromium&quot;;v=&quot;150&quot;, &quot;Google Chrome&quot;;v=&quot;150&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
 Accept-Language: zh-CN,zh;q=0.9</pre>
       </div><div class="payload-block">
         <div class="payload-label">响应</div>
@@ -2342,26 +2623,30 @@ Content-Type: application/json
         &quot;syncEnabled&quot;: true,
         &quot;iconUrl&quot;: &quot;&quot;,
         &quot;resolutionSource&quot;: &quot;&quot;,
-        &quot;lastSyncAt&quot;: &quot;2026-07-09T11:03:47.357+00:00&quot;,
+        &quot;lastSyncAt&quot;: &quot;2026-07-08T10:55:03.888+00:00&quot;,
         &quot;lastSyncStatus&quot;: &quot;PARTIAL&quot;,
-        &quot;lastSyncRunId&quot;: 2,
-        &quot;todaySyncedCount&quot;: 187,
+        &quot;lastSyncRunId&quot;: 1,
+        &quot;todaySyncedCount&quot;: 186,
         &quot;nextSyncAt&quot;: &quot;1970-01-01T00:00:00.000+00:00&quot;,
         &quot;lastError&quot;: &quot;&quot;,
-        &quot;createdBy&quot;: &quot;postman-cli&quot;,
-        &quot;updatedBy&quot;: &quot;postman-cli&quot;,
-        &quot;createdAt&quot;: &quot;2026-07-08T10:43:17.430+00:00&quot;,
-        &quot;updatedAt&quot;: &quot;2026-07-09T11:03:47.590+00:00&quot;
+        &quot;createdBy&quot;: &quot;sven.yang&quot;,
+        &quot;updatedBy&quot;: &quot;sven.yang&quot;,
+        &quot;createdAt&quot;: &quot;2026-07-08T10:55:00.115+00:00&quot;,
+        &quot;updatedAt&quot;: &quot;2026-07-08T10:55:03.897+00:00&quot;
       }
     ]
   },
   &quot;ext_code&quot;: null,
-  &quot;time_now&quot;: &quot;1783595198127&quot;
+  &quot;time_now&quot;: &quot;1783508122344&quot;
 }</pre>
       </div>
         <table>
           <tbody>
             
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 响应为 JSON</td>
+            </tr>
             <tr>
               <th>断言</th>
               <td class="assert-ok">通过 — HTTP 200</td>
@@ -2379,17 +2664,25 @@ Content-Type: application/json
       </div>
     </details>
 <details class="details-req" id="req-10">
-      <summary><span class="sum-title"><span class="status-dot passed"></span>A07 A6-1 list sync-runs</span><span class="sum-meta">GET /private/v1/pm/instant-products/1/sync-runs?limit=20 · HTTP 200 · 328 ms</span></summary>
+      <summary><span class="sum-title"><span class="status-dot passed"></span>A07 A6-1 list sync-runs</span><span class="sum-meta">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/sync-runs?limit=20 · HTTP 200 · 153 ms</span></summary>
       <div class="details-body">
         <div class="focus-card">
           <div class="focus-title">测试要点</div>
-          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=2 条</span><span class="kv"><b>items[0].id</b>=2</span><span class="kv"><b>items[0].status</b>=PARTIAL</span><span class="kv"><b>items[0].failedCount</b>=101</span></div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=1 条</span><span class="kv"><b>items[0].id</b>=1</span><span class="kv"><b>items[0].status</b>=PARTIAL</span><span class="kv"><b>items[0].failedCount</b>=101</span></div>
         </div>
-        <div class="meta">响应体积 707 字节</div>
-        <div class="meta">http://localhost:8080/private/v1/pm/instant-products/1/sync-runs?limit=20</div>
+        <div class="meta">响应体积 385 字节</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/sync-runs?limit=20</div>
         <div class="payload-block">
         <div class="payload-label">请求</div>
-        <pre class="payload">GET http://localhost:8080/private/v1/pm/instant-products/1/sync-runs?limit=20
+        <pre class="payload">GET https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/sync-runs?limit=20
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/create-market-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Not;A=Brand&quot;;v=&quot;8&quot;, &quot;Chromium&quot;;v=&quot;150&quot;, &quot;Google Chrome&quot;;v=&quot;150&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
 Accept-Language: zh-CN,zh;q=0.9</pre>
       </div><div class="payload-block">
         <div class="payload-label">响应</div>
@@ -2402,44 +2695,33 @@ Content-Type: application/json
   &quot;result&quot;: {
     &quot;items&quot;: [
       {
-        &quot;id&quot;: 2,
-        &quot;triggerType&quot;: &quot;MANUAL&quot;,
-        &quot;status&quot;: &quot;PARTIAL&quot;,
-        &quot;startedAt&quot;: &quot;2026-07-09T11:03:26.184+00:00&quot;,
-        &quot;finishedAt&quot;: &quot;2026-07-09T11:03:47.102+00:00&quot;,
-        &quot;gammaCursorStart&quot;: &quot;&quot;,
-        &quot;gammaCursorEnd&quot;: &quot;&quot;,
-        &quot;fetchedCount&quot;: 288,
-        &quot;insertedCount&quot;: 187,
-        &quot;updatedCount&quot;: 0,
-        &quot;skippedCount&quot;: 13,
-        &quot;failedCount&quot;: 101,
-        &quot;errorMessage&quot;: &quot;&quot;
-      },
-      {
         &quot;id&quot;: 1,
         &quot;triggerType&quot;: &quot;MANUAL&quot;,
-        &quot;status&quot;: &quot;FAILED&quot;,
-        &quot;startedAt&quot;: &quot;2026-07-08T10:43:19.930+00:00&quot;,
-        &quot;finishedAt&quot;: &quot;2026-07-09T11:03:25.765+00:00&quot;,
+        &quot;status&quot;: &quot;PARTIAL&quot;,
+        &quot;startedAt&quot;: &quot;2026-07-08T10:55:00.619+00:00&quot;,
+        &quot;finishedAt&quot;: &quot;2026-07-08T10:55:03.862+00:00&quot;,
         &quot;gammaCursorStart&quot;: &quot;&quot;,
         &quot;gammaCursorEnd&quot;: &quot;&quot;,
-        &quot;fetchedCount&quot;: 0,
-        &quot;insertedCount&quot;: 0,
+        &quot;fetchedCount&quot;: 287,
+        &quot;insertedCount&quot;: 186,
         &quot;updatedCount&quot;: 0,
-        &quot;skippedCount&quot;: 0,
-        &quot;failedCount&quot;: 1,
-        &quot;errorMessage&quot;: &quot;stale sync run recovered after timeout&quot;
+        &quot;skippedCount&quot;: 14,
+        &quot;failedCount&quot;: 101,
+        &quot;errorMessage&quot;: &quot;&quot;
       }
     ]
   },
   &quot;ext_code&quot;: null,
-  &quot;time_now&quot;: &quot;1783595198470&quot;
+  &quot;time_now&quot;: &quot;1783508122565&quot;
 }</pre>
       </div>
         <table>
           <tbody>
             
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 响应为 JSON</td>
+            </tr>
             <tr>
               <th>断言</th>
               <td class="assert-ok">通过 — HTTP 200</td>
@@ -2457,17 +2739,25 @@ Content-Type: application/json
       </div>
     </details>
 <details class="details-req" id="req-11">
-      <summary><span class="sum-title"><span class="status-dot passed"></span>A08 A6-2 get sync-run 详情</span><span class="sum-meta">GET /private/v1/pm/instant-products/1/sync-runs/2 · HTTP 200 · 336 ms</span></summary>
+      <summary><span class="sum-title"><span class="status-dot passed"></span>A08 A6-2 get sync-run 详情</span><span class="sum-meta">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/sync-runs/1 · HTTP 200 · 151 ms</span></summary>
       <div class="details-body">
         <div class="focus-card">
           <div class="focus-title">测试要点</div>
-          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>id</b>=2</span><span class="kv important"><b>status</b>=PARTIAL</span><span class="kv"><b>failedCount</b>=101</span><span class="kv"><b>triggerType</b>=MANUAL</span><span class="kv"><b>fetchedCount</b>=288</span><span class="kv"><b>insertedCount</b>=187</span><span class="kv"><b>updatedCount</b>=0</span><span class="kv"><b>failedCount</b>=101</span><span class="kv"><b>startedAt</b>=2026-07-09T11:03:26.184+00:00</span><span class="kv"><b>finishedAt</b>=2026-07-09T11:03:47.102+00:00</span></div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>id</b>=1</span><span class="kv important"><b>status</b>=PARTIAL</span><span class="kv"><b>failedCount</b>=101</span><span class="kv"><b>triggerType</b>=MANUAL</span><span class="kv"><b>fetchedCount</b>=287</span><span class="kv"><b>insertedCount</b>=186</span><span class="kv"><b>updatedCount</b>=0</span><span class="kv"><b>failedCount</b>=101</span><span class="kv"><b>startedAt</b>=2026-07-08T10:55:00.619+00:00</span><span class="kv"><b>finishedAt</b>=2026-07-08T10:55:03.862+00:00</span></div>
         </div>
         <div class="meta">响应体积 373 字节</div>
-        <div class="meta">http://localhost:8080/private/v1/pm/instant-products/1/sync-runs/2</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/sync-runs/1</div>
         <div class="payload-block">
         <div class="payload-label">请求</div>
-        <pre class="payload">GET http://localhost:8080/private/v1/pm/instant-products/1/sync-runs/2
+        <pre class="payload">GET https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/sync-runs/1
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/create-market-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Not;A=Brand&quot;;v=&quot;8&quot;, &quot;Chromium&quot;;v=&quot;150&quot;, &quot;Google Chrome&quot;;v=&quot;150&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
 Accept-Language: zh-CN,zh;q=0.9</pre>
       </div><div class="payload-block">
         <div class="payload-label">响应</div>
@@ -2478,27 +2768,31 @@ Content-Type: application/json
   &quot;ret_code&quot;: 0,
   &quot;ret_msg&quot;: &quot;OK&quot;,
   &quot;result&quot;: {
-    &quot;id&quot;: 2,
+    &quot;id&quot;: 1,
     &quot;triggerType&quot;: &quot;MANUAL&quot;,
     &quot;status&quot;: &quot;PARTIAL&quot;,
-    &quot;startedAt&quot;: &quot;2026-07-09T11:03:26.184+00:00&quot;,
-    &quot;finishedAt&quot;: &quot;2026-07-09T11:03:47.102+00:00&quot;,
+    &quot;startedAt&quot;: &quot;2026-07-08T10:55:00.619+00:00&quot;,
+    &quot;finishedAt&quot;: &quot;2026-07-08T10:55:03.862+00:00&quot;,
     &quot;gammaCursorStart&quot;: &quot;&quot;,
     &quot;gammaCursorEnd&quot;: &quot;&quot;,
-    &quot;fetchedCount&quot;: 288,
-    &quot;insertedCount&quot;: 187,
+    &quot;fetchedCount&quot;: 287,
+    &quot;insertedCount&quot;: 186,
     &quot;updatedCount&quot;: 0,
-    &quot;skippedCount&quot;: 13,
+    &quot;skippedCount&quot;: 14,
     &quot;failedCount&quot;: 101,
     &quot;errorMessage&quot;: &quot;&quot;
   },
   &quot;ext_code&quot;: null,
-  &quot;time_now&quot;: &quot;1783595198826&quot;
+  &quot;time_now&quot;: &quot;1783508122740&quot;
 }</pre>
       </div>
         <table>
           <tbody>
             
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 响应为 JSON</td>
+            </tr>
             <tr>
               <th>断言</th>
               <td class="assert-ok">通过 — HTTP 200</td>
@@ -2516,17 +2810,25 @@ Content-Type: application/json
       </div>
     </details>
 <details class="details-req" id="req-12">
-      <summary><span class="sum-title"><span class="status-dot passed"></span>A09 A7-1 list events source=local</span><span class="sum-meta">GET /private/v1/pm/instant-products/1/events?source=local&amp;limit=50 · HTTP 200 · 591 ms</span></summary>
+      <summary><span class="sum-title"><span class="status-dot passed"></span>A09 A7-1 list events source=local</span><span class="sum-meta">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/events?source=local&amp;limit=50 · HTTP 200 · 163 ms</span></summary>
       <div class="details-body">
         <div class="focus-card">
           <div class="focus-title">测试要点</div>
-          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=50 条</span><span class="kv"><b>items[0].eventId</b>=575</span><span class="kv"><b>items[0].workflowStatus</b>=APPROVED</span><span class="kv"><b>items[0].captureStatus</b>=PENDING</span></div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=50 条</span><span class="kv"><b>items[0].eventId</b>=776</span><span class="kv"><b>items[0].workflowStatus</b>=APPROVED</span><span class="kv"><b>items[0].captureStatus</b>=PENDING</span></div>
         </div>
         <div class="meta">响应体积 12612 字节</div>
-        <div class="meta">http://localhost:8080/private/v1/pm/instant-products/1/events?source=local&amp;limit=50</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/events?source=local&amp;limit=50</div>
         <div class="payload-block">
         <div class="payload-label">请求</div>
-        <pre class="payload">GET http://localhost:8080/private/v1/pm/instant-products/1/events?source=local&amp;limit=50
+        <pre class="payload">GET https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/events?source=local&amp;limit=50
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/create-market-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Not;A=Brand&quot;;v=&quot;8&quot;, &quot;Chromium&quot;;v=&quot;150&quot;, &quot;Google Chrome&quot;;v=&quot;150&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
 Accept-Language: zh-CN,zh;q=0.9</pre>
       </div><div class="payload-block">
         <div class="payload-label">响应</div>
@@ -2539,9 +2841,9 @@ Content-Type: application/json
   &quot;result&quot;: {
     &quot;items&quot;: [
       {
-        &quot;eventId&quot;: 575,
-        &quot;sourceEventId&quot;: &quot;683915&quot;,
-        &quot;slug&quot;: &quot;btc-updown-5m-1783680900&quot;,
+        &quot;eventId&quot;: 776,
+        &quot;sourceEventId&quot;: &quot;680132&quot;,
+        &quot;slug&quot;: &quot;btc-updown-5m-1783593900&quot;,
         &quot;windowLabel&quot;: &quot;&quot;,
         &quot;windowStart&quot;: null,
         &quot;windowEnd&quot;: null,
@@ -2553,9 +2855,9 @@ Content-Type: application/json
         &quot;result&quot;: &quot;&quot;
       },
       {
-        &quot;eventId&quot;: 574,
-        &quot;sourceEventId&quot;: &quot;683901&quot;,
-        &quot;slug&quot;: &quot;btc-updown-5m-1783680600&quot;,
+        &quot;eventId&quot;: 775,
+        &quot;sourceEventId&quot;: &quot;680125&quot;,
+        &quot;slug&quot;: &quot;btc-updown-5m-1783593600&quot;,
         &quot;windowLabel&quot;: &quot;&quot;,
         &quot;windowStart&quot;: null,
         &quot;windowEnd&quot;: null,
@@ -2567,9 +2869,9 @@ Content-Type: application/json
         &quot;result&quot;: &quot;&quot;
       },
       {
-        &quot;eventId&quot;: 572,
-        &quot;sourceEventId&quot;: &quot;683889&quot;,
-        &quot;slug&quot;: &quot;btc-updown-5m-1783680300&quot;,
+        &quot;eventId&quot;: 774,
+        &quot;sourceEventId&quot;: &quot;680122&quot;,
+        &quot;slug&quot;: &quot;btc-updown-5m-1783593300&quot;,
         &quot;windowLabel&quot;: &quot;&quot;,
         &quot;windowStart&quot;: null,
         &quot;windowEnd&quot;: null,
@@ -2581,9 +2883,9 @@ Content-Type: application/json
         &quot;result&quot;: &quot;&quot;
       },
       {
-        &quot;eventId&quot;: 573,
-        &quot;sourceEventId&quot;: &quot;683880&quot;,
-        &quot;slug&quot;: &quot;btc-updown-5m-1783680000&quot;,
+        &quot;eventId&quot;: 773,
+        &quot;sourceEventId&quot;: &quot;680106&quot;,
+        &quot;slug&quot;: &quot;btc-updown-5m-1783593000&quot;,
         &quot;windowLabel&quot;: &quot;&quot;,
         &quot;windowStart&quot;: null,
         &quot;windowEnd&quot;: null,
@@ -2595,9 +2897,9 @@ Content-Type: application/json
         &quot;result&quot;: &quot;&quot;
       },
       {
-        &quot;eventId&quot;: 571,
-        &quot;sourceEventId&quot;: &quot;683875&quot;,
-        &quot;slug&quot;: &quot;btc-updown-5m-1783679700&quot;,
+        &quot;eventId&quot;: 772,
+        &quot;sourceEventId&quot;: &quot;680092&quot;,
+        &quot;slug&quot;: &quot;btc-updown-5m-1783592700&quot;,
         &quot;windowLabel&quot;: &quot;&quot;,
         &quot;windowStart&quot;: null,
         &quot;windowEnd&quot;: null,
@@ -2607,6 +2909,10 @@ Content-Type: application/json
         <table>
           <tbody>
             
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 响应为 JSON</td>
+            </tr>
             <tr>
               <th>断言</th>
               <td class="assert-ok">通过 — HTTP 200</td>
@@ -2624,17 +2930,25 @@ Content-Type: application/json
       </div>
     </details>
 <details class="details-req" id="req-13">
-      <summary><span class="sum-title"><span class="status-dot passed"></span>A10 A7-1 list events source=gamma</span><span class="sum-meta">GET /private/v1/pm/instant-products/1/events?source=gamma&amp;limit=10 · HTTP 200 · 370 ms</span></summary>
+      <summary><span class="sum-title"><span class="status-dot passed"></span>A10 A7-1 list events source=gamma</span><span class="sum-meta">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/events?source=gamma&amp;limit=10 · HTTP 200 · 512 ms</span></summary>
       <div class="details-body">
         <div class="focus-card">
           <div class="focus-title">测试要点</div>
           <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=0 条</span></div>
         </div>
         <div class="meta">响应体积 378 字节</div>
-        <div class="meta">http://localhost:8080/private/v1/pm/instant-products/1/events?source=gamma&amp;limit=10</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/events?source=gamma&amp;limit=10</div>
         <div class="payload-block">
         <div class="payload-label">请求</div>
-        <pre class="payload">GET http://localhost:8080/private/v1/pm/instant-products/1/events?source=gamma&amp;limit=10
+        <pre class="payload">GET https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/events?source=gamma&amp;limit=10
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/create-market-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Not;A=Brand&quot;;v=&quot;8&quot;, &quot;Chromium&quot;;v=&quot;150&quot;, &quot;Google Chrome&quot;;v=&quot;150&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
 Accept-Language: zh-CN,zh;q=0.9</pre>
       </div><div class="payload-block">
         <div class="payload-label">响应</div>
@@ -2649,12 +2963,16 @@ Content-Type: application/json
     &quot;nextCursor&quot;: &quot;fQZz9wNb7F5zTIB50U7KVCk5EvladOk1tA7p78rtqGF7InYiOjEsImsiOiJldmVudHMiLCJvaCI6ImFlNjJmZmE1NzcwYmY4YmZmOWViNDYwZGJjNTAyN2I4YjY5MTgyYjMwOTU3N2RjMzhmYjgxNjdlN2I3NWM4YzYiLCJrZXlzIjpbeyJ0IjoidGltZSIsInYiOiIyMDI2LTAxLTE5VDEyOjMyOjI2WiJ9LHsidCI6InN0cmluZyIsInYiOiIxNzQzNzAifV19&quot;
   },
   &quot;ext_code&quot;: null,
-  &quot;time_now&quot;: &quot;1783595199824&quot;
+  &quot;time_now&quot;: &quot;1783508123466&quot;
 }</pre>
       </div>
         <table>
           <tbody>
             
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 响应为 JSON</td>
+            </tr>
             <tr>
               <th>断言</th>
               <td class="assert-ok">通过 — HTTP 200</td>
@@ -2672,17 +2990,25 @@ Content-Type: application/json
       </div>
     </details>
 <details class="details-req" id="req-14">
-      <summary><span class="sum-title"><span class="status-dot passed"></span>A11 A7-2 list window-prices</span><span class="sum-meta">GET /private/v1/pm/instant-products/1/window-prices?limit=50 · HTTP 200 · 359 ms</span></summary>
+      <summary><span class="sum-title"><span class="status-dot passed"></span>A11 A7-2 list window-prices</span><span class="sum-meta">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/window-prices?limit=50 · HTTP 200 · 155 ms</span></summary>
       <div class="details-body">
         <div class="focus-card">
           <div class="focus-title">测试要点</div>
-          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=50 条</span><span class="kv"><b>items[0].id</b>=374</span><span class="kv"><b>items[0].eventId</b>=474</span><span class="kv"><b>items[0].asset</b>=BTC</span><span class="kv"><b>items[0].captureStatus</b>=PENDING</span></div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=50 条</span><span class="kv"><b>items[0].id</b>=186</span><span class="kv"><b>items[0].eventId</b>=675</span><span class="kv"><b>items[0].asset</b>=BTC</span><span class="kv"><b>items[0].captureStatus</b>=PENDING</span></div>
         </div>
         <div class="meta">响应体积 14593 字节</div>
-        <div class="meta">http://localhost:8080/private/v1/pm/instant-products/1/window-prices?limit=50</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/window-prices?limit=50</div>
         <div class="payload-block">
         <div class="payload-label">请求</div>
-        <pre class="payload">GET http://localhost:8080/private/v1/pm/instant-products/1/window-prices?limit=50
+        <pre class="payload">GET https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/window-prices?limit=50
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/create-market-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Not;A=Brand&quot;;v=&quot;8&quot;, &quot;Chromium&quot;;v=&quot;150&quot;, &quot;Google Chrome&quot;;v=&quot;150&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
 Accept-Language: zh-CN,zh;q=0.9</pre>
       </div><div class="payload-block">
         <div class="payload-label">响应</div>
@@ -2695,13 +3021,13 @@ Content-Type: application/json
   &quot;result&quot;: {
     &quot;items&quot;: [
       {
-        &quot;id&quot;: 374,
-        &quot;eventId&quot;: 474,
-        &quot;sourceEventId&quot;: &quot;682653&quot;,
+        &quot;id&quot;: 186,
+        &quot;eventId&quot;: 675,
+        &quot;sourceEventId&quot;: &quot;678870&quot;,
         &quot;asset&quot;: &quot;BTC&quot;,
-        &quot;windowStart&quot;: &quot;2026-07-10T02:30:00.000+00:00&quot;,
-        &quot;windowEnd&quot;: &quot;2026-07-10T02:35:00.000+00:00&quot;,
-        &quot;lockAt&quot;: &quot;2026-07-10T02:34:50.000+00:00&quot;,
+        &quot;windowStart&quot;: &quot;2026-07-09T02:20:00.000+00:00&quot;,
+        &quot;windowEnd&quot;: &quot;2026-07-09T02:25:00.000+00:00&quot;,
+        &quot;lockAt&quot;: &quot;2026-07-09T02:24:50.000+00:00&quot;,
         &quot;priceToBeat&quot;: 0,
         &quot;endPrice&quot;: 0,
         &quot;captureStatus&quot;: &quot;PENDING&quot;,
@@ -2709,13 +3035,13 @@ Content-Type: application/json
         &quot;isListCurrent&quot;: false
       },
       {
-        &quot;id&quot;: 373,
-        &quot;eventId&quot;: 473,
-        &quot;sourceEventId&quot;: &quot;682646&quot;,
+        &quot;id&quot;: 185,
+        &quot;eventId&quot;: 674,
+        &quot;sourceEventId&quot;: &quot;678852&quot;,
         &quot;asset&quot;: &quot;BTC&quot;,
-        &quot;windowStart&quot;: &quot;2026-07-10T02:25:00.000+00:00&quot;,
-        &quot;windowEnd&quot;: &quot;2026-07-10T02:30:00.000+00:00&quot;,
-        &quot;lockAt&quot;: &quot;2026-07-10T02:29:50.000+00:00&quot;,
+        &quot;windowStart&quot;: &quot;2026-07-09T02:15:00.000+00:00&quot;,
+        &quot;windowEnd&quot;: &quot;2026-07-09T02:20:00.000+00:00&quot;,
+        &quot;lockAt&quot;: &quot;2026-07-09T02:19:50.000+00:00&quot;,
         &quot;priceToBeat&quot;: 0,
         &quot;endPrice&quot;: 0,
         &quot;captureStatus&quot;: &quot;PENDING&quot;,
@@ -2723,13 +3049,13 @@ Content-Type: application/json
         &quot;isListCurrent&quot;: false
       },
       {
-        &quot;id&quot;: 372,
-        &quot;eventId&quot;: 472,
-        &quot;sourceEventId&quot;: &quot;682636&quot;,
+        &quot;id&quot;: 184,
+        &quot;eventId&quot;: 673,
+        &quot;sourceEventId&quot;: &quot;678844&quot;,
         &quot;asset&quot;: &quot;BTC&quot;,
-        &quot;windowStart&quot;: &quot;2026-07-10T02:20:00.000+00:00&quot;,
-        &quot;windowEnd&quot;: &quot;2026-07-10T02:25:00.000+00:00&quot;,
-        &quot;lockAt&quot;: &quot;2026-07-10T02:24:50.000+00:00&quot;,
+        &quot;windowStart&quot;: &quot;2026-07-09T02:10:00.000+00:00&quot;,
+        &quot;windowEnd&quot;: &quot;2026-07-09T02:15:00.000+00:00&quot;,
+        &quot;lockAt&quot;: &quot;2026-07-09T02:14:50.000+00:00&quot;,
         &quot;priceToBeat&quot;: 0,
         &quot;endPrice&quot;: 0,
         &quot;captureStatus&quot;: &quot;PENDING&quot;,
@@ -2737,13 +3063,13 @@ Content-Type: application/json
         &quot;isListCurrent&quot;: false
       },
       {
-        &quot;id&quot;: 371,
-        &quot;eventId&quot;: 471,
-        &quot;sourceEventId&quot;: &quot;682628&quot;,
+        &quot;id&quot;: 183,
+        &quot;eventId&quot;: 672,
+        &quot;sourceEventId&quot;: &quot;678835&quot;,
         &quot;asset&quot;: &quot;BTC&quot;,
-        &quot;windowStart&quot;: &quot;2026-07-10T02:15:00.000+00:00&quot;,
-        &quot;windowEnd&quot;: &quot;2026-07-10T02:20:00.000+00:00&quot;,
-        &quot;lockAt&quot;: &quot;2026-07-10T02:19:50.000+00:00&quot;,
+        &quot;windowStart&quot;: &quot;2026-07-09T02:05:00.000+00:00&quot;,
+        &quot;windowEnd&quot;: &quot;2026-07-09T02:10:00.000+00:00&quot;,
+        &quot;lockAt&quot;: &quot;2026-07-09T02:09:50.000+00:00&quot;,
         &quot;priceToBeat&quot;: 0,
         &quot;endPrice&quot;: 0,
         &quot;captureStatus&quot;: &quot;PENDING&quot;,
@@ -2751,14 +3077,18 @@ Content-Type: application/json
         &quot;isListCurrent&quot;: false
       },
       {
-        &quot;id&quot;: 370,
-        &quot;eventId&quot;: 470,
+        &quot;id&quot;: 182,
+        &quot;eventId&quot;: 671,
         &quot;s
 …（已截断，全文 21028 字符）</pre>
       </div>
         <table>
           <tbody>
             
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 响应为 JSON</td>
+            </tr>
             <tr>
               <th>断言</th>
               <td class="assert-ok">通过 — HTTP 200</td>
@@ -2776,17 +3106,25 @@ Content-Type: application/json
       </div>
     </details>
 <details class="details-req" id="req-15">
-      <summary><span class="sum-title"><span class="status-dot passed"></span>A12 A7-2 list window-prices captureStatus=PENDING</span><span class="sum-meta">GET /private/v1/pm/instant-products/1/window-prices?captureStatus=PENDING&amp;limit=20 · HTTP 200 · 337 ms</span></summary>
+      <summary><span class="sum-title"><span class="status-dot passed"></span>A12 A7-2 list window-prices captureStatus=PENDING</span><span class="sum-meta">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/window-prices?captureStatus=PENDING&amp;limit=20 · HTTP 200 · 143 ms</span></summary>
       <div class="details-body">
         <div class="focus-card">
           <div class="focus-title">测试要点</div>
-          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=20 条</span><span class="kv"><b>items[0].id</b>=374</span><span class="kv"><b>items[0].eventId</b>=474</span><span class="kv"><b>items[0].asset</b>=BTC</span><span class="kv"><b>items[0].captureStatus</b>=PENDING</span></div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=OK</span><span class="kv important"><b>items</b>=20 条</span><span class="kv"><b>items[0].id</b>=186</span><span class="kv"><b>items[0].eventId</b>=675</span><span class="kv"><b>items[0].asset</b>=BTC</span><span class="kv"><b>items[0].captureStatus</b>=PENDING</span></div>
         </div>
         <div class="meta">响应体积 5893 字节</div>
-        <div class="meta">http://localhost:8080/private/v1/pm/instant-products/1/window-prices?captureStatus=PENDING&amp;limit=20</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/window-prices?captureStatus=PENDING&amp;limit=20</div>
         <div class="payload-block">
         <div class="payload-label">请求</div>
-        <pre class="payload">GET http://localhost:8080/private/v1/pm/instant-products/1/window-prices?captureStatus=PENDING&amp;limit=20
+        <pre class="payload">GET https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/window-prices?captureStatus=PENDING&amp;limit=20
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/create-market-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Not;A=Brand&quot;;v=&quot;8&quot;, &quot;Chromium&quot;;v=&quot;150&quot;, &quot;Google Chrome&quot;;v=&quot;150&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
 Accept-Language: zh-CN,zh;q=0.9</pre>
       </div><div class="payload-block">
         <div class="payload-label">响应</div>
@@ -2799,13 +3137,13 @@ Content-Type: application/json
   &quot;result&quot;: {
     &quot;items&quot;: [
       {
-        &quot;id&quot;: 374,
-        &quot;eventId&quot;: 474,
-        &quot;sourceEventId&quot;: &quot;682653&quot;,
+        &quot;id&quot;: 186,
+        &quot;eventId&quot;: 675,
+        &quot;sourceEventId&quot;: &quot;678870&quot;,
         &quot;asset&quot;: &quot;BTC&quot;,
-        &quot;windowStart&quot;: &quot;2026-07-10T02:30:00.000+00:00&quot;,
-        &quot;windowEnd&quot;: &quot;2026-07-10T02:35:00.000+00:00&quot;,
-        &quot;lockAt&quot;: &quot;2026-07-10T02:34:50.000+00:00&quot;,
+        &quot;windowStart&quot;: &quot;2026-07-09T02:20:00.000+00:00&quot;,
+        &quot;windowEnd&quot;: &quot;2026-07-09T02:25:00.000+00:00&quot;,
+        &quot;lockAt&quot;: &quot;2026-07-09T02:24:50.000+00:00&quot;,
         &quot;priceToBeat&quot;: 0,
         &quot;endPrice&quot;: 0,
         &quot;captureStatus&quot;: &quot;PENDING&quot;,
@@ -2813,13 +3151,13 @@ Content-Type: application/json
         &quot;isListCurrent&quot;: false
       },
       {
-        &quot;id&quot;: 373,
-        &quot;eventId&quot;: 473,
-        &quot;sourceEventId&quot;: &quot;682646&quot;,
+        &quot;id&quot;: 185,
+        &quot;eventId&quot;: 674,
+        &quot;sourceEventId&quot;: &quot;678852&quot;,
         &quot;asset&quot;: &quot;BTC&quot;,
-        &quot;windowStart&quot;: &quot;2026-07-10T02:25:00.000+00:00&quot;,
-        &quot;windowEnd&quot;: &quot;2026-07-10T02:30:00.000+00:00&quot;,
-        &quot;lockAt&quot;: &quot;2026-07-10T02:29:50.000+00:00&quot;,
+        &quot;windowStart&quot;: &quot;2026-07-09T02:15:00.000+00:00&quot;,
+        &quot;windowEnd&quot;: &quot;2026-07-09T02:20:00.000+00:00&quot;,
+        &quot;lockAt&quot;: &quot;2026-07-09T02:19:50.000+00:00&quot;,
         &quot;priceToBeat&quot;: 0,
         &quot;endPrice&quot;: 0,
         &quot;captureStatus&quot;: &quot;PENDING&quot;,
@@ -2827,13 +3165,13 @@ Content-Type: application/json
         &quot;isListCurrent&quot;: false
       },
       {
-        &quot;id&quot;: 372,
-        &quot;eventId&quot;: 472,
-        &quot;sourceEventId&quot;: &quot;682636&quot;,
+        &quot;id&quot;: 184,
+        &quot;eventId&quot;: 673,
+        &quot;sourceEventId&quot;: &quot;678844&quot;,
         &quot;asset&quot;: &quot;BTC&quot;,
-        &quot;windowStart&quot;: &quot;2026-07-10T02:20:00.000+00:00&quot;,
-        &quot;windowEnd&quot;: &quot;2026-07-10T02:25:00.000+00:00&quot;,
-        &quot;lockAt&quot;: &quot;2026-07-10T02:24:50.000+00:00&quot;,
+        &quot;windowStart&quot;: &quot;2026-07-09T02:10:00.000+00:00&quot;,
+        &quot;windowEnd&quot;: &quot;2026-07-09T02:15:00.000+00:00&quot;,
+        &quot;lockAt&quot;: &quot;2026-07-09T02:14:50.000+00:00&quot;,
         &quot;priceToBeat&quot;: 0,
         &quot;endPrice&quot;: 0,
         &quot;captureStatus&quot;: &quot;PENDING&quot;,
@@ -2841,13 +3179,13 @@ Content-Type: application/json
         &quot;isListCurrent&quot;: false
       },
       {
-        &quot;id&quot;: 371,
-        &quot;eventId&quot;: 471,
-        &quot;sourceEventId&quot;: &quot;682628&quot;,
+        &quot;id&quot;: 183,
+        &quot;eventId&quot;: 672,
+        &quot;sourceEventId&quot;: &quot;678835&quot;,
         &quot;asset&quot;: &quot;BTC&quot;,
-        &quot;windowStart&quot;: &quot;2026-07-10T02:15:00.000+00:00&quot;,
-        &quot;windowEnd&quot;: &quot;2026-07-10T02:20:00.000+00:00&quot;,
-        &quot;lockAt&quot;: &quot;2026-07-10T02:19:50.000+00:00&quot;,
+        &quot;windowStart&quot;: &quot;2026-07-09T02:05:00.000+00:00&quot;,
+        &quot;windowEnd&quot;: &quot;2026-07-09T02:10:00.000+00:00&quot;,
+        &quot;lockAt&quot;: &quot;2026-07-09T02:09:50.000+00:00&quot;,
         &quot;priceToBeat&quot;: 0,
         &quot;endPrice&quot;: 0,
         &quot;captureStatus&quot;: &quot;PENDING&quot;,
@@ -2855,14 +3193,18 @@ Content-Type: application/json
         &quot;isListCurrent&quot;: false
       },
       {
-        &quot;id&quot;: 370,
-        &quot;eventId&quot;: 470,
+        &quot;id&quot;: 182,
+        &quot;eventId&quot;: 671,
         &quot;s
 …（已截断，全文 8488 字符）</pre>
       </div>
         <table>
           <tbody>
             
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 响应为 JSON</td>
+            </tr>
             <tr>
               <th>断言</th>
               <td class="assert-ok">通过 — HTTP 200</td>
@@ -2883,17 +3225,25 @@ Content-Type: application/json
 <details class="details-folder">
     <summary><span class="folder-title">B · 参数校验 [err]</span><span class="folder-meta">7 个用例 · <span class="ok-inline">断言全过</span></span></summary>
     <div class="folder-inner"><details class="details-req" id="req-16">
-      <summary><span class="sum-title"><span class="status-dot passed"></span>B01 A1 validate 缺 slug → 10001</span><span class="sum-meta">GET /private/v1/pm/instant-products/polymarket/series/validate · HTTP 200 · 7 ms</span></summary>
+      <summary><span class="sum-title"><span class="status-dot passed"></span>B01 A1 validate 缺 slug → 10001</span><span class="sum-meta">GET /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/polymarket/series/validate · HTTP 200 · 139 ms</span></summary>
       <div class="details-body">
         <div class="focus-card">
           <div class="focus-title">测试要点</div>
           <div class="kv-grid"><span class="kv important"><b>ret_code</b>=50000</span><span class="kv important"><b>ret_msg</b>=Required request parameter 'slug' for method parameter type String is not present</span></div>
         </div>
         <div class="meta">响应体积 169 字节</div>
-        <div class="meta">http://localhost:8080/private/v1/pm/instant-products/polymarket/series/validate</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/polymarket/series/validate</div>
         <div class="payload-block">
         <div class="payload-label">请求</div>
-        <pre class="payload">GET http://localhost:8080/private/v1/pm/instant-products/polymarket/series/validate
+        <pre class="payload">GET https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/polymarket/series/validate
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/create-market-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Not;A=Brand&quot;;v=&quot;8&quot;, &quot;Chromium&quot;;v=&quot;150&quot;, &quot;Google Chrome&quot;;v=&quot;150&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
 Accept-Language: zh-CN,zh;q=0.9</pre>
       </div><div class="payload-block">
         <div class="payload-label">响应</div>
@@ -2905,12 +3255,16 @@ Content-Type: application/json
   &quot;ret_msg&quot;: &quot;Required request parameter 'slug' for method parameter type String is not present&quot;,
   &quot;result&quot;: null,
   &quot;ext_code&quot;: null,
-  &quot;time_now&quot;: &quot;1783595200592&quot;
+  &quot;time_now&quot;: &quot;1783508123974&quot;
 }</pre>
       </div>
         <table>
           <tbody>
             
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 响应为 JSON</td>
+            </tr>
             <tr>
               <th>断言</th>
               <td class="assert-ok">通过 — HTTP 200</td>
@@ -2928,23 +3282,31 @@ Content-Type: application/json
       </div>
     </details>
 <details class="details-req" id="req-17">
-      <summary><span class="sum-title"><span class="status-dot passed"></span>B02 A3 create 缺 seriesSlug → HTTP 400</span><span class="sum-meta">POST /private/v1/pm/instant-products · HTTP 400 · 31 ms</span></summary>
+      <summary><span class="sum-title"><span class="status-dot passed"></span>B02 A3 create 缺 seriesSlug → HTTP 400</span><span class="sum-meta">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products · HTTP 400 · 149 ms</span></summary>
       <div class="details-body">
         <div class="focus-card">
           <div class="focus-title">测试要点</div>
           <div class="kv-grid"><span class="muted">—</span></div>
         </div>
         <div class="meta">响应体积 29 字节</div>
-        <div class="meta">http://localhost:8080/private/v1/pm/instant-products</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products</div>
         <div class="payload-block">
         <div class="payload-label">请求</div>
-        <pre class="payload">POST http://localhost:8080/private/v1/pm/instant-products
+        <pre class="payload">POST https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products
 Content-Type: application/json
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/create-market-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Not;A=Brand&quot;;v=&quot;8&quot;, &quot;Chromium&quot;;v=&quot;150&quot;, &quot;Google Chrome&quot;;v=&quot;150&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
 Accept-Language: zh-CN,zh;q=0.9
 
 {
   &quot;categoryId&quot;: 101,
-  &quot;operator&quot;: &quot;postman-cli&quot;
+  &quot;operator&quot;: &quot;sven.yang&quot;
 }</pre>
       </div><div class="payload-block">
         <div class="payload-label">响应</div>
@@ -2960,6 +3322,10 @@ Content-Type: application/json
             
             <tr>
               <th>断言</th>
+              <td class="assert-ok">通过 — 响应为 JSON</td>
+            </tr>
+            <tr>
+              <th>断言</th>
               <td class="assert-ok">通过 — HTTP 400</td>
             </tr>
             <tr>
@@ -2971,23 +3337,31 @@ Content-Type: application/json
       </div>
     </details>
 <details class="details-req" id="req-18">
-      <summary><span class="sum-title"><span class="status-dot passed"></span>B03 A3 create 缺 categoryId → HTTP 400</span><span class="sum-meta">POST /private/v1/pm/instant-products · HTTP 400 · 25 ms</span></summary>
+      <summary><span class="sum-title"><span class="status-dot passed"></span>B03 A3 create 缺 categoryId → HTTP 400</span><span class="sum-meta">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products · HTTP 400 · 138 ms</span></summary>
       <div class="details-body">
         <div class="focus-card">
           <div class="focus-title">测试要点</div>
           <div class="kv-grid"><span class="muted">—</span></div>
         </div>
         <div class="meta">响应体积 30 字节</div>
-        <div class="meta">http://localhost:8080/private/v1/pm/instant-products</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products</div>
         <div class="payload-block">
         <div class="payload-label">请求</div>
-        <pre class="payload">POST http://localhost:8080/private/v1/pm/instant-products
+        <pre class="payload">POST https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products
 Content-Type: application/json
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/create-market-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Not;A=Brand&quot;;v=&quot;8&quot;, &quot;Chromium&quot;;v=&quot;150&quot;, &quot;Google Chrome&quot;;v=&quot;150&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
 Accept-Language: zh-CN,zh;q=0.9
 
 {
   &quot;seriesSlug&quot;: &quot;btc-up-or-down-5m&quot;,
-  &quot;operator&quot;: &quot;postman-cli&quot;
+  &quot;operator&quot;: &quot;sven.yang&quot;
 }</pre>
       </div><div class="payload-block">
         <div class="payload-label">响应</div>
@@ -3003,6 +3377,10 @@ Content-Type: application/json
             
             <tr>
               <th>断言</th>
+              <td class="assert-ok">通过 — 响应为 JSON</td>
+            </tr>
+            <tr>
+              <th>断言</th>
               <td class="assert-ok">通过 — HTTP 400</td>
             </tr>
             <tr>
@@ -3014,18 +3392,26 @@ Content-Type: application/json
       </div>
     </details>
 <details class="details-req" id="req-19">
-      <summary><span class="sum-title"><span class="status-dot passed"></span>B04 A3 create 缺 operator → HTTP 400</span><span class="sum-meta">POST /private/v1/pm/instant-products · HTTP 400 · 19 ms</span></summary>
+      <summary><span class="sum-title"><span class="status-dot passed"></span>B04 A3 create 缺 operator → HTTP 400</span><span class="sum-meta">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products · HTTP 400 · 180 ms</span></summary>
       <div class="details-body">
         <div class="focus-card">
           <div class="focus-title">测试要点</div>
           <div class="kv-grid"><span class="muted">—</span></div>
         </div>
         <div class="meta">响应体积 27 字节</div>
-        <div class="meta">http://localhost:8080/private/v1/pm/instant-products</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products</div>
         <div class="payload-block">
         <div class="payload-label">请求</div>
-        <pre class="payload">POST http://localhost:8080/private/v1/pm/instant-products
+        <pre class="payload">POST https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products
 Content-Type: application/json
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/create-market-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Not;A=Brand&quot;;v=&quot;8&quot;, &quot;Chromium&quot;;v=&quot;150&quot;, &quot;Google Chrome&quot;;v=&quot;150&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
 Accept-Language: zh-CN,zh;q=0.9
 
 {
@@ -3046,6 +3432,10 @@ Content-Type: application/json
             
             <tr>
               <th>断言</th>
+              <td class="assert-ok">通过 — 响应为 JSON</td>
+            </tr>
+            <tr>
+              <th>断言</th>
               <td class="assert-ok">通过 — HTTP 400</td>
             </tr>
             <tr>
@@ -3057,18 +3447,26 @@ Content-Type: application/json
       </div>
     </details>
 <details class="details-req" id="req-20">
-      <summary><span class="sum-title"><span class="status-dot passed"></span>B05 A4-1 start 缺 operator → HTTP 400</span><span class="sum-meta">POST /private/v1/pm/instant-products/1/start · HTTP 400 · 3 ms</span></summary>
+      <summary><span class="sum-title"><span class="status-dot passed"></span>B05 A4-1 start 缺 operator → HTTP 400</span><span class="sum-meta">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/start · HTTP 400 · 175 ms</span></summary>
       <div class="details-body">
         <div class="focus-card">
           <div class="focus-title">测试要点</div>
           <div class="kv-grid"><span class="muted">—</span></div>
         </div>
         <div class="meta">响应体积 27 字节</div>
-        <div class="meta">http://localhost:8080/private/v1/pm/instant-products/1/start</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/start</div>
         <div class="payload-block">
         <div class="payload-label">请求</div>
-        <pre class="payload">POST http://localhost:8080/private/v1/pm/instant-products/1/start
+        <pre class="payload">POST https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/start
 Content-Type: application/json
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/create-market-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Not;A=Brand&quot;;v=&quot;8&quot;, &quot;Chromium&quot;;v=&quot;150&quot;, &quot;Google Chrome&quot;;v=&quot;150&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
 Accept-Language: zh-CN,zh;q=0.9
 
 {
@@ -3088,6 +3486,10 @@ Content-Type: application/json
             
             <tr>
               <th>断言</th>
+              <td class="assert-ok">通过 — 响应为 JSON</td>
+            </tr>
+            <tr>
+              <th>断言</th>
               <td class="assert-ok">通过 — HTTP 400</td>
             </tr>
             <tr>
@@ -3099,18 +3501,26 @@ Content-Type: application/json
       </div>
     </details>
 <details class="details-req" id="req-21">
-      <summary><span class="sum-title"><span class="status-dot passed"></span>B06 A4-2 stop 缺 operator → HTTP 400</span><span class="sum-meta">POST /private/v1/pm/instant-products/1/stop · HTTP 400 · 2 ms</span></summary>
+      <summary><span class="sum-title"><span class="status-dot passed"></span>B06 A4-2 stop 缺 operator → HTTP 400</span><span class="sum-meta">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/stop · HTTP 400 · 176 ms</span></summary>
       <div class="details-body">
         <div class="focus-card">
           <div class="focus-title">测试要点</div>
           <div class="kv-grid"><span class="muted">—</span></div>
         </div>
         <div class="meta">响应体积 27 字节</div>
-        <div class="meta">http://localhost:8080/private/v1/pm/instant-products/1/stop</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/stop</div>
         <div class="payload-block">
         <div class="payload-label">请求</div>
-        <pre class="payload">POST http://localhost:8080/private/v1/pm/instant-products/1/stop
+        <pre class="payload">POST https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/stop
 Content-Type: application/json
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/create-market-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Not;A=Brand&quot;;v=&quot;8&quot;, &quot;Chromium&quot;;v=&quot;150&quot;, &quot;Google Chrome&quot;;v=&quot;150&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
 Accept-Language: zh-CN,zh;q=0.9
 
 {}</pre>
@@ -3128,6 +3538,10 @@ Content-Type: application/json
             
             <tr>
               <th>断言</th>
+              <td class="assert-ok">通过 — 响应为 JSON</td>
+            </tr>
+            <tr>
+              <th>断言</th>
               <td class="assert-ok">通过 — HTTP 400</td>
             </tr>
             <tr>
@@ -3139,18 +3553,26 @@ Content-Type: application/json
       </div>
     </details>
 <details class="details-req" id="req-22">
-      <summary><span class="sum-title"><span class="status-dot passed"></span>B07 A5 sync 缺 operator → HTTP 400</span><span class="sum-meta">POST /private/v1/pm/instant-products/1/sync · HTTP 400 · 5 ms</span></summary>
+      <summary><span class="sum-title"><span class="status-dot passed"></span>B07 A5 sync 缺 operator → HTTP 400</span><span class="sum-meta">POST /ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/sync · HTTP 400 · 156 ms</span></summary>
       <div class="details-body">
         <div class="focus-card">
           <div class="focus-title">测试要点</div>
           <div class="kv-grid"><span class="muted">—</span></div>
         </div>
         <div class="meta">响应体积 27 字节</div>
-        <div class="meta">http://localhost:8080/private/v1/pm/instant-products/1/sync</div>
+        <div class="meta">https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/sync</div>
         <div class="payload-block">
         <div class="payload-label">请求</div>
-        <pre class="payload">POST http://localhost:8080/private/v1/pm/instant-products/1/sync
+        <pre class="payload">POST https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm/instant-products/1/sync
 Content-Type: application/json
+Referer: https://ls-management-platform-testnet.thezmx.com/cms/predict/create-market-management
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Not;A=Brand&quot;;v=&quot;8&quot;, &quot;Chromium&quot;;v=&quot;150&quot;, &quot;Google Chrome&quot;;v=&quot;150&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
 Accept-Language: zh-CN,zh;q=0.9
 
 {
@@ -3170,6 +3592,10 @@ Content-Type: application/json
             
             <tr>
               <th>断言</th>
+              <td class="assert-ok">通过 — 响应为 JSON</td>
+            </tr>
+            <tr>
+              <th>断言</th>
               <td class="assert-ok">通过 — HTTP 400</td>
             </tr>
             <tr>
@@ -3183,7 +3609,7 @@ Content-Type: application/json
   </details>
   </section></section>
 
-    <footer>由 <code>newman-json-to-zh-html.mjs</code> 生成 · registry <code>pm-admin-instant-product-local</code></footer>
+    <footer>由 <code>newman-json-to-zh-html.mjs</code> 生成 · registry <code>pm-admin-instant-product-testnet</code></footer>
   </div>
 </body>
 </html>

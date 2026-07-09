@@ -48,6 +48,7 @@ npm run pm:admin-sync          # PmSyncController · testnet 网关（需 pm-adm
 npm run pm:admin-sync:local    # 可选：直连本地 prediction-admin :8080
 npm run pm:admin-instant-product:local   # PmInstantProductController · 本地 :8080
 npm run pm:admin-instant-product:testnet # 同上 · testnet 网关（需 private 环境 Cookie）
+npm run pm:ce-updown:local               # UpdownEventController · 本地 :8080（windows/history/chart）
 npm run pm:reports:index                 # 刷新 reports/index.html 汇总页
 npm run pm:report:zh           # 仅根据已有 JSON 重新生成中文 HTML（需先跑过 pm:event-list）
 ```
@@ -99,6 +100,8 @@ https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?categoryId=30101&page=1&
 
 - `postman/collections/pm-ce-testnet-event-list.postman_collection.json` — 对齐 Wiki 与 prediction-serv 源码：**`GET /categories`** + **`GET /event/list`**（`00 Setup` + A/B 共 **35** 个请求；含 `i18nName` / 列表 `rules` / `outcomes` key 等断言）。
 - `postman/collections/pm-admin-sync-controller.postman_collection.json` — **prediction-admin** `PmSyncController`：`/private/v1/pm/sync/*`（Setup + A/B/C，见 [`docs/pm-admin-sync-testing.md`](docs/pm-admin-sync-testing.md)）。
+- `postman/collections/pm-ce-updown-local.postman_collection.json` — **prediction-serv** `UpdownEventController`：`GET /ce/pm/v1/api/event/updown/{windows,history,chart}` + `event/list` / `event` 回归（本地 `dev` profile，见 `application-dev.yaml` 匿名放通）。
+- `postman/environments/pm-ce-local.postman_environment.json` — CE 本地环境（`baseUrl`、`seriesSlug`、`ceCookie`）。
 
 ## 更完整的接口测试说明
 
