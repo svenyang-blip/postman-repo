@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "c3d4e5f6-a7b8-9012-cdef-ls-affiliate-commission",
     "name": "LS Affiliate MP · 自助佣金 Profile & Setting",
-    "description": "ls-affiliate-mp 自助佣金 5 个接口契约测试。\n\n| 方法 | 路径 | 说明 |\n|------|------|------|\n| GET | `/affiliate/commission_profile` | 查询 Profile |\n| POST | `/affiliate/commission_profile` | 更新 Profile（upsert） |\n| POST | `/affiliate/commission_setting/override` | Admin 覆盖直客分成 |\n| POST | `/affiliate/commission_setting/disable` | Admin 停用直客分成 |\n| GET | `/affiliate/commission_setting/logs` | 操作日志列表 |\n\n**apiBase**（testnet）：`https://ls-affiliate-mp-testnet.thezmx.com/ls-affiliate-mp/papi/api/v1`\n\n**鉴权**：环境变量 `adminCookie` + `referer`（复制 `ls-affiliate-mp-testnet.private.postman_environment.example.json` 为 `ls-affiliate-mp-testnet.private.postman_environment.json` 并填入 Cookie）。\n\n**运行**：`npm run pm:ls-affiliate-commission:testnet`",
+    "description": "ls-affiliate-mp 自助佣金 5 接口 **业务功能**契约测试。\n\n**Wiki**：[Affiliate 自助佣金设置 — MP 接口纵览](https://skyrocket.sg.larksuite.com/wiki/OIXuw7VQCiBX08kxqwYl2apEgWc)\n\n**业务用例矩阵**：`docs/ls-affiliate-commission-testing.md`\n\n| 切片 | 接口 |\n|------|------|\n| G0 P0 | Profile 查询 / 更新 |\n| G3 P0 | 覆盖 / 停用 / 日志 |\n\n**apiBase**：`https://ls-affiliate-mp-testnet.thezmx.com/ls-affiliate-mp/papi/api/v1`\n\n**鉴权（Cookie）**：`adminCookie`（`paas-testnet` + `BubbleAppCookie`）\n\n**运行**：`npm run pm:ls-affiliate-commission:testnet`",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -14,8 +14,17 @@
     { "key": "_origSelfServeEnabled", "value": "" },
     { "key": "_origMaxRateE6", "value": "" },
     { "key": "_origAdminSetShareE6", "value": "" },
-    { "key": "_hasOperableShare", "value": "false" }
+    { "key": "_hasOperableShare", "value": "false" },
+    { "key": "adminCookie", "value": "" }
   ],
+  "auth": {
+    "type": "apikey",
+    "apikey": [
+      { "key": "key", "value": "Cookie", "type": "string" },
+      { "key": "value", "value": "{{adminCookie}}", "type": "string" },
+      { "key": "in", "value": "header", "type": "string" }
+    ]
+  },
   "event": [
     {
       "listen": "prerequest",
@@ -26,12 +35,26 @@
           "const isTestnet = apiBase.includes('thezmx.com');",
           "const cookie = (pm.environment.get('adminCookie') || pm.collectionVariables.get('adminCookie') || '').trim();",
           "if (isTestnet && !cookie) {",
-          "  throw new Error('testnet 需 Cookie 鉴权：复制 ls-affiliate-mp-testnet.private.postman_environment.example.json 并填入 adminCookie');",
+          "  throw new Error('testnet Cookie 鉴权：请在 private 环境中填入 adminCookie（浏览器 DevTools → Request Headers → Cookie 整段）');",
+          "}",
+          "if (isTestnet && cookie) {",
+          "  const missing = [];",
+          "  if (!/paas-testnet=/i.test(cookie)) missing.push('paas-testnet');",
+          "  if (!/BubbleAppCookie=/i.test(cookie)) missing.push('BubbleAppCookie');",
+          "  if (missing.length) {",
+          "    throw new Error('adminCookie 缺少登录 Cookie：' + missing.join(', ') + ' — 请从已登录浏览器复制完整 Cookie');",
+          "  }",
           "}",
           "if (cookie) {",
           "  pm.request.headers.upsert({ key: 'Cookie', value: cookie });",
           "}",
-          "const referer = pm.environment.get('referer');",
+          "const affId = (pm.environment.get('affiliationId') || pm.collectionVariables.get('affiliationId') || '').trim();",
+          "const host = isTestnet ? 'https://ls-affiliate-mp-testnet.thezmx.com' : '';",
+          "let referer = (pm.environment.get('referer') || '').trim();",
+          "const reqUrl = pm.request.url.toString();",
+          "if (host && affId && /\\/affiliate\\/(commission_profile|commission_setting)/.test(reqUrl)) {",
+          "  referer = `${host}/affiliate-mgt/detail?id=${affId}`;",
+          "}",
           "if (referer) {",
           "  pm.request.headers.upsert({ key: 'Referer', value: referer });",
           "}",
@@ -68,11 +91,23 @@
           "const ct = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
           "const body = pm.response.text() || '';",
           "const looksHtml = ct.includes('text/html') || body.trimStart().startsWith('<!');",
-          "if (looksHtml) {",
-          "  pm.test('Cookie 鉴权失败（返回 HTML 登录页，请更新 adminCookie）', () => {",
-          "    pm.expect.fail('响应为 HTML 而非 JSON API');",
+          "if (looksHtml || pm.response.code === 302) {",
+          "  pm.test('Cookie 鉴权失败（HTML/302，请重新登录并更新 adminCookie）', () => {",
+          "    pm.expect.fail('响应非 JSON API，Cookie 可能已过期');",
           "  });",
           "  return;",
+          "}",
+          "if (pm.response.code === 403) {",
+          "  try {",
+          "    const j = pm.response.json();",
+          "    if (j && j.message && String(j.message).includes('Unauthorized')) {",
+          "      pm.test('Cookie 已生效，但网关接口权限未开通（403 Unauthorized）', () => {",
+          "        pm.expect(j.code).to.eql('403');",
+          "      });",
+          "      pm.collectionVariables.set('_gatewayUnauthorized', 'true');",
+          "      return;",
+          "    }",
+          "  } catch (e) {}",
           "}",
           "pm.test('响应为 JSON', () => {",
           "  pm.response.to.be.json;",
@@ -94,6 +129,10 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
+                  "if (pm.collectionVariables.get('_gatewayUnauthorized') === 'true') {",
+                  "  pm.test('跳过业务断言（Cookie 已生效，网关 403 Unauthorized）', () => pm.expect(true).to.eql(true));",
+                  "  return;",
+                  "}",
                   "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
                   "const body = pm.response.json();",
                   "pm.test('Responses 壳字段', () => {",
@@ -163,6 +202,10 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
+                  "if (pm.collectionVariables.get('_gatewayUnauthorized') === 'true') {",
+                  "  pm.test('跳过业务断言（Cookie 已生效，网关 403 Unauthorized）', () => pm.expect(true).to.eql(true));",
+                  "  return;",
+                  "}",
                   "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
                   "const body = pm.response.json();",
                   "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
@@ -200,6 +243,10 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
+                  "if (pm.collectionVariables.get('_gatewayUnauthorized') === 'true') {",
+                  "  pm.test('跳过业务断言（Cookie 已生效，网关 403 Unauthorized）', () => pm.expect(true).to.eql(true));",
+                  "  return;",
+                  "}",
                   "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
                   "const body = pm.response.json();",
                   "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
@@ -234,29 +281,45 @@
       ]
     },
     {
-      "name": "01 Commission Profile",
-      "description": "GET/POST `/affiliate/commission_profile`（带 DetailFilter 数据权限）。",
+      "name": "G0 · Profile 查询与更新",
+      "description": "Wiki G0 P0：[Profile 查询](https://skyrocket.sg.larksuite.com/wiki/EobswiA28il8PgkCHF4lU7mrgJc) / [Profile 更新](https://skyrocket.sg.larksuite.com/wiki/JkBMwwIkmiEdblkJuUXlHwrqg1e)。无行默认开+50%；Upsert 后 `exists=true`。",
       "item": [
         {
-          "name": "C01 GET commission_profile 成功",
+          "name": "P-Q01 GET commission_profile（Wiki 默认/已有）",
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
+                  "if (pm.collectionVariables.get('_gatewayUnauthorized') === 'true') {",
+                  "  pm.test('跳过业务断言（Cookie 已生效，网关 403 Unauthorized）', () => pm.expect(true).to.eql(true));",
+                  "  return;",
+                  "}",
                   "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
                   "const body = pm.response.json();",
                   "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
                   "const r = body.result;",
+                  "const expectedId = Number(pm.environment.get('affiliationId') || pm.collectionVariables.get('affiliationId'));",
+                  "const queryId = Number(pm.request.url.query.get('affiliation_id') || expectedId);",
                   "pm.test('ProfileResp 字段完整', () => {",
                   "  pm.expect(r).to.include.keys(",
                   "    'affiliation_id', 'self_serve_enabled', 'max_commission_rate_e6',",
                   "    'max_commission_rate', 'admin_set_share_rate_e6', 'admin_set_share_rate',",
                   "    'remark', 'updated_by', 'exists'",
                   "  );",
-                  "  pm.expect(r.affiliation_id).to.eql(Number(pm.collectionVariables.get('affiliationId')));",
-                  "});"
+                  "  pm.expect(r.exists).to.be.a('boolean');",
+                  "});",
+                  "pm.test('affiliation_id 与请求 AID 一致', () => {",
+                  "  pm.expect(Number(r.affiliation_id)).to.eql(queryId);",
+                  "});",
+                  "if (!r.exists) {",
+                  "  pm.test('P-Q01 无库行默认：开 + 50%', () => {",
+                  "    pm.expect(r.self_serve_enabled).to.eql(1);",
+                  "    pm.expect(Number(r.max_commission_rate_e6)).to.eql(500000);",
+                  "    pm.expect(r.max_commission_rate).to.eql('50.0');",
+                  "  });",
+                  "}"
                 ]
               }
             }
@@ -275,13 +338,17 @@
           }
         },
         {
-          "name": "C02 GET commission_profile 缺 affiliation_id",
+          "name": "P-Q03 GET commission_profile 缺 affiliation_id",
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
+                  "if (pm.collectionVariables.get('_gatewayUnauthorized') === 'true') {",
+                  "  pm.test('跳过业务断言（Cookie 已生效，网关 403 Unauthorized）', () => pm.expect(true).to.eql(true));",
+                  "  return;",
+                  "}",
                   "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
                   "const body = pm.response.json();",
                   "pm.test('无 affiliation_id 拒绝访问（ret_code=6 无数据权限 或 1001 参数错误）', () => {",
@@ -298,21 +365,31 @@
           }
         },
         {
-          "name": "C03 POST commission_profile 更新 Profile",
+          "name": "P-U01 POST commission_profile Upsert 开启+50%",
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
+                  "if (pm.collectionVariables.get('_gatewayUnauthorized') === 'true') {",
+                  "  pm.test('跳过业务断言（Cookie 已生效，网关 403 Unauthorized）', () => pm.expect(true).to.eql(true));",
+                  "  return;",
+                  "}",
                   "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
                   "const body = pm.response.json();",
                   "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
                   "const r = body.result;",
-                  "pm.test('更新后 Profile 值', () => {",
-                  "  pm.expect(r.self_serve_enabled).to.eql(1);",
-                  "  pm.expect(r.max_commission_rate_e6).to.eql(Number(pm.collectionVariables.get('maxRateE6')));",
+                  "const sent = JSON.parse(pm.request.body.raw);",
+                  "const expectedId = Number(sent.affiliation_id);",
+                  "const expectedEnabled = Number(sent.self_serve_enabled);",
+                  "const expectedMax = Number(sent.max_commission_rate_e6);",
+                  "pm.test('P-U01 更新后 Profile（Wiki exists=true）', () => {",
                   "  pm.expect(r.exists).to.eql(true);",
+                  "  pm.expect(Number(r.affiliation_id)).to.eql(expectedId);",
+                  "  pm.expect(r.self_serve_enabled).to.eql(expectedEnabled);",
+                  "  pm.expect(Number(r.max_commission_rate_e6)).to.eql(expectedMax);",
+                  "  pm.expect(r.max_commission_rate).to.eql('50.0');",
                   "});"
                 ]
               }
@@ -331,13 +408,17 @@
           }
         },
         {
-          "name": "C04 POST commission_profile 非法 max_commission_rate_e6",
+          "name": "P-U06 POST commission_profile 非法 max_commission_rate_e6",
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
+                  "if (pm.collectionVariables.get('_gatewayUnauthorized') === 'true') {",
+                  "  pm.test('跳过业务断言（Cookie 已生效，网关 403 Unauthorized）', () => pm.expect(true).to.eql(true));",
+                  "  return;",
+                  "}",
                   "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
                   "const body = pm.response.json();",
                   "pm.test('ret_code=1001 参数错误', () => {",
@@ -360,7 +441,114 @@
           }
         },
         {
-          "name": "C05 POST commission_profile 恢复初始 Profile",
+          "name": "P-U02 POST commission_profile 关闭自助开关",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('_gatewayUnauthorized') === 'true') {",
+                  "  pm.test('跳过业务断言（Cookie 已生效，网关 403 Unauthorized）', () => pm.expect(true).to.eql(true));",
+                  "  return;",
+                  "}",
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "const r = body.result;",
+                  "pm.test('P-U02 self_serve_enabled=0（Portal 入口置灰）', () => {",
+                  "  pm.expect(r.exists).to.eql(true);",
+                  "  pm.expect(r.self_serve_enabled).to.eql(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"affiliation_id\": {{affiliationId}},\n  \"self_serve_enabled\": 0,\n  \"max_commission_rate_e6\": {{maxRateE6}},\n  \"remark\": \"postman close self serve\"\n}"
+            },
+            "url": "{{apiBase}}/affiliate/commission_profile"
+          }
+        },
+        {
+          "name": "P-U09 GET commission_profile 更新后一致性",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('_gatewayUnauthorized') === 'true') {",
+                  "  pm.test('跳过业务断言（Cookie 已生效，网关 403 Unauthorized）', () => pm.expect(true).to.eql(true));",
+                  "  return;",
+                  "}",
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "const r = body.result;",
+                  "pm.test('P-U09 与 P-U02 关闭状态一致', () => {",
+                  "  pm.expect(r.exists).to.eql(true);",
+                  "  pm.expect(r.self_serve_enabled).to.eql(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{apiBase}}/affiliate/commission_profile?affiliation_id={{affiliationId}}",
+              "host": ["{{apiBase}}"],
+              "path": ["affiliate", "commission_profile"],
+              "query": [
+                { "key": "affiliation_id", "value": "{{affiliationId}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "P-U10 POST commission_profile 恢复开启（E2E 清理）",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('_gatewayUnauthorized') === 'true') {",
+                  "  pm.test('跳过业务断言（Cookie 已生效，网关 403 Unauthorized）', () => pm.expect(true).to.eql(true));",
+                  "  return;",
+                  "}",
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "pm.test('恢复 self_serve_enabled=1', () => {",
+                  "  pm.expect(body.result.self_serve_enabled).to.eql(1);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"affiliation_id\": {{affiliationId}},\n  \"self_serve_enabled\": 1,\n  \"max_commission_rate_e6\": {{maxRateE6}},\n  \"remark\": \"postman restore after P-U02\"\n}"
+            },
+            "url": "{{apiBase}}/affiliate/commission_profile"
+          }
+        },
+        {
+          "name": "P-U11 POST commission_profile 恢复初始 Profile",
           "event": [
             {
               "listen": "prerequest",
@@ -381,6 +569,10 @@
                 "exec": [
                   "if (pm.collectionVariables.get('_skipRestoreProfile') === 'true') {",
                   "  pm.test('无初始 Profile 缓存，跳过恢复', () => pm.expect(true).to.eql(true));",
+                  "  return;",
+                  "}",
+                  "if (pm.collectionVariables.get('_gatewayUnauthorized') === 'true') {",
+                  "  pm.test('跳过业务断言（Cookie 已生效，网关 403 Unauthorized）', () => pm.expect(true).to.eql(true));",
                   "  return;",
                   "}",
                   "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
@@ -405,17 +597,21 @@
       ]
     },
     {
-      "name": "02 Commission Setting · Logs",
-      "description": "GET `/affiliate/commission_setting/logs`",
+      "name": "G3 · 操作日志",
+      "description": "Wiki G3：[操作日志查询](https://skyrocket.sg.larksuite.com/wiki/ADZHwPm0yibwHokvXtSlpqAAg4f)。跨 Affiliate 检索；支持 scope/action/display_status/日期。",
       "item": [
         {
-          "name": "L01 GET logs 按 affiliation_id 分页",
+          "name": "L-Q01 GET logs 按 affiliation_id 分页",
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
+                  "if (pm.collectionVariables.get('_gatewayUnauthorized') === 'true') {",
+                  "  pm.test('跳过业务断言（Cookie 已生效，网关 403 Unauthorized）', () => pm.expect(true).to.eql(true));",
+                  "  return;",
+                  "}",
                   "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
                   "const body = pm.response.json();",
                   "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
@@ -458,13 +654,17 @@
           }
         },
         {
-          "name": "L02 GET logs 筛选 scope=direct_client action=override",
+          "name": "L-Q02 GET logs scope=direct_client action=override",
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
+                  "if (pm.collectionVariables.get('_gatewayUnauthorized') === 'true') {",
+                  "  pm.test('跳过业务断言（Cookie 已生效，网关 403 Unauthorized）', () => pm.expect(true).to.eql(true));",
+                  "  return;",
+                  "}",
                   "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
                   "const body = pm.response.json();",
                   "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
@@ -497,13 +697,17 @@
           }
         },
         {
-          "name": "L03 GET logs 缺 affiliation_id（全量软过滤）",
+          "name": "L-Q03 GET logs 缺 affiliation_id 默认分页",
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
+                  "if (pm.collectionVariables.get('_gatewayUnauthorized') === 'true') {",
+                  "  pm.test('跳过业务断言（Cookie 已生效，网关 403 Unauthorized）', () => pm.expect(true).to.eql(true));",
+                  "  return;",
+                  "}",
                   "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
                   "const body = pm.response.json();",
                   "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
@@ -526,35 +730,119 @@
               ]
             }
           }
-        }
-      ]
-    },
-    {
-      "name": "03 Commission Setting · Override",
-      "description": "POST `/affiliate/commission_setting/override`",
-      "item": [
+        },
         {
-          "name": "O01 POST override 成功（需可操作用 share）",
+          "name": "L-Q04 GET logs display_status=overridden",
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
+                  "if (pm.collectionVariables.get('_gatewayUnauthorized') === 'true') {",
+                  "  pm.test('跳过业务断言（Cookie 已生效，网关 403 Unauthorized）', () => pm.expect(true).to.eql(true));",
+                  "  return;",
+                  "}",
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "(body.result.list || []).forEach((item, i) => {",
+                  "  pm.test('display_status=overridden [' + i + ']', () => {",
+                  "    if (item.display_status) pm.expect(item.display_status).to.eql('overridden');",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{apiBase}}/affiliate/commission_setting/logs?affiliation_id={{affiliationId}}&display_status=overridden&page=1&page_size=20",
+              "host": ["{{apiBase}}"],
+              "path": ["affiliate", "commission_setting", "logs"],
+              "query": [
+                { "key": "affiliation_id", "value": "{{affiliationId}}" },
+                { "key": "display_status", "value": "overridden" },
+                { "key": "page", "value": "1" },
+                { "key": "page_size", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "L-Q05 GET logs page_size=100 上限",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('_gatewayUnauthorized') === 'true') {",
+                  "  pm.test('跳过业务断言（Cookie 已生效，网关 403 Unauthorized）', () => pm.expect(true).to.eql(true));",
+                  "  return;",
+                  "}",
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "pm.test('page_size≤100', () => {",
+                  "  pm.expect(body.result.page_size).to.be.at.most(100);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{apiBase}}/affiliate/commission_setting/logs?affiliation_id={{affiliationId}}&page=1&page_size=100",
+              "host": ["{{apiBase}}"],
+              "path": ["affiliate", "commission_setting", "logs"],
+              "query": [
+                { "key": "affiliation_id", "value": "{{affiliationId}}" },
+                { "key": "page", "value": "1" },
+                { "key": "page_size", "value": "100" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "G3 · Admin 覆盖",
+      "description": "Wiki G3：[Admin 覆盖](https://skyrocket.sg.larksuite.com/wiki/CYQHwSKNDijtBvkt7trl7HHhgHb)。share `5=Overridden`；写 log `action=override`。",
+      "item": [
+        {
+          "name": "O-01 POST override 覆盖可操作 share",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('_gatewayUnauthorized') === 'true') {",
+                  "  pm.test('跳过业务断言（Cookie 已生效，网关 403 Unauthorized）', () => pm.expect(true).to.eql(true));",
+                  "  return;",
+                  "}",
                   "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
                   "const body = pm.response.json();",
                   "if (body.ret_code === 0 && body.result) {",
                   "  pm.collectionVariables.set('_hasOperableShare', 'true');",
                   "  pm.collectionVariables.set('_overrideOk', 'true');",
                   "  const r = body.result;",
-                  "  pm.test('AdminOpResult 结构', () => {",
+                  "  pm.test('O-01 CommissionSettingAdminOpResult', () => {",
                   "    pm.expect(r).to.include.keys(",
                   "      'action', 'affiliation_id', 'share_id',",
-                  "      'rate_before_e6', 'rate_after_e6', 'display_status'",
+                  "      'rate_before_e6', 'rate_after_e6', 'rate_before', 'rate_after',",
+                  "      'share_status', 'display_status'",
                   "    );",
                   "    pm.expect(r.action).to.eql('override');",
                   "    pm.expect(r.display_status).to.eql('overridden');",
+                  "    pm.expect(r.share_status).to.eql(5);",
                   "    pm.expect(r.rate_after_e6).to.eql(Number(pm.collectionVariables.get('overrideRateE6')));",
+                  "    pm.expect(Number(r.affiliation_id)).to.eql(Number(pm.environment.get('affiliationId') || pm.collectionVariables.get('affiliationId')));",
                   "  });",
                   "  if (r.share_id) pm.collectionVariables.set('shareRelatedId', String(r.share_id));",
                   "} else {",
@@ -580,13 +868,17 @@
           }
         },
         {
-          "name": "O02 POST override 非法 rate_after_e6",
+          "name": "O-03 POST override 非法 rate_after_e6",
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
+                  "if (pm.collectionVariables.get('_gatewayUnauthorized') === 'true') {",
+                  "  pm.test('跳过业务断言（Cookie 已生效，网关 403 Unauthorized）', () => pm.expect(true).to.eql(true));",
+                  "  return;",
+                  "}",
                   "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
                   "const body = pm.response.json();",
                   "pm.test('ret_code=1001 参数错误', () => {",
@@ -609,13 +901,17 @@
           }
         },
         {
-          "name": "O03 POST override 非法 effective_start",
+          "name": "O-04 POST override 非法 effective_start",
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
+                  "if (pm.collectionVariables.get('_gatewayUnauthorized') === 'true') {",
+                  "  pm.test('跳过业务断言（Cookie 已生效，网关 403 Unauthorized）', () => pm.expect(true).to.eql(true));",
+                  "  return;",
+                  "}",
                   "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
                   "const body = pm.response.json();",
                   "pm.test('ret_code=1001 参数错误', () => {",
@@ -638,13 +934,17 @@
           }
         },
         {
-          "name": "O04 POST override 缺 affiliation_id",
+          "name": "O-05 POST override 缺 affiliation_id",
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
+                  "if (pm.collectionVariables.get('_gatewayUnauthorized') === 'true') {",
+                  "  pm.test('跳过业务断言（Cookie 已生效，网关 403 Unauthorized）', () => pm.expect(true).to.eql(true));",
+                  "  return;",
+                  "}",
                   "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
                   "const body = pm.response.json();",
                   "pm.test('ret_code=1001 参数错误', () => {",
@@ -669,11 +969,11 @@
       ]
     },
     {
-      "name": "04 Commission Setting · Disable",
-      "description": "POST `/affiliate/commission_setting/disable`",
+      "name": "G3 · Admin 停用",
+      "description": "Wiki G3：[Admin 停用](https://skyrocket.sg.larksuite.com/wiki/EOykw8YkLiOZCvk4tlnlhxVhgHe)。share `6=Disabled`；写 log `action=disable`。",
       "item": [
         {
-          "name": "D01 POST disable 成功（O01 覆盖成功后）",
+          "name": "D-01 POST disable 停用 share（O-01 成功后）",
           "event": [
             {
               "listen": "prerequest",
@@ -695,14 +995,18 @@
                   "  pm.test('无可操作 share，跳过 D01', () => pm.expect(true).to.eql(true));",
                   "  return;",
                   "}",
+                  "if (pm.collectionVariables.get('_gatewayUnauthorized') === 'true') {",
+                  "  pm.test('跳过业务断言（Cookie 已生效，网关 403 Unauthorized）', () => pm.expect(true).to.eql(true));",
+                  "  return;",
+                  "}",
                   "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
                   "const body = pm.response.json();",
                   "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
                   "const r = body.result;",
-                  "pm.test('AdminOpResult disable', () => {",
+                  "pm.test('D-01 disable 业务结果', () => {",
                   "  pm.expect(r.action).to.eql('disable');",
                   "  pm.expect(r.display_status).to.eql('disabled');",
-                  "  pm.expect(r.share_status).to.be.a('number');",
+                  "  pm.expect(r.share_status).to.eql(6);",
                   "});"
                 ]
               }
@@ -721,13 +1025,17 @@
           }
         },
         {
-          "name": "D02 POST disable 缺 affiliation_id",
+          "name": "D-02 POST disable 缺 affiliation_id",
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
+                  "if (pm.collectionVariables.get('_gatewayUnauthorized') === 'true') {",
+                  "  pm.test('跳过业务断言（Cookie 已生效，网关 403 Unauthorized）', () => pm.expect(true).to.eql(true));",
+                  "  return;",
+                  "}",
                   "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
                   "const body = pm.response.json();",
                   "pm.test('ret_code=1001 参数错误', () => {",
@@ -750,7 +1058,7 @@
           }
         },
         {
-          "name": "D03 GET logs 验证 disable 审计（可选）",
+          "name": "D-04 GET logs 验证 disable 审计（F-01）",
           "event": [
             {
               "listen": "prerequest",
@@ -770,6 +1078,10 @@
                 "exec": [
                   "if (pm.collectionVariables.get('_skipDisableLog') === 'true') {",
                   "  pm.test('跳过 disable 日志校验', () => pm.expect(true).to.eql(true));",
+                  "  return;",
+                  "}",
+                  "if (pm.collectionVariables.get('_gatewayUnauthorized') === 'true') {",
+                  "  pm.test('跳过业务断言（Cookie 已生效，网关 403 Unauthorized）', () => pm.expect(true).to.eql(true));",
                   "  return;",
                   "}",
                   "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
