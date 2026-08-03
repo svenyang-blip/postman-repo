@@ -13,7 +13,8 @@
     "pm:reports:index": "node scripts/build-reports-index.mjs",
     "pm:report:zh": "node scripts/newman-json-to-zh-html.mjs reports/newman-event-list.json reports/controllers/pm-ce-event-list.html --controller pm-ce-event-list",
     "pm:admin-sync:report:zh": "node scripts/newman-json-to-zh-html.mjs reports/newman-admin-sync.json reports/controllers/pm-admin-sync-testnet.html --controller pm-admin-sync-testnet",
-    "pm:admin-instant-product:report:zh": "node scripts/newman-json-to-zh-html.mjs reports/newman-admin-instant-product-local.json reports/controllers/pm-admin-instant-product-local.html --controller pm-admin-instant-product-local"
+    "pm:admin-instant-product:report:zh": "node scripts/newman-json-to-zh-html.mjs reports/newman-admin-instant-product-local.json reports/controllers/pm-admin-instant-product-local.html --controller pm-admin-instant-product-local",
+    "pm:ls-affiliate-commission:testnet": "newman run postman/collections/ls-affiliate-commission.postman_collection.json -e postman/environments/ls-affiliate-mp-testnet.private.postman_environment.json --reporters cli,json,junit,htmlextra --reporter-json-export reports/newman-ls-affiliate-commission.json --reporter-junit-export reports/newman-ls-affiliate-commission.xml --reporter-htmlextra-export reports/newman-ls-affiliate-commission-dashboard.html --reporter-htmlextra-template postman/templates/htmlextra-inline-dashboard.hbs --reporter-htmlextra-browserTitle \"LS Affiliate Commission Newman\" --reporter-htmlextra-title \"LS Affiliate · commission · testnet\" --reporter-htmlextra-noSyntaxHighlighting --reporter-htmlextra-timezone \"Asia/Shanghai\" && node scripts/newman-json-to-zh-html.mjs reports/newman-ls-affiliate-commission.json reports/controllers/ls-affiliate-commission-testnet.html --controller ls-affiliate-commission-testnet"
   },
   "devDependencies": {
     "newman": "^6.2.1",

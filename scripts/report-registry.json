@@ -89,6 +89,21 @@
       ]
     },
     {
+      "id": "ls-affiliate-commission-testnet",
+      "title": "LS Affiliate · Commission",
+      "controller": "自助佣金 Profile & Setting · testnet",
+      "json": "reports/newman-ls-affiliate-commission.json",
+      "html": "reports/controllers/ls-affiliate-commission-testnet.html",
+      "apiGroups": [
+        { "id": "commissionProfile", "pathIncludes": "/affiliate/commission_profile", "summaryLabel": "commission_profile" },
+        { "id": "override", "pathIncludes": "/commission_setting/override", "summaryLabel": "override" },
+        { "id": "disable", "pathIncludes": "/commission_setting/disable", "summaryLabel": "disable" },
+        { "id": "logs", "pathIncludes": "/commission_setting/logs", "summaryLabel": "logs" },
+        { "id": "setup", "pathIncludes": "/affiliate_management/list", "summaryLabel": "Setup list" },
+        { "id": "other", "pathIncludes": null, "summaryLabel": "其它" }
+      ]
+    },
+    {
       "id": "pm-ce-updown-local",
       "title": "UpdownEventController",
       "controller": "5m 涨跌 windows/history/chart + event 回归 · local :8080",

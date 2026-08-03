@@ -9,4 +9,5 @@ reports/newman-dashboard.html
 # 历史/误跑产生的分接口报告（已废弃，勿再提交）
 reports/newman-categories*
 reports/newman-admin-sync*
+reports/newman-ls-affiliate-commission*
 postman/environments/*.private.postman_environment.json

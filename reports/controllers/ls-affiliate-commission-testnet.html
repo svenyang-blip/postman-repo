@@ -1,0 +1,1444 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LS Affiliate · Commission · Newman 报告</title>
+  <style>
+    :root {
+      --bg: #f2f2f2; --surface: #fff; --border: #e5e5e5; --text: #333; --muted: #888;
+      --header: #1e293b; --passed: #16a34a; --failed: #dc2626; --accent: #2563eb;
+      --shadow: 0 1px 3px rgba(0,0,0,.08); --radius: 6px;
+    }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: ui-sans-serif, system-ui, "PingFang SC", "Microsoft YaHei", sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; font-size: 14px; }
+    .topbar { background: var(--header); color: #fff; padding: 16px clamp(16px,4vw,40px); }
+    .topbar h1 { margin: 0 0 4px; font-size: 1.3rem; }
+    .topbar .sub { color: rgba(255,255,255,.75); font-size: .85rem; }
+    .topbar a { color: #93c5fd; text-decoration: none; font-size: .85rem; }
+    .topbar a:hover { text-decoration: underline; }
+    .page { padding: 20px clamp(16px,4vw,40px) 48px; max-width: 1320px; margin: 0 auto; }
+    .widgets { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin-bottom: 20px; }
+    .widget { background: var(--surface); border-radius: var(--radius); padding: 12px 14px; border-left: 4px solid var(--accent); box-shadow: var(--shadow); }
+    .widget h3 { margin: 0 0 6px; font-size: .7rem; text-transform: uppercase; color: var(--muted); }
+    .widget .val { font-size: 1.5rem; font-weight: 700; }
+    .widget.passed { border-left-color: var(--passed); } .widget.passed .val { color: var(--passed); }
+    .widget.failed { border-left-color: var(--failed); } .widget.failed .val { color: var(--failed); }
+    .badge { display: inline-block; padding: 4px 12px; border-radius: 4px; font-size: .8rem; font-weight: 600; color: #fff; margin-bottom: 20px; }
+    .badge.ok { background: var(--passed); } .badge.bad { background: var(--failed); }
+    section { margin-top: 28px; }
+    section h2 { font-size: .92rem; font-weight: 600; text-transform: uppercase; color: var(--muted); margin: 0 0 12px; padding-bottom: 8px; border-bottom: 2px solid var(--border); }
+    .hint { color: var(--muted); font-size: .82rem; margin: -6px 0 12px; }
+    table { width: 100%; border-collapse: collapse; font-size: .86rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+    th, td { padding: 9px 11px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+    th { background: #fafafa; color: var(--muted); font-size: .72rem; text-transform: uppercase; font-weight: 600; }
+    tr:last-child td { border-bottom: none; }
+    tr.row-fail { background: #fff5f5; }
+    .row-folder { font-size: .75rem; color: var(--muted); }
+    .api-code { font-size: .78rem; word-break: break-all; }
+    .focus-cell .kv { display: inline-block; margin: 2px 6px 2px 0; padding: 2px 6px; background: #f3f4f6; border-radius: 4px; font-size: .78rem; }
+    .focus-cell .kv.important { background: #eff6ff; border: 1px solid #bfdbfe; }
+    .focus-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: var(--radius); padding: 10px 12px; margin-bottom: 10px; }
+    .focus-title { font-size: .72rem; font-weight: 600; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+    .kv-grid .kv { display: inline-block; margin: 3px 8px 3px 0; font-size: .82rem; }
+    .kv-grid .kv.important b { color: var(--accent); }
+    .summary-api code { font-size: .82rem; }
+    details.details-folder, details.details-req { border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 8px; background: var(--surface); box-shadow: var(--shadow); }
+    details > summary { list-style: none; cursor: pointer; padding: 10px 14px; display: flex; flex-wrap: wrap; gap: 8px 14px; user-select: none; background: #fafafa; }
+    details[open] > summary { border-bottom: 1px solid var(--border); }
+    details > summary::-webkit-details-marker { display: none; }
+    details > summary::before { content: "▸"; color: var(--muted); margin-right: 6px; transition: transform .15s; }
+    details[open] > summary::before { transform: rotate(90deg); }
+    .folder-inner { padding: 8px 10px 10px; }
+    details.details-req { margin-left: 10px; }
+    .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+    .status-dot.passed { background: var(--passed); } .status-dot.failed { background: var(--failed); }
+    .sum-meta, .folder-meta, .meta { color: var(--muted); font-size: .8rem; }
+    .sum-title { font-weight: 600; }
+    .details-body { padding: 12px; }
+    .payload { max-height: 280px; overflow: auto; background: #f8f8f8; border: 1px solid var(--border); border-radius: var(--radius); padding: 10px; font-size: .78rem; white-space: pre-wrap; word-break: break-word; }
+    .payload-label { font-size: .7rem; font-weight: 600; color: var(--muted); margin: 10px 0 4px; text-transform: uppercase; }
+    .fail-card { border-left: 4px solid var(--failed); background: #fff5f5; padding: 12px; margin-bottom: 10px; border-radius: var(--radius); }
+    .assert-ok { color: var(--passed); font-weight: 600; }
+    .assert-bad { color: var(--failed); font-weight: 600; }
+    .bad { color: var(--failed); font-weight: 600; }
+    .ok-inline { color: var(--passed); }
+    .muted { color: var(--muted); }
+    footer { margin-top: 28px; padding-top: 14px; border-top: 1px solid var(--border); color: var(--muted); font-size: .78rem; }
+    footer a { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <p><a href="../index.html">← 返回汇总</a></p>
+    <h1>LS Affiliate · Commission</h1>
+    <div class="sub">自助佣金 Profile &amp; Setting · testnet · LS Affiliate MP · 自助佣金 Profile &amp; Setting · 生成 2026/8/3 18:06:19</div>
+  </div>
+  <div class="page">
+    <div class="widgets">
+      <div class="widget"><h3>请求</h3><div class="val">18</div></div>
+      <div class="widget"><h3>断言</h3><div class="val">57</div></div>
+      <div class="widget failed"><h3>失败断言</h3><div class="val">32</div></div>
+      <div class="widget"><h3>平均耗时</h3><div class="val" style="font-size:1rem">210 ms</div></div>
+    </div>
+    <span class="badge bad">存在失败</span>
+
+    <section>
+      <h2>用例一览（测试要点）</h2>
+      <p class="hint">点击用例名跳转明细；<code>ret_code</code> 与 <code>result</code> 关键字段已提取。</p>
+      <table class="case-overview">
+        <thead><tr>
+          <th>#</th><th>用例</th><th>API</th><th>HTTP</th><th>ret_code</th>
+          <th>测试要点</th><th>断言</th><th>失败</th><th>耗时</th>
+        </tr></thead>
+        <tbody><tr class="">
+    <td>1</td>
+    <td><a href="#req-1">S01 GET /affiliate_management/list 解析 affiliationId</a><div class="row-folder">00 Setup</div></td>
+    <td><code class="api-code">GET /ls-affiliate-mp/papi/api/v1/affiliate_management/list?page=1&amp;size=10&amp;coin=BTC&amp;start_time=&amp;end_time=</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=成功</span><span class="kv"><b>size</b>=10</span><span class="kv"><b>totalNum</b>=612</span><span class="kv"><b>currentPage</b>=1</span><span class="kv"><b>totalPage</b>=62</span></td>
+    <td>5</td>
+    <td class="assert-ok">0</td>
+    <td>542 ms</td>
+  </tr>
+<tr class="row-fail">
+    <td>2</td>
+    <td><a href="#req-2">S02 GET /affiliate/commission_profile 缓存初始 Profile</a><div class="row-folder">00 Setup</div></td>
+    <td><code class="api-code">GET /ls-affiliate-mp/papi/api/v1/affiliate/commission_profile?affiliation_id=900483</code></td>
+    <td>403</td>
+    <td>—</td>
+    <td class="focus-cell"><span class="muted">—</span></td>
+    <td>3</td>
+    <td class="assert-bad">2</td>
+    <td>903 ms</td>
+  </tr>
+<tr class="row-fail">
+    <td>3</td>
+    <td><a href="#req-3">S03 GET /commission_setting/logs 预取 shareRelatedId</a><div class="row-folder">00 Setup</div></td>
+    <td><code class="api-code">GET /ls-affiliate-mp/papi/api/v1/affiliate/commission_setting/logs?affiliation_id=900483&amp;scope=direct_client&amp;page=1&amp;page_size=20</code></td>
+    <td>403</td>
+    <td>—</td>
+    <td class="focus-cell"><span class="muted">—</span></td>
+    <td>3</td>
+    <td class="assert-bad">2</td>
+    <td>168 ms</td>
+  </tr>
+<tr class="row-fail">
+    <td>4</td>
+    <td><a href="#req-4">C01 GET commission_profile 成功</a><div class="row-folder">01 Commission Profile</div></td>
+    <td><code class="api-code">GET /ls-affiliate-mp/papi/api/v1/affiliate/commission_profile?affiliation_id=900483</code></td>
+    <td>403</td>
+    <td>—</td>
+    <td class="focus-cell"><span class="muted">—</span></td>
+    <td>4</td>
+    <td class="assert-bad">3</td>
+    <td>187 ms</td>
+  </tr>
+<tr class="row-fail">
+    <td>5</td>
+    <td><a href="#req-5">C02 GET commission_profile 缺 affiliation_id</a><div class="row-folder">01 Commission Profile</div></td>
+    <td><code class="api-code">GET /ls-affiliate-mp/papi/api/v1/affiliate/commission_profile</code></td>
+    <td>403</td>
+    <td>—</td>
+    <td class="focus-cell"><span class="muted">—</span></td>
+    <td>3</td>
+    <td class="assert-bad">2</td>
+    <td>157 ms</td>
+  </tr>
+<tr class="row-fail">
+    <td>6</td>
+    <td><a href="#req-6">C03 POST commission_profile 更新 Profile</a><div class="row-folder">01 Commission Profile</div></td>
+    <td><code class="api-code">POST /ls-affiliate-mp/papi/api/v1/affiliate/commission_profile</code></td>
+    <td>403</td>
+    <td>—</td>
+    <td class="focus-cell"><span class="muted">—</span></td>
+    <td>4</td>
+    <td class="assert-bad">3</td>
+    <td>139 ms</td>
+  </tr>
+<tr class="row-fail">
+    <td>7</td>
+    <td><a href="#req-7">C04 POST commission_profile 非法 max_commission_rate_e6</a><div class="row-folder">01 Commission Profile</div></td>
+    <td><code class="api-code">POST /ls-affiliate-mp/papi/api/v1/affiliate/commission_profile</code></td>
+    <td>403</td>
+    <td>—</td>
+    <td class="focus-cell"><span class="muted">—</span></td>
+    <td>3</td>
+    <td class="assert-bad">2</td>
+    <td>139 ms</td>
+  </tr>
+<tr class="row-fail">
+    <td>8</td>
+    <td><a href="#req-8">C05 POST commission_profile 恢复初始 Profile</a><div class="row-folder">01 Commission Profile</div></td>
+    <td><code class="api-code">POST /ls-affiliate-mp/papi/api/v1/affiliate/commission_profile</code></td>
+    <td>403</td>
+    <td>—</td>
+    <td class="focus-cell"><span class="muted">—</span></td>
+    <td>2</td>
+    <td class="assert-ok">0</td>
+    <td>143 ms</td>
+  </tr>
+<tr class="row-fail">
+    <td>9</td>
+    <td><a href="#req-9">L01 GET logs 按 affiliation_id 分页</a><div class="row-folder">02 Commission Setting · Logs</div></td>
+    <td><code class="api-code">GET /ls-affiliate-mp/papi/api/v1/affiliate/commission_setting/logs?affiliation_id=900483&amp;page=1&amp;page_size=10</code></td>
+    <td>403</td>
+    <td>—</td>
+    <td class="focus-cell"><span class="muted">—</span></td>
+    <td>4</td>
+    <td class="assert-bad">3</td>
+    <td>145 ms</td>
+  </tr>
+<tr class="row-fail">
+    <td>10</td>
+    <td><a href="#req-10">L02 GET logs 筛选 scope=direct_client action=override</a><div class="row-folder">02 Commission Setting · Logs</div></td>
+    <td><code class="api-code">GET /ls-affiliate-mp/papi/api/v1/affiliate/commission_setting/logs?affiliation_id=900483&amp;scope=direct_client&amp;action=override&amp;page=1&amp;page_size=20</code></td>
+    <td>403</td>
+    <td>—</td>
+    <td class="focus-cell"><span class="muted">—</span></td>
+    <td>3</td>
+    <td class="assert-bad">2</td>
+    <td>149 ms</td>
+  </tr>
+<tr class="row-fail">
+    <td>11</td>
+    <td><a href="#req-11">L03 GET logs 缺 affiliation_id（全量软过滤）</a><div class="row-folder">02 Commission Setting · Logs</div></td>
+    <td><code class="api-code">GET /ls-affiliate-mp/papi/api/v1/affiliate/commission_setting/logs?page=1</code></td>
+    <td>403</td>
+    <td>—</td>
+    <td class="focus-cell"><span class="muted">—</span></td>
+    <td>4</td>
+    <td class="assert-bad">3</td>
+    <td>145 ms</td>
+  </tr>
+<tr class="row-fail">
+    <td>12</td>
+    <td><a href="#req-12">O01 POST override 成功（需可操作用 share）</a><div class="row-folder">03 Commission Setting · Override</div></td>
+    <td><code class="api-code">POST /ls-affiliate-mp/papi/api/v1/affiliate/commission_setting/override</code></td>
+    <td>403</td>
+    <td>—</td>
+    <td class="focus-cell"><span class="muted">—</span></td>
+    <td>3</td>
+    <td class="assert-bad">2</td>
+    <td>136 ms</td>
+  </tr>
+<tr class="row-fail">
+    <td>13</td>
+    <td><a href="#req-13">O02 POST override 非法 rate_after_e6</a><div class="row-folder">03 Commission Setting · Override</div></td>
+    <td><code class="api-code">POST /ls-affiliate-mp/papi/api/v1/affiliate/commission_setting/override</code></td>
+    <td>403</td>
+    <td>—</td>
+    <td class="focus-cell"><span class="muted">—</span></td>
+    <td>3</td>
+    <td class="assert-bad">2</td>
+    <td>139 ms</td>
+  </tr>
+<tr class="row-fail">
+    <td>14</td>
+    <td><a href="#req-14">O03 POST override 非法 effective_start</a><div class="row-folder">03 Commission Setting · Override</div></td>
+    <td><code class="api-code">POST /ls-affiliate-mp/papi/api/v1/affiliate/commission_setting/override</code></td>
+    <td>403</td>
+    <td>—</td>
+    <td class="focus-cell"><span class="muted">—</span></td>
+    <td>3</td>
+    <td class="assert-bad">2</td>
+    <td>143 ms</td>
+  </tr>
+<tr class="row-fail">
+    <td>15</td>
+    <td><a href="#req-15">O04 POST override 缺 affiliation_id</a><div class="row-folder">03 Commission Setting · Override</div></td>
+    <td><code class="api-code">POST /ls-affiliate-mp/papi/api/v1/affiliate/commission_setting/override</code></td>
+    <td>403</td>
+    <td>—</td>
+    <td class="focus-cell"><span class="muted">—</span></td>
+    <td>3</td>
+    <td class="assert-bad">2</td>
+    <td>141 ms</td>
+  </tr>
+<tr class="row-fail">
+    <td>16</td>
+    <td><a href="#req-16">D01 POST disable 成功（O01 覆盖成功后）</a><div class="row-folder">04 Commission Setting · Disable</div></td>
+    <td><code class="api-code">POST /ls-affiliate-mp/papi/api/v1/affiliate/commission_setting/disable</code></td>
+    <td>403</td>
+    <td>—</td>
+    <td class="focus-cell"><span class="muted">—</span></td>
+    <td>2</td>
+    <td class="assert-ok">0</td>
+    <td>133 ms</td>
+  </tr>
+<tr class="row-fail">
+    <td>17</td>
+    <td><a href="#req-17">D02 POST disable 缺 affiliation_id</a><div class="row-folder">04 Commission Setting · Disable</div></td>
+    <td><code class="api-code">POST /ls-affiliate-mp/papi/api/v1/affiliate/commission_setting/disable</code></td>
+    <td>403</td>
+    <td>—</td>
+    <td class="focus-cell"><span class="muted">—</span></td>
+    <td>3</td>
+    <td class="assert-bad">2</td>
+    <td>143 ms</td>
+  </tr>
+<tr class="row-fail">
+    <td>18</td>
+    <td><a href="#req-18">D03 GET logs 验证 disable 审计（可选）</a><div class="row-folder">04 Commission Setting · Disable</div></td>
+    <td><code class="api-code">GET /ls-affiliate-mp/papi/api/v1/affiliate/commission_setting/logs?affiliation_id=900483&amp;action=disable&amp;page=1&amp;page_size=5</code></td>
+    <td>403</td>
+    <td>—</td>
+    <td class="focus-cell"><span class="muted">—</span></td>
+    <td>2</td>
+    <td class="assert-ok">0</td>
+    <td>137 ms</td>
+  </tr></tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>接口汇总</h2>
+      <table class="summary-api">
+        <thead><tr><th>接口</th><th>用例</th><th>断言</th><th>失败</th><th>结果</th></tr></thead>
+        <tbody><tr>
+    <td><code>commission_profile</code></td>
+    <td>6</td>
+    <td>19</td>
+    <td><span class="bad">12</span></td>
+    <td class="assert-bad">有失败</td>
+  </tr>
+<tr>
+    <td><code>override</code></td>
+    <td>4</td>
+    <td>12</td>
+    <td><span class="bad">8</span></td>
+    <td class="assert-bad">有失败</td>
+  </tr>
+<tr>
+    <td><code>disable</code></td>
+    <td>2</td>
+    <td>5</td>
+    <td><span class="bad">2</span></td>
+    <td class="assert-bad">有失败</td>
+  </tr>
+<tr>
+    <td><code>logs</code></td>
+    <td>5</td>
+    <td>16</td>
+    <td><span class="bad">10</span></td>
+    <td class="assert-bad">有失败</td>
+  </tr>
+<tr>
+    <td><code>Setup list</code></td>
+    <td>1</td>
+    <td>5</td>
+    <td>0</td>
+    <td class="assert-ok">全通过</td>
+  </tr>
+</tbody>
+      </table>
+    </section>
+
+    <section><h2>失败详情</h2><div class="fail-card"><strong>S02 GET /affiliate/commission_profile 缓存初始 Profile</strong><pre class="payload">expected response to have status code 200 but got 403</pre></div><div class="fail-card"><strong>S02 GET /affiliate/commission_profile 缓存初始 Profile</strong><pre class="payload">expected undefined to deeply equal +0</pre></div><div class="fail-card"><strong>S03 GET /commission_setting/logs 预取 shareRelatedId</strong><pre class="payload">expected response to have status code 200 but got 403</pre></div><div class="fail-card"><strong>S03 GET /commission_setting/logs 预取 shareRelatedId</strong><pre class="payload">expected undefined to deeply equal +0</pre></div><div class="fail-card"><strong>C01 GET commission_profile 成功</strong><pre class="payload">expected response to have status code 200 but got 403</pre></div><div class="fail-card"><strong>C01 GET commission_profile 成功</strong><pre class="payload">expected undefined to deeply equal +0</pre></div><div class="fail-card"><strong>C01 GET commission_profile 成功</strong><pre class="payload">Cannot convert undefined or null to object</pre></div><div class="fail-card"><strong>C02 GET commission_profile 缺 affiliation_id</strong><pre class="payload">expected response to have status code 200 but got 403</pre></div><div class="fail-card"><strong>C02 GET commission_profile 缺 affiliation_id</strong><pre class="payload">expected undefined to be one of [ 6, 1001 ]</pre></div><div class="fail-card"><strong>C03 POST commission_profile 更新 Profile</strong><pre class="payload">expected response to have status code 200 but got 403</pre></div><div class="fail-card"><strong>C03 POST commission_profile 更新 Profile</strong><pre class="payload">expected undefined to deeply equal +0</pre></div><div class="fail-card"><strong>C03 POST commission_profile 更新 Profile</strong><pre class="payload">Cannot read properties of undefined (reading 'self_serve_enabled')</pre></div><div class="fail-card"><strong>C04 POST commission_profile 非法 max_commission_rate_e6</strong><pre class="payload">expected response to have status code 200 but got 403</pre></div><div class="fail-card"><strong>C04 POST commission_profile 非法 max_commission_rate_e6</strong><pre class="payload">expected undefined to deeply equal 1001</pre></div><div class="fail-card"><strong>L01 GET logs 按 affiliation_id 分页</strong><pre class="payload">expected response to have status code 200 but got 403</pre></div><div class="fail-card"><strong>L01 GET logs 按 affiliation_id 分页</strong><pre class="payload">expected undefined to deeply equal +0</pre></div><div class="fail-card"><strong>L01 GET logs 按 affiliation_id 分页</strong><pre class="payload">Cannot convert undefined or null to object</pre></div><div class="fail-card"><strong>L01 GET logs 按 affiliation_id 分页</strong><pre class="payload">Cannot read properties of undefined (reading 'list')</pre></div><div class="fail-card"><strong>L02 GET logs 筛选 scope=direct_client action=override</strong><pre class="payload">expected response to have status code 200 but got 403</pre></div><div class="fail-card"><strong>L02 GET logs 筛选 scope=direct_client action=override</strong><pre class="payload">expected undefined to deeply equal +0</pre></div><div class="fail-card"><strong>L02 GET logs 筛选 scope=direct_client action=override</strong><pre class="payload">Cannot read properties of undefined (reading 'list')</pre></div><div class="fail-card"><strong>L03 GET logs 缺 affiliation_id（全量软过滤）</strong><pre class="payload">expected response to have status code 200 but got 403</pre></div><div class="fail-card"><strong>L03 GET logs 缺 affiliation_id（全量软过滤）</strong><pre class="payload">expected undefined to deeply equal +0</pre></div><div class="fail-card"><strong>L03 GET logs 缺 affiliation_id（全量软过滤）</strong><pre class="payload">Cannot read properties of undefined (reading 'page_size')</pre></div><div class="fail-card"><strong>O01 POST override 成功（需可操作用 share）</strong><pre class="payload">expected response to have status code 200 but got 403</pre></div><div class="fail-card"><strong>O01 POST override 成功（需可操作用 share）</strong><pre class="payload">expected undefined to deeply equal 3</pre></div><div class="fail-card"><strong>O02 POST override 非法 rate_after_e6</strong><pre class="payload">expected response to have status code 200 but got 403</pre></div><div class="fail-card"><strong>O02 POST override 非法 rate_after_e6</strong><pre class="payload">expected undefined to deeply equal 1001</pre></div><div class="fail-card"><strong>O03 POST override 非法 effective_start</strong><pre class="payload">expected response to have status code 200 but got 403</pre></div><div class="fail-card"><strong>O03 POST override 非法 effective_start</strong><pre class="payload">expected undefined to deeply equal 1001</pre></div><div class="fail-card"><strong>O04 POST override 缺 affiliation_id</strong><pre class="payload">expected response to have status code 200 but got 403</pre></div><div class="fail-card"><strong>O04 POST override 缺 affiliation_id</strong><pre class="payload">expected undefined to deeply equal 1001</pre></div><div class="fail-card"><strong>D02 POST disable 缺 affiliation_id</strong><pre class="payload">expected response to have status code 200 but got 403</pre></div><div class="fail-card"><strong>D02 POST disable 缺 affiliation_id</strong><pre class="payload">expected undefined to deeply equal 1001</pre></div></section>
+
+    <section><h2>分节明细</h2><section id="api-commissionProfile">
+    <h2>一、commission_profile</h2>
+    <details class="details-folder" open>
+    <summary><span class="folder-title">01 Commission Profile</span><span class="folder-meta">5 个用例 · <span class="bad">10 条断言失败</span></span></summary>
+    <div class="folder-inner"><details class="details-req" id="req-4" open>
+      <summary><span class="sum-title"><span class="status-dot failed"></span>C01 GET commission_profile 成功</span><span class="sum-meta">GET /ls-affiliate-mp/papi/api/v1/affiliate/commission_profile?affiliation_id=900483 · HTTP 403 · 187 ms · <span class="bad">3 失败</span></span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="muted">—</span></div>
+        </div>
+        <div class="meta">响应体积 160 字节</div>
+        <div class="meta">https://ls-affiliate-mp-testnet.thezmx.com/ls-affiliate-mp/papi/api/v1/affiliate/commission_profile?affiliation_id=900483</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET https://ls-affiliate-mp-testnet.thezmx.com/ls-affiliate-mp/papi/api/v1/affiliate/commission_profile?affiliation_id=900483
+Referer: https://ls-affiliate-mp-testnet.thezmx.com/affiliate-mgt/list
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Not=A?Brand&quot;;v=&quot;99&quot;, &quot;Google Chrome&quot;;v=&quot;151&quot;, &quot;Chromium&quot;;v=&quot;151&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
+Accept-Language: zh-CN,zh;q=0.9
+Pragma: no-cache</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 403
+Content-Type: text/plain; charset=utf-8
+
+{
+  &quot;message&quot;: &quot;Verification: Request to \&quot;GET /ls-affiliate-mp/papi/api/v1/affiliate/commission_profile\&quot; for User(sven.yang) is Unauthorized&quot;,
+  &quot;code&quot;: &quot;403&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 响应为 JSON</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — HTTP 200<br/><small>expected response to have status code 200 but got 403</small></td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — ret_code=0<br/><small>expected undefined to deeply equal +0</small></td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — ProfileResp 字段完整<br/><small>Cannot convert undefined or null to object</small></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-5" open>
+      <summary><span class="sum-title"><span class="status-dot failed"></span>C02 GET commission_profile 缺 affiliation_id</span><span class="sum-meta">GET /ls-affiliate-mp/papi/api/v1/affiliate/commission_profile · HTTP 403 · 157 ms · <span class="bad">2 失败</span></span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="muted">—</span></div>
+        </div>
+        <div class="meta">响应体积 160 字节</div>
+        <div class="meta">https://ls-affiliate-mp-testnet.thezmx.com/ls-affiliate-mp/papi/api/v1/affiliate/commission_profile</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET https://ls-affiliate-mp-testnet.thezmx.com/ls-affiliate-mp/papi/api/v1/affiliate/commission_profile
+Referer: https://ls-affiliate-mp-testnet.thezmx.com/affiliate-mgt/list
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Not=A?Brand&quot;;v=&quot;99&quot;, &quot;Google Chrome&quot;;v=&quot;151&quot;, &quot;Chromium&quot;;v=&quot;151&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
+Accept-Language: zh-CN,zh;q=0.9
+Pragma: no-cache</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 403
+Content-Type: text/plain; charset=utf-8
+
+{
+  &quot;message&quot;: &quot;Verification: Request to \&quot;GET /ls-affiliate-mp/papi/api/v1/affiliate/commission_profile\&quot; for User(sven.yang) is Unauthorized&quot;,
+  &quot;code&quot;: &quot;403&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 响应为 JSON</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — HTTP 200<br/><small>expected response to have status code 200 but got 403</small></td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — 无 affiliation_id 拒绝访问（ret_code=6 无数据权限 或 1001 参数错误）<br/><small>expected undefined to be one of [ 6, 1001 ]</small></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-6" open>
+      <summary><span class="sum-title"><span class="status-dot failed"></span>C03 POST commission_profile 更新 Profile</span><span class="sum-meta">POST /ls-affiliate-mp/papi/api/v1/affiliate/commission_profile · HTTP 403 · 139 ms · <span class="bad">3 失败</span></span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="muted">—</span></div>
+        </div>
+        <div class="meta">响应体积 161 字节</div>
+        <div class="meta">https://ls-affiliate-mp-testnet.thezmx.com/ls-affiliate-mp/papi/api/v1/affiliate/commission_profile</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">POST https://ls-affiliate-mp-testnet.thezmx.com/ls-affiliate-mp/papi/api/v1/affiliate/commission_profile
+Content-Type: application/json
+Referer: https://ls-affiliate-mp-testnet.thezmx.com/affiliate-mgt/list
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Not=A?Brand&quot;;v=&quot;99&quot;, &quot;Google Chrome&quot;;v=&quot;151&quot;, &quot;Chromium&quot;;v=&quot;151&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
+Accept-Language: zh-CN,zh;q=0.9
+Pragma: no-cache
+
+{
+  &quot;affiliation_id&quot;: 900483,
+  &quot;self_serve_enabled&quot;: 1,
+  &quot;max_commission_rate_e6&quot;: 500000,
+  &quot;admin_set_share_rate_e6&quot;: 200000,
+  &quot;remark&quot;: &quot;postman update commission profile&quot;
+}</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 403
+Content-Type: text/plain; charset=utf-8
+
+{
+  &quot;message&quot;: &quot;Verification: Request to \&quot;POST /ls-affiliate-mp/papi/api/v1/affiliate/commission_profile\&quot; for User(sven.yang) is Unauthorized&quot;,
+  &quot;code&quot;: &quot;403&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 响应为 JSON</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — HTTP 200<br/><small>expected response to have status code 200 but got 403</small></td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — ret_code=0<br/><small>expected undefined to deeply equal +0</small></td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — 更新后 Profile 值<br/><small>Cannot read properties of undefined (reading 'self_serve_enabled')</small></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-7" open>
+      <summary><span class="sum-title"><span class="status-dot failed"></span>C04 POST commission_profile 非法 max_commission_rate_e6</span><span class="sum-meta">POST /ls-affiliate-mp/papi/api/v1/affiliate/commission_profile · HTTP 403 · 139 ms · <span class="bad">2 失败</span></span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="muted">—</span></div>
+        </div>
+        <div class="meta">响应体积 161 字节</div>
+        <div class="meta">https://ls-affiliate-mp-testnet.thezmx.com/ls-affiliate-mp/papi/api/v1/affiliate/commission_profile</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">POST https://ls-affiliate-mp-testnet.thezmx.com/ls-affiliate-mp/papi/api/v1/affiliate/commission_profile
+Content-Type: application/json
+Referer: https://ls-affiliate-mp-testnet.thezmx.com/affiliate-mgt/list
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Not=A?Brand&quot;;v=&quot;99&quot;, &quot;Google Chrome&quot;;v=&quot;151&quot;, &quot;Chromium&quot;;v=&quot;151&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
+Accept-Language: zh-CN,zh;q=0.9
+Pragma: no-cache
+
+{
+  &quot;affiliation_id&quot;: 900483,
+  &quot;self_serve_enabled&quot;: 1,
+  &quot;max_commission_rate_e6&quot;: 600000
+}</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 403
+Content-Type: text/plain; charset=utf-8
+
+{
+  &quot;message&quot;: &quot;Verification: Request to \&quot;POST /ls-affiliate-mp/papi/api/v1/affiliate/commission_profile\&quot; for User(sven.yang) is Unauthorized&quot;,
+  &quot;code&quot;: &quot;403&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 响应为 JSON</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — HTTP 200<br/><small>expected response to have status code 200 but got 403</small></td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — ret_code=1001 参数错误<br/><small>expected undefined to deeply equal 1001</small></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-8">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>C05 POST commission_profile 恢复初始 Profile</span><span class="sum-meta">POST /ls-affiliate-mp/papi/api/v1/affiliate/commission_profile · HTTP 403 · 143 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="muted">—</span></div>
+        </div>
+        <div class="meta">响应体积 161 字节</div>
+        <div class="meta">https://ls-affiliate-mp-testnet.thezmx.com/ls-affiliate-mp/papi/api/v1/affiliate/commission_profile</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">POST https://ls-affiliate-mp-testnet.thezmx.com/ls-affiliate-mp/papi/api/v1/affiliate/commission_profile
+Content-Type: application/json
+Referer: https://ls-affiliate-mp-testnet.thezmx.com/affiliate-mgt/list
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Not=A?Brand&quot;;v=&quot;99&quot;, &quot;Google Chrome&quot;;v=&quot;151&quot;, &quot;Chromium&quot;;v=&quot;151&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
+Accept-Language: zh-CN,zh;q=0.9
+Pragma: no-cache
+
+{
+  &quot;affiliation_id&quot;: 900483,
+  &quot;self_serve_enabled&quot;: ,
+  &quot;max_commission_rate_e6&quot;: ,
+  &quot;remark&quot;: &quot;postman restore profile&quot;
+}</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 403
+Content-Type: text/plain; charset=utf-8
+
+{
+  &quot;message&quot;: &quot;Verification: Request to \&quot;POST /ls-affiliate-mp/papi/api/v1/affiliate/commission_profile\&quot; for User(sven.yang) is Unauthorized&quot;,
+  &quot;code&quot;: &quot;403&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 响应为 JSON</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 无初始 Profile 缓存，跳过恢复</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details></div>
+  </details>
+  </section>
+
+<section id="api-override">
+    <h2>二、override</h2>
+    <details class="details-folder" open>
+    <summary><span class="folder-title">03 Commission Setting · Override</span><span class="folder-meta">4 个用例 · <span class="bad">8 条断言失败</span></span></summary>
+    <div class="folder-inner"><details class="details-req" id="req-12" open>
+      <summary><span class="sum-title"><span class="status-dot failed"></span>O01 POST override 成功（需可操作用 share）</span><span class="sum-meta">POST /ls-affiliate-mp/papi/api/v1/affiliate/commission_setting/override · HTTP 403 · 136 ms · <span class="bad">2 失败</span></span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="muted">—</span></div>
+        </div>
+        <div class="meta">响应体积 171 字节</div>
+        <div class="meta">https://ls-affiliate-mp-testnet.thezmx.com/ls-affiliate-mp/papi/api/v1/affiliate/commission_setting/override</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">POST https://ls-affiliate-mp-testnet.thezmx.com/ls-affiliate-mp/papi/api/v1/affiliate/commission_setting/override
+Content-Type: application/json
+Referer: https://ls-affiliate-mp-testnet.thezmx.com/affiliate-mgt/list
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Not=A?Brand&quot;;v=&quot;99&quot;, &quot;Google Chrome&quot;;v=&quot;151&quot;, &quot;Chromium&quot;;v=&quot;151&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
+Accept-Language: zh-CN,zh;q=0.9
+Pragma: no-cache
+
+{
+  &quot;affiliation_id&quot;: 900483,
+  &quot;rate_after_e6&quot;: 300000,
+  &quot;effective_start&quot;: &quot;2026-08-03&quot;,
+  &quot;remark&quot;: &quot;postman override commission setting&quot;
+}</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 403
+Content-Type: text/plain; charset=utf-8
+
+{
+  &quot;message&quot;: &quot;Verification: Request to \&quot;POST /ls-affiliate-mp/papi/api/v1/affiliate/commission_setting/override\&quot; for User(sven.yang) is Unauthorized&quot;,
+  &quot;code&quot;: &quot;403&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 响应为 JSON</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — HTTP 200<br/><small>expected response to have status code 200 but got 403</small></td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — 无可操作 share（ret_code=3）— 停用用例将跳过<br/><small>expected undefined to deeply equal 3</small></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-13" open>
+      <summary><span class="sum-title"><span class="status-dot failed"></span>O02 POST override 非法 rate_after_e6</span><span class="sum-meta">POST /ls-affiliate-mp/papi/api/v1/affiliate/commission_setting/override · HTTP 403 · 139 ms · <span class="bad">2 失败</span></span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="muted">—</span></div>
+        </div>
+        <div class="meta">响应体积 171 字节</div>
+        <div class="meta">https://ls-affiliate-mp-testnet.thezmx.com/ls-affiliate-mp/papi/api/v1/affiliate/commission_setting/override</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">POST https://ls-affiliate-mp-testnet.thezmx.com/ls-affiliate-mp/papi/api/v1/affiliate/commission_setting/override
+Content-Type: application/json
+Referer: https://ls-affiliate-mp-testnet.thezmx.com/affiliate-mgt/list
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Not=A?Brand&quot;;v=&quot;99&quot;, &quot;Google Chrome&quot;;v=&quot;151&quot;, &quot;Chromium&quot;;v=&quot;151&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
+Accept-Language: zh-CN,zh;q=0.9
+Pragma: no-cache
+
+{
+  &quot;affiliation_id&quot;: 900483,
+  &quot;rate_after_e6&quot;: 600000
+}</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 403
+Content-Type: text/plain; charset=utf-8
+
+{
+  &quot;message&quot;: &quot;Verification: Request to \&quot;POST /ls-affiliate-mp/papi/api/v1/affiliate/commission_setting/override\&quot; for User(sven.yang) is Unauthorized&quot;,
+  &quot;code&quot;: &quot;403&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 响应为 JSON</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — HTTP 200<br/><small>expected response to have status code 200 but got 403</small></td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — ret_code=1001 参数错误<br/><small>expected undefined to deeply equal 1001</small></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-14" open>
+      <summary><span class="sum-title"><span class="status-dot failed"></span>O03 POST override 非法 effective_start</span><span class="sum-meta">POST /ls-affiliate-mp/papi/api/v1/affiliate/commission_setting/override · HTTP 403 · 143 ms · <span class="bad">2 失败</span></span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="muted">—</span></div>
+        </div>
+        <div class="meta">响应体积 171 字节</div>
+        <div class="meta">https://ls-affiliate-mp-testnet.thezmx.com/ls-affiliate-mp/papi/api/v1/affiliate/commission_setting/override</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">POST https://ls-affiliate-mp-testnet.thezmx.com/ls-affiliate-mp/papi/api/v1/affiliate/commission_setting/override
+Content-Type: application/json
+Referer: https://ls-affiliate-mp-testnet.thezmx.com/affiliate-mgt/list
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Not=A?Brand&quot;;v=&quot;99&quot;, &quot;Google Chrome&quot;;v=&quot;151&quot;, &quot;Chromium&quot;;v=&quot;151&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
+Accept-Language: zh-CN,zh;q=0.9
+Pragma: no-cache
+
+{
+  &quot;affiliation_id&quot;: 900483,
+  &quot;rate_after_e6&quot;: 100000,
+  &quot;effective_start&quot;: &quot;2026/08/03&quot;
+}</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 403
+Content-Type: text/plain; charset=utf-8
+
+{
+  &quot;message&quot;: &quot;Verification: Request to \&quot;POST /ls-affiliate-mp/papi/api/v1/affiliate/commission_setting/override\&quot; for User(sven.yang) is Unauthorized&quot;,
+  &quot;code&quot;: &quot;403&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 响应为 JSON</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — HTTP 200<br/><small>expected response to have status code 200 but got 403</small></td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — ret_code=1001 参数错误<br/><small>expected undefined to deeply equal 1001</small></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-15" open>
+      <summary><span class="sum-title"><span class="status-dot failed"></span>O04 POST override 缺 affiliation_id</span><span class="sum-meta">POST /ls-affiliate-mp/papi/api/v1/affiliate/commission_setting/override · HTTP 403 · 141 ms · <span class="bad">2 失败</span></span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="muted">—</span></div>
+        </div>
+        <div class="meta">响应体积 171 字节</div>
+        <div class="meta">https://ls-affiliate-mp-testnet.thezmx.com/ls-affiliate-mp/papi/api/v1/affiliate/commission_setting/override</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">POST https://ls-affiliate-mp-testnet.thezmx.com/ls-affiliate-mp/papi/api/v1/affiliate/commission_setting/override
+Content-Type: application/json
+Referer: https://ls-affiliate-mp-testnet.thezmx.com/affiliate-mgt/list
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Not=A?Brand&quot;;v=&quot;99&quot;, &quot;Google Chrome&quot;;v=&quot;151&quot;, &quot;Chromium&quot;;v=&quot;151&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
+Accept-Language: zh-CN,zh;q=0.9
+Pragma: no-cache
+
+{
+  &quot;rate_after_e6&quot;: 100000
+}</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 403
+Content-Type: text/plain; charset=utf-8
+
+{
+  &quot;message&quot;: &quot;Verification: Request to \&quot;POST /ls-affiliate-mp/papi/api/v1/affiliate/commission_setting/override\&quot; for User(sven.yang) is Unauthorized&quot;,
+  &quot;code&quot;: &quot;403&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 响应为 JSON</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — HTTP 200<br/><small>expected response to have status code 200 but got 403</small></td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — ret_code=1001 参数错误<br/><small>expected undefined to deeply equal 1001</small></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details></div>
+  </details>
+  </section>
+
+<section id="api-disable">
+    <h2>三、disable</h2>
+    <p class="hint">（本运行无此类请求）</p>
+  </section>
+
+<section id="api-logs">
+    <h2>四、logs</h2>
+    <details class="details-folder" open>
+    <summary><span class="folder-title">02 Commission Setting · Logs</span><span class="folder-meta">3 个用例 · <span class="bad">8 条断言失败</span></span></summary>
+    <div class="folder-inner"><details class="details-req" id="req-9" open>
+      <summary><span class="sum-title"><span class="status-dot failed"></span>L01 GET logs 按 affiliation_id 分页</span><span class="sum-meta">GET /ls-affiliate-mp/papi/api/v1/affiliate/commission_setting/logs?affiliation_id=900483&amp;page=1&amp;page_size=10 · HTTP 403 · 145 ms · <span class="bad">3 失败</span></span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="muted">—</span></div>
+        </div>
+        <div class="meta">响应体积 166 字节</div>
+        <div class="meta">https://ls-affiliate-mp-testnet.thezmx.com/ls-affiliate-mp/papi/api/v1/affiliate/commission_setting/logs?affiliation_id=900483&amp;page=1&amp;page_size=10</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET https://ls-affiliate-mp-testnet.thezmx.com/ls-affiliate-mp/papi/api/v1/affiliate/commission_setting/logs?affiliation_id=900483&amp;page=1&amp;page_size=10
+Referer: https://ls-affiliate-mp-testnet.thezmx.com/affiliate-mgt/list
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Not=A?Brand&quot;;v=&quot;99&quot;, &quot;Google Chrome&quot;;v=&quot;151&quot;, &quot;Chromium&quot;;v=&quot;151&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
+Accept-Language: zh-CN,zh;q=0.9
+Pragma: no-cache</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 403
+Content-Type: text/plain; charset=utf-8
+
+{
+  &quot;message&quot;: &quot;Verification: Request to \&quot;GET /ls-affiliate-mp/papi/api/v1/affiliate/commission_setting/logs\&quot; for User(sven.yang) is Unauthorized&quot;,
+  &quot;code&quot;: &quot;403&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 响应为 JSON</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — HTTP 200<br/><small>expected response to have status code 200 but got 403</small></td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — ret_code=0<br/><small>expected undefined to deeply equal +0</small></td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — CommissionSettingLogListResp 结构<br/><small>Cannot convert undefined or null to object</small></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-10" open>
+      <summary><span class="sum-title"><span class="status-dot failed"></span>L02 GET logs 筛选 scope=direct_client action=override</span><span class="sum-meta">GET /ls-affiliate-mp/papi/api/v1/affiliate/commission_setting/logs?affiliation_id=900483&amp;scope=direct_client&amp;action=override&amp;page=1&amp;page_size=20 · HTTP 403 · 149 ms · <span class="bad">2 失败</span></span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="muted">—</span></div>
+        </div>
+        <div class="meta">响应体积 166 字节</div>
+        <div class="meta">https://ls-affiliate-mp-testnet.thezmx.com/ls-affiliate-mp/papi/api/v1/affiliate/commission_setting/logs?affiliation_id=900483&amp;scope=direct_client&amp;action=override&amp;page=1&amp;page_size=20</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET https://ls-affiliate-mp-testnet.thezmx.com/ls-affiliate-mp/papi/api/v1/affiliate/commission_setting/logs?affiliation_id=900483&amp;scope=direct_client&amp;action=override&amp;page=1&amp;page_size=20
+Referer: https://ls-affiliate-mp-testnet.thezmx.com/affiliate-mgt/list
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Not=A?Brand&quot;;v=&quot;99&quot;, &quot;Google Chrome&quot;;v=&quot;151&quot;, &quot;Chromium&quot;;v=&quot;151&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
+Accept-Language: zh-CN,zh;q=0.9
+Pragma: no-cache</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 403
+Content-Type: text/plain; charset=utf-8
+
+{
+  &quot;message&quot;: &quot;Verification: Request to \&quot;GET /ls-affiliate-mp/papi/api/v1/affiliate/commission_setting/logs\&quot; for User(sven.yang) is Unauthorized&quot;,
+  &quot;code&quot;: &quot;403&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 响应为 JSON</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — HTTP 200<br/><small>expected response to have status code 200 but got 403</small></td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — ret_code=0<br/><small>expected undefined to deeply equal +0</small></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-11" open>
+      <summary><span class="sum-title"><span class="status-dot failed"></span>L03 GET logs 缺 affiliation_id（全量软过滤）</span><span class="sum-meta">GET /ls-affiliate-mp/papi/api/v1/affiliate/commission_setting/logs?page=1 · HTTP 403 · 145 ms · <span class="bad">3 失败</span></span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="muted">—</span></div>
+        </div>
+        <div class="meta">响应体积 166 字节</div>
+        <div class="meta">https://ls-affiliate-mp-testnet.thezmx.com/ls-affiliate-mp/papi/api/v1/affiliate/commission_setting/logs?page=1</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET https://ls-affiliate-mp-testnet.thezmx.com/ls-affiliate-mp/papi/api/v1/affiliate/commission_setting/logs?page=1
+Referer: https://ls-affiliate-mp-testnet.thezmx.com/affiliate-mgt/list
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Not=A?Brand&quot;;v=&quot;99&quot;, &quot;Google Chrome&quot;;v=&quot;151&quot;, &quot;Chromium&quot;;v=&quot;151&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
+Accept-Language: zh-CN,zh;q=0.9
+Pragma: no-cache</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 403
+Content-Type: text/plain; charset=utf-8
+
+{
+  &quot;message&quot;: &quot;Verification: Request to \&quot;GET /ls-affiliate-mp/papi/api/v1/affiliate/commission_setting/logs\&quot; for User(sven.yang) is Unauthorized&quot;,
+  &quot;code&quot;: &quot;403&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 响应为 JSON</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — HTTP 200<br/><small>expected response to have status code 200 but got 403</small></td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — ret_code=0<br/><small>expected undefined to deeply equal +0</small></td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — 默认分页 page_size=20<br/><small>Cannot read properties of undefined (reading 'page_size')</small></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details></div>
+  </details>
+  </section>
+
+<section id="api-setup">
+    <h2>五、Setup list</h2>
+    <p class="hint">（本运行无此类请求）</p>
+  </section>
+
+<section id="api-other">
+    <h2>其它请求</h2>
+    <details class="details-folder" open>
+    <summary><span class="folder-title">00 Setup</span><span class="folder-meta">3 个用例 · <span class="bad">4 条断言失败</span></span></summary>
+    <div class="folder-inner"><details class="details-req" id="req-1">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>S01 GET /affiliate_management/list 解析 affiliationId</span><span class="sum-meta">GET /ls-affiliate-mp/papi/api/v1/affiliate_management/list?page=1&amp;size=10&amp;coin=BTC&amp;start_time=&amp;end_time= · HTTP 200 · 542 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=成功</span><span class="kv"><b>size</b>=10</span><span class="kv"><b>totalNum</b>=612</span><span class="kv"><b>currentPage</b>=1</span><span class="kv"><b>totalPage</b>=62</span></div>
+        </div>
+        <div class="meta">响应体积 2945 字节</div>
+        <div class="meta">https://ls-affiliate-mp-testnet.thezmx.com/ls-affiliate-mp/papi/api/v1/affiliate_management/list?page=1&amp;size=10&amp;coin=BTC&amp;start_time=&amp;end_time=</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET https://ls-affiliate-mp-testnet.thezmx.com/ls-affiliate-mp/papi/api/v1/affiliate_management/list?page=1&amp;size=10&amp;coin=BTC&amp;start_time=&amp;end_time=
+Referer: https://ls-affiliate-mp-testnet.thezmx.com/affiliate-mgt/list
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Not=A?Brand&quot;;v=&quot;99&quot;, &quot;Google Chrome&quot;;v=&quot;151&quot;, &quot;Chromium&quot;;v=&quot;151&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
+Accept-Language: zh-CN,zh;q=0.9
+Pragma: no-cache</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json; charset=utf-8
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;result&quot;: {
+    &quot;list&quot;: [
+      {
+        &quot;id&quot;: 900508,
+        &quot;type&quot;: 1,
+        &quot;email&quot;: &quot;rb0***@586486.xyz&quot;,
+        &quot;country&quot;: &quot;US&quot;,
+        &quot;level&quot;: &quot;1&quot;,
+        &quot;register_count&quot;: 2,
+        &quot;deposit_count&quot;: 0,
+        &quot;cum_deposit&quot;: &quot;&quot;,
+        &quot;cum_rebate&quot;: &quot;&quot;,
+        &quot;cum_trading_amount&quot;: &quot;&quot;,
+        &quot;wallet_balance&quot;: &quot;0&quot;,
+        &quot;bd&quot;: &quot;raychen&quot;,
+        &quot;ban_type&quot;: [],
+        &quot;created_at&quot;: &quot;2026-07-01 07:24:52&quot;,
+        &quot;contract_mmf_e6&quot;: 150
+      },
+      {
+        &quot;id&quot;: 900507,
+        &quot;type&quot;: 1,
+        &quot;email&quot;: &quot;air***@586486.xyz&quot;,
+        &quot;country&quot;: &quot;US&quot;,
+        &quot;level&quot;: &quot;1&quot;,
+        &quot;register_count&quot;: 0,
+        &quot;deposit_count&quot;: 0,
+        &quot;cum_deposit&quot;: &quot;&quot;,
+        &quot;cum_rebate&quot;: &quot;&quot;,
+        &quot;cum_trading_amount&quot;: &quot;&quot;,
+        &quot;wallet_balance&quot;: &quot;0&quot;,
+        &quot;bd&quot;: &quot;zhiping.wu&quot;,
+        &quot;ban_type&quot;: [],
+        &quot;created_at&quot;: &quot;2026-06-18 05:51:16&quot;,
+        &quot;contract_mmf_e6&quot;: 150
+      },
+      {
+        &quot;id&quot;: 900506,
+        &quot;type&quot;: 2,
+        &quot;email&quot;: &quot;zmx***@586486.xyz&quot;,
+        &quot;country&quot;: &quot;US&quot;,
+        &quot;level&quot;: &quot;1&quot;,
+        &quot;register_count&quot;: 0,
+        &quot;deposit_count&quot;: 0,
+        &quot;cum_deposit&quot;: &quot;&quot;,
+        &quot;cum_rebate&quot;: &quot;&quot;,
+        &quot;cum_trading_amount&quot;: &quot;&quot;,
+        &quot;wallet_balance&quot;: &quot;0&quot;,
+        &quot;bd&quot;: &quot;gongsheng&quot;,
+        &quot;ban_type&quot;: [],
+        &quot;created_at&quot;: &quot;2026-06-05 02:27:30&quot;,
+        &quot;contract_mmf_e6&quot;: 150
+      },
+      {
+        &quot;id&quot;: 900505,
+        &quot;type&quot;: 1,
+        &quot;email&quot;: &quot;ala*****56@uuf.me&quot;,
+        &quot;country&quot;: &quot;US&quot;,
+        &quot;level&quot;: &quot;1&quot;,
+        &quot;register_count&quot;: 4,
+        &quot;deposit_count&quot;: 0,
+        &quot;cum_deposit&quot;: &quot;&quot;,
+        &quot;cum_rebate&quot;: &quot;&quot;,
+        &quot;cum_trading_amount&quot;: &quot;&quot;,
+        &quot;wallet_balance&quot;: &quot;0&quot;,
+        &quot;bd&quot;: &quot;haiduan.wang&quot;,
+        &quot;ban_type&quot;: [],
+        &quot;created_at&quot;: &quot;2026-05-20 02:11:31&quot;,
+        &quot;co
+…（已截断，全文 4636 字符）</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 响应为 JSON</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — Responses 壳字段</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code=0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 使用预设 affiliationId=900483</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-2" open>
+      <summary><span class="sum-title"><span class="status-dot failed"></span>S02 GET /affiliate/commission_profile 缓存初始 Profile</span><span class="sum-meta">GET /ls-affiliate-mp/papi/api/v1/affiliate/commission_profile?affiliation_id=900483 · HTTP 403 · 903 ms · <span class="bad">2 失败</span></span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="muted">—</span></div>
+        </div>
+        <div class="meta">响应体积 160 字节</div>
+        <div class="meta">https://ls-affiliate-mp-testnet.thezmx.com/ls-affiliate-mp/papi/api/v1/affiliate/commission_profile?affiliation_id=900483</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET https://ls-affiliate-mp-testnet.thezmx.com/ls-affiliate-mp/papi/api/v1/affiliate/commission_profile?affiliation_id=900483
+Referer: https://ls-affiliate-mp-testnet.thezmx.com/affiliate-mgt/list
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Not=A?Brand&quot;;v=&quot;99&quot;, &quot;Google Chrome&quot;;v=&quot;151&quot;, &quot;Chromium&quot;;v=&quot;151&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
+Accept-Language: zh-CN,zh;q=0.9
+Pragma: no-cache</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 403
+Content-Type: text/plain; charset=utf-8
+
+{
+  &quot;message&quot;: &quot;Verification: Request to \&quot;GET /ls-affiliate-mp/papi/api/v1/affiliate/commission_profile\&quot; for User(sven.yang) is Unauthorized&quot;,
+  &quot;code&quot;: &quot;403&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 响应为 JSON</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — HTTP 200<br/><small>expected response to have status code 200 but got 403</small></td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — ret_code=0<br/><small>expected undefined to deeply equal +0</small></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-3" open>
+      <summary><span class="sum-title"><span class="status-dot failed"></span>S03 GET /commission_setting/logs 预取 shareRelatedId</span><span class="sum-meta">GET /ls-affiliate-mp/papi/api/v1/affiliate/commission_setting/logs?affiliation_id=900483&amp;scope=direct_client&amp;page=1&amp;page_size=20 · HTTP 403 · 168 ms · <span class="bad">2 失败</span></span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="muted">—</span></div>
+        </div>
+        <div class="meta">响应体积 166 字节</div>
+        <div class="meta">https://ls-affiliate-mp-testnet.thezmx.com/ls-affiliate-mp/papi/api/v1/affiliate/commission_setting/logs?affiliation_id=900483&amp;scope=direct_client&amp;page=1&amp;page_size=20</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET https://ls-affiliate-mp-testnet.thezmx.com/ls-affiliate-mp/papi/api/v1/affiliate/commission_setting/logs?affiliation_id=900483&amp;scope=direct_client&amp;page=1&amp;page_size=20
+Referer: https://ls-affiliate-mp-testnet.thezmx.com/affiliate-mgt/list
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Not=A?Brand&quot;;v=&quot;99&quot;, &quot;Google Chrome&quot;;v=&quot;151&quot;, &quot;Chromium&quot;;v=&quot;151&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
+Accept-Language: zh-CN,zh;q=0.9
+Pragma: no-cache</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 403
+Content-Type: text/plain; charset=utf-8
+
+{
+  &quot;message&quot;: &quot;Verification: Request to \&quot;GET /ls-affiliate-mp/papi/api/v1/affiliate/commission_setting/logs\&quot; for User(sven.yang) is Unauthorized&quot;,
+  &quot;code&quot;: &quot;403&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 响应为 JSON</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — HTTP 200<br/><small>expected response to have status code 200 but got 403</small></td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — ret_code=0<br/><small>expected undefined to deeply equal +0</small></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details></div>
+  </details>
+<details class="details-folder" open>
+    <summary><span class="folder-title">04 Commission Setting · Disable</span><span class="folder-meta">3 个用例 · <span class="bad">2 条断言失败</span></span></summary>
+    <div class="folder-inner"><details class="details-req" id="req-16">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>D01 POST disable 成功（O01 覆盖成功后）</span><span class="sum-meta">POST /ls-affiliate-mp/papi/api/v1/affiliate/commission_setting/disable · HTTP 403 · 133 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="muted">—</span></div>
+        </div>
+        <div class="meta">响应体积 170 字节</div>
+        <div class="meta">https://ls-affiliate-mp-testnet.thezmx.com/ls-affiliate-mp/papi/api/v1/affiliate/commission_setting/disable</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">POST https://ls-affiliate-mp-testnet.thezmx.com/ls-affiliate-mp/papi/api/v1/affiliate/commission_setting/disable
+Content-Type: application/json
+Referer: https://ls-affiliate-mp-testnet.thezmx.com/affiliate-mgt/list
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Not=A?Brand&quot;;v=&quot;99&quot;, &quot;Google Chrome&quot;;v=&quot;151&quot;, &quot;Chromium&quot;;v=&quot;151&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
+Accept-Language: zh-CN,zh;q=0.9
+Pragma: no-cache
+
+{
+  &quot;affiliation_id&quot;: 900483,
+  &quot;related_id&quot;: ,
+  &quot;remark&quot;: &quot;postman disable commission setting&quot;
+}</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 403
+Content-Type: text/plain; charset=utf-8
+
+{
+  &quot;message&quot;: &quot;Verification: Request to \&quot;POST /ls-affiliate-mp/papi/api/v1/affiliate/commission_setting/disable\&quot; for User(sven.yang) is Unauthorized&quot;,
+  &quot;code&quot;: &quot;403&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 响应为 JSON</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 无可操作 share，跳过 D01</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-17" open>
+      <summary><span class="sum-title"><span class="status-dot failed"></span>D02 POST disable 缺 affiliation_id</span><span class="sum-meta">POST /ls-affiliate-mp/papi/api/v1/affiliate/commission_setting/disable · HTTP 403 · 143 ms · <span class="bad">2 失败</span></span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="muted">—</span></div>
+        </div>
+        <div class="meta">响应体积 170 字节</div>
+        <div class="meta">https://ls-affiliate-mp-testnet.thezmx.com/ls-affiliate-mp/papi/api/v1/affiliate/commission_setting/disable</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">POST https://ls-affiliate-mp-testnet.thezmx.com/ls-affiliate-mp/papi/api/v1/affiliate/commission_setting/disable
+Content-Type: application/json
+Referer: https://ls-affiliate-mp-testnet.thezmx.com/affiliate-mgt/list
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Not=A?Brand&quot;;v=&quot;99&quot;, &quot;Google Chrome&quot;;v=&quot;151&quot;, &quot;Chromium&quot;;v=&quot;151&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
+Accept-Language: zh-CN,zh;q=0.9
+Pragma: no-cache
+
+{
+  &quot;remark&quot;: &quot;missing affiliation_id&quot;
+}</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 403
+Content-Type: text/plain; charset=utf-8
+
+{
+  &quot;message&quot;: &quot;Verification: Request to \&quot;POST /ls-affiliate-mp/papi/api/v1/affiliate/commission_setting/disable\&quot; for User(sven.yang) is Unauthorized&quot;,
+  &quot;code&quot;: &quot;403&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 响应为 JSON</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — HTTP 200<br/><small>expected response to have status code 200 but got 403</small></td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-bad">失败 — ret_code=1001 参数错误<br/><small>expected undefined to deeply equal 1001</small></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-18">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>D03 GET logs 验证 disable 审计（可选）</span><span class="sum-meta">GET /ls-affiliate-mp/papi/api/v1/affiliate/commission_setting/logs?affiliation_id=900483&amp;action=disable&amp;page=1&amp;page_size=5 · HTTP 403 · 137 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="muted">—</span></div>
+        </div>
+        <div class="meta">响应体积 166 字节</div>
+        <div class="meta">https://ls-affiliate-mp-testnet.thezmx.com/ls-affiliate-mp/papi/api/v1/affiliate/commission_setting/logs?affiliation_id=900483&amp;action=disable&amp;page=1&amp;page_size=5</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET https://ls-affiliate-mp-testnet.thezmx.com/ls-affiliate-mp/papi/api/v1/affiliate/commission_setting/logs?affiliation_id=900483&amp;action=disable&amp;page=1&amp;page_size=5
+Referer: https://ls-affiliate-mp-testnet.thezmx.com/affiliate-mgt/list
+X-Requested-With: XMLHttpRequest
+sec-ch-ua: &quot;Not=A?Brand&quot;;v=&quot;99&quot;, &quot;Google Chrome&quot;;v=&quot;151&quot;, &quot;Chromium&quot;;v=&quot;151&quot;
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: &quot;macOS&quot;
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
+Accept-Language: zh-CN,zh;q=0.9
+Pragma: no-cache</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 403
+Content-Type: text/plain; charset=utf-8
+
+{
+  &quot;message&quot;: &quot;Verification: Request to \&quot;GET /ls-affiliate-mp/papi/api/v1/affiliate/commission_setting/logs\&quot; for User(sven.yang) is Unauthorized&quot;,
+  &quot;code&quot;: &quot;403&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 响应为 JSON</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 跳过 disable 日志校验</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details></div>
+  </details>
+  </section></section>
+
+    <footer>由 <code>newman-json-to-zh-html.mjs</code> 生成 · registry <code>ls-affiliate-commission-testnet</code></footer>
+  </div>
+</body>
+</html>

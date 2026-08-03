@@ -1,0 +1,805 @@
+{
+  "info": {
+    "_postman_id": "c3d4e5f6-a7b8-9012-cdef-ls-affiliate-commission",
+    "name": "LS Affiliate MP · 自助佣金 Profile & Setting",
+    "description": "ls-affiliate-mp 自助佣金 5 个接口契约测试。\n\n| 方法 | 路径 | 说明 |\n|------|------|------|\n| GET | `/affiliate/commission_profile` | 查询 Profile |\n| POST | `/affiliate/commission_profile` | 更新 Profile（upsert） |\n| POST | `/affiliate/commission_setting/override` | Admin 覆盖直客分成 |\n| POST | `/affiliate/commission_setting/disable` | Admin 停用直客分成 |\n| GET | `/affiliate/commission_setting/logs` | 操作日志列表 |\n\n**apiBase**（testnet）：`https://ls-affiliate-mp-testnet.thezmx.com/ls-affiliate-mp/papi/api/v1`\n\n**鉴权**：环境变量 `adminCookie` + `referer`（复制 `ls-affiliate-mp-testnet.private.postman_environment.example.json` 为 `ls-affiliate-mp-testnet.private.postman_environment.json` 并填入 Cookie）。\n\n**运行**：`npm run pm:ls-affiliate-commission:testnet`",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "apiBase", "value": "https://ls-affiliate-mp-testnet.thezmx.com/ls-affiliate-mp/papi/api/v1" },
+    { "key": "affiliationId", "value": "900483" },
+    { "key": "shareRelatedId", "value": "" },
+    { "key": "overrideRateE6", "value": "300000" },
+    { "key": "maxRateE6", "value": "500000" },
+    { "key": "_origSelfServeEnabled", "value": "" },
+    { "key": "_origMaxRateE6", "value": "" },
+    { "key": "_origAdminSetShareE6", "value": "" },
+    { "key": "_hasOperableShare", "value": "false" }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const apiBase = pm.environment.get('apiBase') || pm.collectionVariables.get('apiBase') || '';",
+          "const isTestnet = apiBase.includes('thezmx.com');",
+          "const cookie = (pm.environment.get('adminCookie') || pm.collectionVariables.get('adminCookie') || '').trim();",
+          "if (isTestnet && !cookie) {",
+          "  throw new Error('testnet 需 Cookie 鉴权：复制 ls-affiliate-mp-testnet.private.postman_environment.example.json 并填入 adminCookie');",
+          "}",
+          "if (cookie) {",
+          "  pm.request.headers.upsert({ key: 'Cookie', value: cookie });",
+          "}",
+          "const referer = pm.environment.get('referer');",
+          "if (referer) {",
+          "  pm.request.headers.upsert({ key: 'Referer', value: referer });",
+          "}",
+          "if (pm.environment.get('useXhr') === 'true' || isTestnet) {",
+          "  pm.request.headers.upsert({ key: 'X-Requested-With', value: 'XMLHttpRequest' });",
+          "}",
+          "if (isTestnet) {",
+          "  pm.request.headers.upsert({ key: 'Connection', value: 'keep-alive' });",
+          "  pm.request.headers.upsert({ key: 'User-Agent', value: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36' });",
+          "  pm.request.headers.upsert({ key: 'sec-ch-ua', value: '\"Not=A?Brand\";v=\"99\", \"Google Chrome\";v=\"151\", \"Chromium\";v=\"151\"' });",
+          "  pm.request.headers.upsert({ key: 'sec-ch-ua-mobile', value: '?0' });",
+          "  pm.request.headers.upsert({ key: 'sec-ch-ua-platform', value: '\"macOS\"' });",
+          "  pm.request.headers.upsert({ key: 'Sec-Fetch-Dest', value: 'empty' });",
+          "  pm.request.headers.upsert({ key: 'Sec-Fetch-Mode', value: 'cors' });",
+          "  pm.request.headers.upsert({ key: 'Sec-Fetch-Site', value: 'same-origin' });",
+          "  if (!referer) {",
+          "    pm.request.headers.upsert({ key: 'Referer', value: 'https://ls-affiliate-mp-testnet.thezmx.com/affiliate-mgt/list' });",
+          "  }",
+          "}",
+          "pm.request.headers.upsert({ key: 'Accept', value: 'application/json, text/plain, */*' });",
+          "pm.request.headers.upsert({ key: 'Accept-Language', value: 'zh-CN,zh;q=0.9' });",
+          "pm.request.headers.upsert({ key: 'Cache-Control', value: 'no-cache' });",
+          "pm.request.headers.upsert({ key: 'Pragma', value: 'no-cache' });"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const apiBase = pm.environment.get('apiBase') || pm.collectionVariables.get('apiBase') || '';",
+          "if (!apiBase.includes('thezmx.com')) return;",
+          "const ct = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+          "const body = pm.response.text() || '';",
+          "const looksHtml = ct.includes('text/html') || body.trimStart().startsWith('<!');",
+          "if (looksHtml) {",
+          "  pm.test('Cookie 鉴权失败（返回 HTML 登录页，请更新 adminCookie）', () => {",
+          "    pm.expect.fail('响应为 HTML 而非 JSON API');",
+          "  });",
+          "  return;",
+          "}",
+          "pm.test('响应为 JSON', () => {",
+          "  pm.response.to.be.json;",
+          "});"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "00 Setup",
+      "description": "从代理商列表解析 affiliation_id；探测是否存在可覆盖/停用的直客分成配置。",
+      "item": [
+        {
+          "name": "S01 GET /affiliate_management/list 解析 affiliationId",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Responses 壳字段', () => {",
+                  "  pm.expect(body).to.include.keys('ret_code', 'ret_msg');",
+                  "});",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "const preset = (pm.environment.get('affiliationId') || pm.collectionVariables.get('affiliationId') || '').trim();",
+                  "if (preset && /^[0-9]+$/.test(preset)) {",
+                  "  pm.collectionVariables.set('affiliationId', preset);",
+                  "  pm.environment.set('affiliationId', preset);",
+                  "  pm.test('使用预设 affiliationId=' + preset, () => {",
+                  "    pm.expect(preset).to.match(/^[0-9]+$/);",
+                  "  });",
+                  "  return;",
+                  "}",
+                  "const list = body.result && (body.result.list || body.result.items || body.result.data);",
+                  "const rows = Array.isArray(list) ? list : [];",
+                  "if (rows.length > 0) {",
+                  "  const row = rows[0];",
+                  "  const id = row.id || row.affiliation_id || row.affiliationId;",
+                  "  pm.collectionVariables.set('affiliationId', String(id));",
+                  "  pm.environment.set('affiliationId', String(id));",
+                  "  pm.test('已缓存 affiliationId', () => {",
+                  "    pm.expect(pm.collectionVariables.get('affiliationId')).to.match(/^[0-9]+$/);",
+                  "  });",
+                  "} else {",
+                  "  pm.test('列表为空时跳过后续（需手动设置 affiliationId）', () => {",
+                  "    pm.expect(rows.length).to.eql(0);",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{apiBase}}/affiliate_management/list?page=1&size=10&coin=BTC&start_time=&end_time=",
+              "host": ["{{apiBase}}"],
+              "path": ["affiliate_management", "list"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "size", "value": "10" },
+                { "key": "coin", "value": "BTC" },
+                { "key": "start_time", "value": "" },
+                { "key": "end_time", "value": "" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "S02 GET /affiliate/commission_profile 缓存初始 Profile",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const id = pm.collectionVariables.get('affiliationId') || pm.environment.get('affiliationId');",
+                  "if (!id) throw new Error('缺少 affiliationId：S01 未解析到代理商或请手动设置环境变量');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "if (body.ret_code === 0 && body.result) {",
+                  "  const r = body.result;",
+                  "  pm.collectionVariables.set('_origSelfServeEnabled', String(r.self_serve_enabled ?? ''));",
+                  "  pm.collectionVariables.set('_origMaxRateE6', String(r.max_commission_rate_e6 ?? ''));",
+                  "  pm.collectionVariables.set('_origAdminSetShareE6', String(r.admin_set_share_rate_e6 ?? ''));",
+                  "  pm.test('ProfileResp 结构', () => {",
+                  "    pm.expect(r).to.include.keys('affiliation_id', 'self_serve_enabled', 'max_commission_rate_e6', 'exists');",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{apiBase}}/affiliate/commission_profile?affiliation_id={{affiliationId}}",
+              "host": ["{{apiBase}}"],
+              "path": ["affiliate", "commission_profile"],
+              "query": [
+                { "key": "affiliation_id", "value": "{{affiliationId}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "S03 GET /commission_setting/logs 预取 shareRelatedId",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "const list = (body.result && body.result.list) || [];",
+                  "const withRelated = list.find(i => i.related_id && i.related_id > 0);",
+                  "if (withRelated) {",
+                  "  pm.collectionVariables.set('shareRelatedId', String(withRelated.related_id));",
+                  "  pm.test('已从日志缓存 shareRelatedId', () => {",
+                  "    pm.expect(pm.collectionVariables.get('shareRelatedId')).to.match(/^[0-9]+$/);",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{apiBase}}/affiliate/commission_setting/logs?affiliation_id={{affiliationId}}&scope=direct_client&page=1&page_size=20",
+              "host": ["{{apiBase}}"],
+              "path": ["affiliate", "commission_setting", "logs"],
+              "query": [
+                { "key": "affiliation_id", "value": "{{affiliationId}}" },
+                { "key": "scope", "value": "direct_client" },
+                { "key": "page", "value": "1" },
+                { "key": "page_size", "value": "20" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "01 Commission Profile",
+      "description": "GET/POST `/affiliate/commission_profile`（带 DetailFilter 数据权限）。",
+      "item": [
+        {
+          "name": "C01 GET commission_profile 成功",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "const r = body.result;",
+                  "pm.test('ProfileResp 字段完整', () => {",
+                  "  pm.expect(r).to.include.keys(",
+                  "    'affiliation_id', 'self_serve_enabled', 'max_commission_rate_e6',",
+                  "    'max_commission_rate', 'admin_set_share_rate_e6', 'admin_set_share_rate',",
+                  "    'remark', 'updated_by', 'exists'",
+                  "  );",
+                  "  pm.expect(r.affiliation_id).to.eql(Number(pm.collectionVariables.get('affiliationId')));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{apiBase}}/affiliate/commission_profile?affiliation_id={{affiliationId}}",
+              "host": ["{{apiBase}}"],
+              "path": ["affiliate", "commission_profile"],
+              "query": [
+                { "key": "affiliation_id", "value": "{{affiliationId}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "C02 GET commission_profile 缺 affiliation_id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('无 affiliation_id 拒绝访问（ret_code=6 无数据权限 或 1001 参数错误）', () => {",
+                  "  pm.expect(body.ret_code).to.be.oneOf([6, 1001]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/affiliate/commission_profile"
+          }
+        },
+        {
+          "name": "C03 POST commission_profile 更新 Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "const r = body.result;",
+                  "pm.test('更新后 Profile 值', () => {",
+                  "  pm.expect(r.self_serve_enabled).to.eql(1);",
+                  "  pm.expect(r.max_commission_rate_e6).to.eql(Number(pm.collectionVariables.get('maxRateE6')));",
+                  "  pm.expect(r.exists).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"affiliation_id\": {{affiliationId}},\n  \"self_serve_enabled\": 1,\n  \"max_commission_rate_e6\": {{maxRateE6}},\n  \"admin_set_share_rate_e6\": 200000,\n  \"remark\": \"postman update commission profile\"\n}"
+            },
+            "url": "{{apiBase}}/affiliate/commission_profile"
+          }
+        },
+        {
+          "name": "C04 POST commission_profile 非法 max_commission_rate_e6",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=1001 参数错误', () => {",
+                  "  pm.expect(body.ret_code).to.eql(1001);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"affiliation_id\": {{affiliationId}},\n  \"self_serve_enabled\": 1,\n  \"max_commission_rate_e6\": 600000\n}"
+            },
+            "url": "{{apiBase}}/affiliate/commission_profile"
+          }
+        },
+        {
+          "name": "C05 POST commission_profile 恢复初始 Profile",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const enabled = pm.collectionVariables.get('_origSelfServeEnabled');",
+                  "if (!enabled) {",
+                  "  pm.collectionVariables.set('_skipRestoreProfile', 'true');",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('_skipRestoreProfile') === 'true') {",
+                  "  pm.test('无初始 Profile 缓存，跳过恢复', () => pm.expect(true).to.eql(true));",
+                  "  return;",
+                  "}",
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"affiliation_id\": {{affiliationId}},\n  \"self_serve_enabled\": {{_origSelfServeEnabled}},\n  \"max_commission_rate_e6\": {{_origMaxRateE6}},\n  \"remark\": \"postman restore profile\"\n}"
+            },
+            "url": "{{apiBase}}/affiliate/commission_profile"
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 Commission Setting · Logs",
+      "description": "GET `/affiliate/commission_setting/logs`",
+      "item": [
+        {
+          "name": "L01 GET logs 按 affiliation_id 分页",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "const r = body.result;",
+                  "pm.test('CommissionSettingLogListResp 结构', () => {",
+                  "  pm.expect(r).to.include.keys('list', 'page', 'page_size', 'total');",
+                  "  pm.expect(r.list).to.be.an('array');",
+                  "  pm.expect(r.page).to.eql(1);",
+                  "  pm.expect(r.page_size).to.eql(10);",
+                  "});",
+                  "if (r.list.length > 0) {",
+                  "  const item = r.list[0];",
+                  "  pm.test('CommissionSettingLogItem 字段', () => {",
+                  "    pm.expect(item).to.include.keys(",
+                  "      'id', 'setting_id', 'affiliation_id', 'scope', 'action',",
+                  "      'display_status', 'operator_role', 'created_at'",
+                  "    );",
+                  "  });",
+                  "  if (item.related_id) {",
+                  "    pm.collectionVariables.set('shareRelatedId', String(item.related_id));",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{apiBase}}/affiliate/commission_setting/logs?affiliation_id={{affiliationId}}&page=1&page_size=10",
+              "host": ["{{apiBase}}"],
+              "path": ["affiliate", "commission_setting", "logs"],
+              "query": [
+                { "key": "affiliation_id", "value": "{{affiliationId}}" },
+                { "key": "page", "value": "1" },
+                { "key": "page_size", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "L02 GET logs 筛选 scope=direct_client action=override",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "const list = body.result.list || [];",
+                  "list.forEach((item, idx) => {",
+                  "  pm.test('筛选结果 scope/action 匹配 [' + idx + ']', () => {",
+                  "    if (item.scope) pm.expect(item.scope).to.eql('direct_client');",
+                  "    if (item.action) pm.expect(item.action).to.eql('override');",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{apiBase}}/affiliate/commission_setting/logs?affiliation_id={{affiliationId}}&scope=direct_client&action=override&page=1&page_size=20",
+              "host": ["{{apiBase}}"],
+              "path": ["affiliate", "commission_setting", "logs"],
+              "query": [
+                { "key": "affiliation_id", "value": "{{affiliationId}}" },
+                { "key": "scope", "value": "direct_client" },
+                { "key": "action", "value": "override" },
+                { "key": "page", "value": "1" },
+                { "key": "page_size", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "L03 GET logs 缺 affiliation_id（全量软过滤）",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "pm.test('默认分页 page_size=20', () => {",
+                  "  pm.expect(body.result.page_size).to.eql(20);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{apiBase}}/affiliate/commission_setting/logs?page=1",
+              "host": ["{{apiBase}}"],
+              "path": ["affiliate", "commission_setting", "logs"],
+              "query": [
+                { "key": "page", "value": "1" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 Commission Setting · Override",
+      "description": "POST `/affiliate/commission_setting/override`",
+      "item": [
+        {
+          "name": "O01 POST override 成功（需可操作用 share）",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "if (body.ret_code === 0 && body.result) {",
+                  "  pm.collectionVariables.set('_hasOperableShare', 'true');",
+                  "  pm.collectionVariables.set('_overrideOk', 'true');",
+                  "  const r = body.result;",
+                  "  pm.test('AdminOpResult 结构', () => {",
+                  "    pm.expect(r).to.include.keys(",
+                  "      'action', 'affiliation_id', 'share_id',",
+                  "      'rate_before_e6', 'rate_after_e6', 'display_status'",
+                  "    );",
+                  "    pm.expect(r.action).to.eql('override');",
+                  "    pm.expect(r.display_status).to.eql('overridden');",
+                  "    pm.expect(r.rate_after_e6).to.eql(Number(pm.collectionVariables.get('overrideRateE6')));",
+                  "  });",
+                  "  if (r.share_id) pm.collectionVariables.set('shareRelatedId', String(r.share_id));",
+                  "} else {",
+                  "  pm.collectionVariables.set('_overrideOk', 'false');",
+                  "  pm.test('无可操作 share（ret_code=3）— 停用用例将跳过', () => {",
+                  "    pm.expect(body.ret_code).to.eql(3);",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"affiliation_id\": {{affiliationId}},\n  \"rate_after_e6\": {{overrideRateE6}},\n  \"effective_start\": \"2026-08-03\",\n  \"remark\": \"postman override commission setting\"\n}"
+            },
+            "url": "{{apiBase}}/affiliate/commission_setting/override"
+          }
+        },
+        {
+          "name": "O02 POST override 非法 rate_after_e6",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=1001 参数错误', () => {",
+                  "  pm.expect(body.ret_code).to.eql(1001);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"affiliation_id\": {{affiliationId}},\n  \"rate_after_e6\": 600000\n}"
+            },
+            "url": "{{apiBase}}/affiliate/commission_setting/override"
+          }
+        },
+        {
+          "name": "O03 POST override 非法 effective_start",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=1001 参数错误', () => {",
+                  "  pm.expect(body.ret_code).to.eql(1001);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"affiliation_id\": {{affiliationId}},\n  \"rate_after_e6\": 100000,\n  \"effective_start\": \"2026/08/03\"\n}"
+            },
+            "url": "{{apiBase}}/affiliate/commission_setting/override"
+          }
+        },
+        {
+          "name": "O04 POST override 缺 affiliation_id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=1001 参数错误', () => {",
+                  "  pm.expect(body.ret_code).to.eql(1001);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rate_after_e6\": 100000\n}"
+            },
+            "url": "{{apiBase}}/affiliate/commission_setting/override"
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 Commission Setting · Disable",
+      "description": "POST `/affiliate/commission_setting/disable`",
+      "item": [
+        {
+          "name": "D01 POST disable 成功（O01 覆盖成功后）",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('_overrideOk') !== 'true') {",
+                  "  pm.collectionVariables.set('_skipDisable', 'true');",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('_skipDisable') === 'true') {",
+                  "  pm.test('无可操作 share，跳过 D01', () => pm.expect(true).to.eql(true));",
+                  "  return;",
+                  "}",
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "const r = body.result;",
+                  "pm.test('AdminOpResult disable', () => {",
+                  "  pm.expect(r.action).to.eql('disable');",
+                  "  pm.expect(r.display_status).to.eql('disabled');",
+                  "  pm.expect(r.share_status).to.be.a('number');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"affiliation_id\": {{affiliationId}},\n  \"related_id\": {{shareRelatedId}},\n  \"remark\": \"postman disable commission setting\"\n}"
+            },
+            "url": "{{apiBase}}/affiliate/commission_setting/disable"
+          }
+        },
+        {
+          "name": "D02 POST disable 缺 affiliation_id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=1001 参数错误', () => {",
+                  "  pm.expect(body.ret_code).to.eql(1001);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"remark\": \"missing affiliation_id\"\n}"
+            },
+            "url": "{{apiBase}}/affiliate/commission_setting/disable"
+          }
+        },
+        {
+          "name": "D03 GET logs 验证 disable 审计（可选）",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('_skipDisable') === 'true') {",
+                  "  pm.collectionVariables.set('_skipDisableLog', 'true');",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('_skipDisableLog') === 'true') {",
+                  "  pm.test('跳过 disable 日志校验', () => pm.expect(true).to.eql(true));",
+                  "  return;",
+                  "}",
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "const disableLogs = (body.result.list || []).filter(i => i.action === 'disable');",
+                  "pm.test('存在 disable 操作日志', () => {",
+                  "  pm.expect(disableLogs.length).to.be.at.least(1);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{apiBase}}/affiliate/commission_setting/logs?affiliation_id={{affiliationId}}&action=disable&page=1&page_size=5",
+              "host": ["{{apiBase}}"],
+              "path": ["affiliate", "commission_setting", "logs"],
+              "query": [
+                { "key": "affiliation_id", "value": "{{affiliationId}}" },
+                { "key": "action", "value": "disable" },
+                { "key": "page", "value": "1" },
+                { "key": "page_size", "value": "5" }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
