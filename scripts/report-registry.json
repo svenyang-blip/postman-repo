@@ -118,6 +118,38 @@
         { "id": "categories", "pathIncludes": "/categories", "summaryLabel": "Setup categories" },
         { "id": "other", "pathIncludes": null, "summaryLabel": "其它" }
       ]
+    },
+    {
+      "id": "one-commission-settings-local",
+      "title": "One Portal · Commission Settings",
+      "controller": "自助佣金设置 · local :8081",
+      "json": "reports/newman-one-commission-settings-local.json",
+      "html": "reports/controllers/one-commission-settings-local.html",
+      "apiGroups": [
+        { "id": "overview", "pathIncludes": "/commission_settings/overview", "summaryLabel": "GET overview" },
+        { "id": "chain", "pathIncludes": "/commission_settings/chain", "summaryLabel": "GET chain" },
+        { "id": "subList", "pathIncludes": "/commission_settings/sub_affiliates?", "summaryLabel": "GET sub_affiliates" },
+        { "id": "subSubmit", "pathIncludes": "/commission_settings/sub_affiliates", "method": "POST", "summaryLabel": "POST sub_affiliates" },
+        { "id": "historyDetail", "pathIncludes": "/commission_settings/history/", "summaryLabel": "GET history/:id" },
+        { "id": "history", "pathIncludes": "/commission_settings/history", "summaryLabel": "GET history" },
+        { "id": "other", "pathIncludes": null, "summaryLabel": "其它" }
+      ]
+    },
+    {
+      "id": "one-commission-settings-testnet",
+      "title": "One Portal · Commission Settings",
+      "controller": "自助佣金设置 · testnet",
+      "json": "reports/newman-one-commission-settings.json",
+      "html": "reports/controllers/one-commission-settings-testnet.html",
+      "apiGroups": [
+        { "id": "overview", "pathIncludes": "/commission_settings/overview", "summaryLabel": "GET overview" },
+        { "id": "chain", "pathIncludes": "/commission_settings/chain", "summaryLabel": "GET chain" },
+        { "id": "subList", "pathIncludes": "/commission_settings/sub_affiliates?", "summaryLabel": "GET sub_affiliates" },
+        { "id": "subSubmit", "pathIncludes": "/commission_settings/sub_affiliates", "method": "POST", "summaryLabel": "POST sub_affiliates" },
+        { "id": "historyDetail", "pathIncludes": "/commission_settings/history/", "summaryLabel": "GET history/:id" },
+        { "id": "history", "pathIncludes": "/commission_settings/history", "summaryLabel": "GET history" },
+        { "id": "other", "pathIncludes": null, "summaryLabel": "其它" }
+      ]
     }
   ]
 }

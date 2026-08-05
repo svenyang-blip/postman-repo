@@ -1,0 +1,1102 @@
+{
+  "info": {
+    "_postman_id": "a1b2c3d4-e5f6-7890-abcd-one-commission-settings",
+    "name": "One Portal · Commission Settings · /apiv2/commission_settings",
+    "description": "Portal（`one/api`）自助佣金设置 6 个接口契约测试。\n\n对齐 `api/internal/handler/routes.go`（prefix `/apiv2/commission_settings` + `AuthMiddleware`）。\n\n| 方法 | 路径 | 说明 |\n|------|------|------|\n| GET | `/overview` | 总览（Profile + 可分配额度 + 下级摘要） |\n| GET | `/chain` | 返佣链路（仅直系下级） |\n| GET | `/sub_affiliates` | 直属下级佣金列表 |\n| POST | `/sub_affiliates` | 批量设置下级佣金（立即生效） |\n| GET | `/history` | 设置历史分页 |\n| GET | `/history/:setting_id` | 历史详情 + timeline |\n\n**鉴权**：`Authorization: Bearer {{accessToken}}`（JWT；中间件可能在响应 `token` 字段刷新）。\n\n**本地**：`apiBase=http://127.0.0.1:8081`（`api/etc/main.toml` Port=8081）\n\n**testnet**：`apiBase=https://affiliates-testnet.zoomex.com`\n\n**运行**：\n- `npm run pm:one-commission-settings:local`\n- `npm run pm:one-commission-settings:testnet`（需 private 环境填入 accessToken）",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "apiBase",
+      "value": "https://affiliates-testnet.zoomex.com"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "submitShareRate",
+      "value": "10.0"
+    },
+    {
+      "key": "targetAffiliationId",
+      "value": ""
+    },
+    {
+      "key": "settingId",
+      "value": ""
+    },
+    {
+      "key": "_origShareRate",
+      "value": ""
+    },
+    {
+      "key": "_canAllocate",
+      "value": "false"
+    },
+    {
+      "key": "_hasDirectSub",
+      "value": "false"
+    },
+    {
+      "key": "_submitOk",
+      "value": "false"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const token = (pm.environment.get('accessToken') || pm.collectionVariables.get('accessToken') || '').trim();",
+          "if (!token) {",
+          "  throw new Error('缺少 accessToken：请在环境中填入 Portal JWT（登录后 Authorization Bearer，或 /login 返回的 result）');",
+          "}",
+          "pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + token });",
+          "pm.request.headers.upsert({ key: 'Accept', value: 'application/json, text/plain, */*' });",
+          "pm.request.headers.upsert({ key: 'Accept-Language', value: 'zh-CN,zh;q=0.9' });"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const ct = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+          "const text = pm.response.text() || '';",
+          "if (pm.response.code === 401) {",
+          "  const name = (pm.info && pm.info.requestName) || '';",
+          "  if (/无\\s*Token|无\\s*auth|no\\s*auth/i.test(name)) return;",
+          "  pm.test('鉴权失败（HTTP 401，请更新 accessToken）', () => {",
+          "    pm.expect.fail('Unauthorized');",
+          "  });",
+          "  return;",
+          "}",
+          "if (ct.includes('text/html') || text.trimStart().startsWith('<!')) {",
+          "  pm.test('响应应为 JSON API', () => pm.expect.fail('got HTML'));",
+          "  return;",
+          "}",
+          "try {",
+          "  const body = pm.response.json();",
+          "  if (body && typeof body.token === 'string' && body.token.length > 0) {",
+          "    pm.environment.set('accessToken', body.token);",
+          "    pm.collectionVariables.set('accessToken', body.token);",
+          "  }",
+          "} catch (e) { /* ignore */ }"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "00 Setup",
+      "description": "拉取 overview / sub_affiliates，缓存 targetAffiliationId、可分配态与原始比例（供写接口恢复）。",
+      "item": [
+        {
+          "name": "S01 GET /overview 缓存入口态",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "const r = body.result || {};",
+                  "pm.test('Overview 关键字段', () => {",
+                  "  pm.expect(r).to.include.keys(",
+                  "    'affiliation_id', 'affiliation_name', 'agent_type', 'level',",
+                  "    'self_serve_enabled', 'allocatable_rate', 'allocatable_rate_e6',",
+                  "    'has_direct_sub', 'can_allocate', 'sub_affiliate_count'",
+                  "  );",
+                  "});",
+                  "pm.collectionVariables.set('_canAllocate', String(!!r.can_allocate));",
+                  "pm.collectionVariables.set('_hasDirectSub', String(!!r.has_direct_sub));",
+                  "pm.collectionVariables.set('affiliationId', String(r.affiliation_id || ''));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/apiv2/commission_settings/overview"
+          }
+        },
+        {
+          "name": "S02 GET /sub_affiliates 缓存 target + 原比例",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "const r = body.result || {};",
+                  "pm.test('List 分页结构', () => {",
+                  "  pm.expect(r).to.include.keys('list', 'page', 'page_size', 'total', 'allocatable_rate_e6');",
+                  "  pm.expect(r.list).to.be.an('array');",
+                  "});",
+                  "if (r.list && r.list.length > 0) {",
+                  "  const item = r.list[0];",
+                  "  pm.collectionVariables.set('targetAffiliationId', String(item.target_affiliation_id));",
+                  "  pm.collectionVariables.set('_origShareRate', String(item.current_rate || ''));",
+                  "  if (item.setting_id) pm.collectionVariables.set('settingId', String(item.setting_id));",
+                  "  pm.test('已缓存 targetAffiliationId', () => {",
+                  "    pm.expect(pm.collectionVariables.get('targetAffiliationId')).to.match(/^[0-9]+$/);",
+                  "  });",
+                  "} else {",
+                  "  pm.test('无直属下级 — 写接口正例将跳过', () => pm.expect(r.total).to.eql(0));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{apiBase}}/apiv2/commission_settings/sub_affiliates?page=1&page_size=20",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "apiv2",
+                "commission_settings",
+                "sub_affiliates"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "page_size",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "01 Overview",
+      "item": [
+        {
+          "name": "O01 GET /overview 成功",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "const r = body.result;",
+                  "pm.test('Overview 字段完整', () => {",
+                  "  pm.expect(r).to.include.keys(",
+                  "    'affiliation_id', 'affiliation_name', 'agent_type', 'level', 'is_top_level',",
+                  "    'self_serve_enabled', 'allocatable_rate', 'allocatable_rate_e6', 'allocatable_source',",
+                  "    'chain_cap', 'chain_cap_e6', 'parent_affiliation_id', 'parent_name',",
+                  "    'has_direct_sub', 'can_allocate', 'sub_affiliate_count', 'sub_affiliate_set_count',",
+                  "    'account_frozen', 'account_frozen_reason'",
+                  "  );",
+                  "  pm.expect(r.allocatable_rate_e6).to.be.a('number');",
+                  "  pm.expect(r.self_serve_enabled).to.be.oneOf([0, 1]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/apiv2/commission_settings/overview"
+          }
+        },
+        {
+          "name": "O02 GET /overview 无 Token",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.request.headers.upsert({ key: 'Authorization', value: '' });",
+                  "pm.request.headers.remove('Authorization');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 401', () => pm.response.to.have.status(401));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=30101 无权限', () => {",
+                  "  pm.expect(body.ret_code).to.eql(30101);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/apiv2/commission_settings/overview"
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 Chain",
+      "item": [
+        {
+          "name": "C01 GET /chain 成功",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "const r = body.result;",
+                  "pm.test('ChainResult 结构', () => {",
+                  "  pm.expect(r).to.include.keys(",
+                  "    'agent_type', 'level', 'is_top_level', 'allocatable_rate', 'allocatable_rate_e6',",
+                  "    'allocatable_source', 'chain_cap', 'chain_cap_e6', 'has_direct_sub', 'branches'",
+                  "  );",
+                  "  pm.expect(r.branches).to.be.an('array');",
+                  "});",
+                  "if (r.branches.length > 0) {",
+                  "  const b = r.branches[0];",
+                  "  pm.test('Branch 字段', () => {",
+                  "    pm.expect(b).to.include.keys(",
+                  "      'source_label', 'source_rate', 'my_share_rate', 'my_share_rate_e6',",
+                  "      'target_affiliation_id', 'target_name', 'target_level',",
+                  "      'allocated_rate', 'allocated_rate_e6', 'has_deeper', 'is_leaf_tier'",
+                  "    );",
+                  "  });",
+                  "  if (!pm.collectionVariables.get('targetAffiliationId')) {",
+                  "    pm.collectionVariables.set('targetAffiliationId', String(b.target_affiliation_id));",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/apiv2/commission_settings/chain"
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 Sub Affiliates · List",
+      "item": [
+        {
+          "name": "L01 GET /sub_affiliates 默认分页",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "const r = body.result;",
+                  "pm.test('默认 page=1 page_size=20', () => {",
+                  "  pm.expect(r.page).to.eql(1);",
+                  "  pm.expect(r.page_size).to.eql(20);",
+                  "  pm.expect(r.list).to.be.an('array');",
+                  "});",
+                  "if (r.list.length > 0) {",
+                  "  const item = r.list[0];",
+                  "  pm.test('SubAffiliateCommissionItem 字段', () => {",
+                  "    pm.expect(item).to.include.keys(",
+                  "      'target_affiliation_id', 'target_name', 'current_rate', 'current_rate_e6',",
+                  "      'my_share', 'my_share_e6', 'max_rate', 'display_status', 'updated_at'",
+                  "    );",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/apiv2/commission_settings/sub_affiliates"
+          }
+        },
+        {
+          "name": "L02 GET /sub_affiliates keyword 过滤",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const id = pm.collectionVariables.get('targetAffiliationId') || '999999';",
+                  "pm.variables.set('kw', id);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "pm.test('list 为数组', () => pm.expect(body.result.list).to.be.an('array'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{apiBase}}/apiv2/commission_settings/sub_affiliates?keyword={{kw}}&page=1&page_size=10",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "apiv2",
+                "commission_settings",
+                "sub_affiliates"
+              ],
+              "query": [
+                {
+                  "key": "keyword",
+                  "value": "{{kw}}"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "page_size",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "L03 GET /sub_affiliates display_status=active",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "const list = body.result.list || [];",
+                  "list.forEach((item, idx) => {",
+                  "  pm.test('筛选结果 display_status=active [' + idx + ']', () => {",
+                  "    pm.expect(item.display_status).to.eql('active');",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{apiBase}}/apiv2/commission_settings/sub_affiliates?display_status=active&page=1&page_size=20",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "apiv2",
+                "commission_settings",
+                "sub_affiliates"
+              ],
+              "query": [
+                {
+                  "key": "display_status",
+                  "value": "active"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "page_size",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 Sub Affiliates · Submit",
+      "description": "POST `/sub_affiliates`：负例始终跑；正例需 Setup 解析到 target 且 can_allocate。",
+      "item": [
+        {
+          "name": "U01 POST items 为空",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=20001 参数错误', () => pm.expect(body.ret_code).to.eql(20001));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [],\n  \"remark\": \"postman empty items\"\n}"
+            },
+            "url": "{{apiBase}}/apiv2/commission_settings/sub_affiliates"
+          }
+        },
+        {
+          "name": "U02 POST 缺 share_rate",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test('缺 share_rate 被拒绝（20001 参数错误，或服务端 500/50000）', () => {",
+                  "  if (pm.response.code === 500) {",
+                  "    pm.expect(body.ret_code).to.be.oneOf([50000, 10000, 20001]);",
+                  "    return;",
+                  "  }",
+                  "  pm.expect(pm.response).to.have.status(200);",
+                  "  pm.expect(body.ret_code).to.eql(20001);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    { \"target_affiliation_id\": 1, \"share_rate\": \"\" }\n  ]\n}"
+            },
+            "url": "{{apiBase}}/apiv2/commission_settings/sub_affiliates"
+          }
+        },
+        {
+          "name": "U03 POST share_rate 非法格式",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=20001 参数错误', () => pm.expect(body.ret_code).to.eql(20001));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    { \"target_affiliation_id\": 1, \"share_rate\": \"abc\" }\n  ]\n}"
+            },
+            "url": "{{apiBase}}/apiv2/commission_settings/sub_affiliates"
+          }
+        },
+        {
+          "name": "U04 POST target_affiliation_id=0",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=20001 参数错误', () => pm.expect(body.ret_code).to.eql(20001));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    { \"target_affiliation_id\": 0, \"share_rate\": \"10.0\" }\n  ]\n}"
+            },
+            "url": "{{apiBase}}/apiv2/commission_settings/sub_affiliates"
+          }
+        },
+        {
+          "name": "U05 POST 非直属下级 target",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code 为无权限/参数/服务错误之一', () => {",
+                  "  pm.expect(body.ret_code).to.be.oneOf([30101, 20001, 10403, 10000]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    { \"target_affiliation_id\": 999999999, \"share_rate\": \"1.0\" }\n  ],\n  \"remark\": \"postman non-direct child\"\n}"
+            },
+            "url": "{{apiBase}}/apiv2/commission_settings/sub_affiliates"
+          }
+        },
+        {
+          "name": "U06 POST 超限 share_rate=99.9",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const id = (pm.collectionVariables.get('targetAffiliationId') || '').trim();",
+                  "if (!id) {",
+                  "  pm.collectionVariables.set('_skipExceed', 'true');",
+                  "  pm.collectionVariables.set('targetAffiliationId', '1');",
+                  "} else {",
+                  "  pm.collectionVariables.set('_skipExceed', 'false');",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('_skipExceed') === 'true') {",
+                  "  pm.test('无 target，跳过超限用例', () => pm.expect(true).to.eql(true));",
+                  "  return;",
+                  "}",
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('超限错误码 21002/21001/10403/20001', () => {",
+                  "  pm.expect(body.ret_code).to.be.oneOf([21002, 21001, 10403, 20001, 30101]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    { \"target_affiliation_id\": {{targetAffiliationId}}, \"share_rate\": \"99.9\" }\n  ],\n  \"remark\": \"postman exceed max\"\n}"
+            },
+            "url": "{{apiBase}}/apiv2/commission_settings/sub_affiliates"
+          }
+        },
+        {
+          "name": "U07 POST 成功提交（可分配时）",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const id = (pm.collectionVariables.get('targetAffiliationId') || '').trim();",
+                  "const can = pm.collectionVariables.get('_canAllocate') === 'true';",
+                  "if (!id || !can) {",
+                  "  pm.collectionVariables.set('_skipSubmit', 'true');",
+                  "  if (!id) pm.collectionVariables.set('targetAffiliationId', '1');",
+                  "} else {",
+                  "  pm.collectionVariables.set('_skipSubmit', 'false');",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('_skipSubmit') === 'true') {",
+                  "  pm.test('无可分配 target，跳过 U07', () => pm.expect(true).to.eql(true));",
+                  "  return;",
+                  "}",
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "if (body.ret_code === 0 && body.result && body.result.items) {",
+                  "  pm.collectionVariables.set('_submitOk', 'true');",
+                  "  const item = body.result.items[0];",
+                  "  pm.test('SubmitResult 结构', () => {",
+                  "    pm.expect(item).to.include.keys(",
+                  "      'setting_id', 'display_status', 'share_rate', 'share_rate_e6',",
+                  "      'target_affiliation_id', 'need_review'",
+                  "    );",
+                  "    pm.expect(item.need_review).to.eql(false);",
+                  "    pm.expect(item.display_status).to.eql('active');",
+                  "  });",
+                  "  if (item.setting_id) pm.collectionVariables.set('settingId', String(item.setting_id));",
+                  "} else {",
+                  "  pm.collectionVariables.set('_submitOk', 'false');",
+                  "  pm.test('业务拒绝可接受（权限/冻结/上限）', () => {",
+                  "    pm.expect(body.ret_code).to.be.oneOf([10403, 21001, 21002, 30101, 20001, 21003]);",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"target_affiliation_id\": {{targetAffiliationId}},\n      \"share_rate\": \"{{submitShareRate}}\"\n    }\n  ],\n  \"remark\": \"postman submit sub affiliate commission\"\n}"
+            },
+            "url": "{{apiBase}}/apiv2/commission_settings/sub_affiliates"
+          }
+        },
+        {
+          "name": "U08 POST 恢复原比例",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const ok = pm.collectionVariables.get('_submitOk') === 'true';",
+                  "const orig = (pm.collectionVariables.get('_origShareRate') || '').trim();",
+                  "const id = (pm.collectionVariables.get('targetAffiliationId') || '').trim();",
+                  "if (!ok || !orig || !id || id === '1') {",
+                  "  pm.collectionVariables.set('_skipRestore', 'true');",
+                  "  if (!orig) pm.collectionVariables.set('_origShareRate', '0.0');",
+                  "  if (!id) pm.collectionVariables.set('targetAffiliationId', '1');",
+                  "} else {",
+                  "  pm.collectionVariables.set('_skipRestore', 'false');",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('_skipRestore') === 'true') {",
+                  "  pm.test('无需恢复，跳过', () => pm.expect(true).to.eql(true));",
+                  "  return;",
+                  "}",
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('恢复成功或业务可接受错误', () => {",
+                  "  pm.expect(body.ret_code).to.be.oneOf([0, 10403, 21001, 21002, 30101, 20001]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"target_affiliation_id\": {{targetAffiliationId}},\n      \"share_rate\": \"{{_origShareRate}}\"\n    }\n  ],\n  \"remark\": \"postman restore original share rate\"\n}"
+            },
+            "url": "{{apiBase}}/apiv2/commission_settings/sub_affiliates"
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 History · List",
+      "item": [
+        {
+          "name": "H01 GET /history 默认（全 scope）",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "const r = body.result;",
+                  "pm.test('HistoryList 结构', () => {",
+                  "  pm.expect(r).to.include.keys('list', 'page', 'page_size', 'total');",
+                  "  pm.expect(r.list).to.be.an('array');",
+                  "  pm.expect(r.page).to.eql(1);",
+                  "  pm.expect(r.page_size).to.eql(20);",
+                  "});",
+                  "if (r.list.length > 0) {",
+                  "  const item = r.list[0];",
+                  "  pm.test('HistoryItem 字段', () => {",
+                  "    pm.expect(item).to.include.keys(",
+                  "      'setting_id', 'scope', 'rate_before', 'rate_after',",
+                  "      'display_status', 'action', 'submitted_at'",
+                  "    );",
+                  "  });",
+                  "  if (item.setting_id) pm.collectionVariables.set('settingId', String(item.setting_id));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{apiBase}}/apiv2/commission_settings/history?page=1&page_size=20",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "apiv2",
+                "commission_settings",
+                "history"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "page_size",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "H02 GET /history scope=sub_affiliate",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "const list = body.result.list || [];",
+                  "list.forEach((item, idx) => {",
+                  "  pm.test('scope=sub_affiliate [' + idx + ']', () => {",
+                  "    pm.expect(item.scope).to.eql('sub_affiliate');",
+                  "  });",
+                  "});",
+                  "if (list.length > 0 && list[0].setting_id) {",
+                  "  pm.collectionVariables.set('settingId', String(list[0].setting_id));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{apiBase}}/apiv2/commission_settings/history?scope=sub_affiliate&page=1&page_size=20",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "apiv2",
+                "commission_settings",
+                "history"
+              ],
+              "query": [
+                {
+                  "key": "scope",
+                  "value": "sub_affiliate"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "page_size",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "H03 GET /history scope=direct_client",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "const list = body.result.list || [];",
+                  "list.forEach((item, idx) => {",
+                  "  pm.test('scope=direct_client [' + idx + ']', () => {",
+                  "    pm.expect(item.scope).to.eql('direct_client');",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{apiBase}}/apiv2/commission_settings/history?scope=direct_client&page=1&page_size=20",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "apiv2",
+                "commission_settings",
+                "history"
+              ],
+              "query": [
+                {
+                  "key": "scope",
+                  "value": "direct_client"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "page_size",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "H04 GET /history display_status=active",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "const list = body.result.list || [];",
+                  "list.forEach((item, idx) => {",
+                  "  pm.test('display_status=active [' + idx + ']', () => {",
+                  "    pm.expect(item.display_status).to.eql('active');",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{apiBase}}/apiv2/commission_settings/history?display_status=active&page=1&page_size=20",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "apiv2",
+                "commission_settings",
+                "history"
+              ],
+              "query": [
+                {
+                  "key": "display_status",
+                  "value": "active"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "page_size",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 History · Detail",
+      "item": [
+        {
+          "name": "D01 GET /history/:setting_id 成功",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const sid = (pm.collectionVariables.get('settingId') || '').trim();",
+                  "if (!sid) {",
+                  "  pm.collectionVariables.set('_skipDetail', 'true');",
+                  "  pm.collectionVariables.set('settingId', '0');",
+                  "} else {",
+                  "  pm.collectionVariables.set('_skipDetail', 'false');",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('_skipDetail') === 'true') {",
+                  "  pm.test('无 settingId，跳过详情', () => pm.expect(true).to.eql(true));",
+                  "  return;",
+                  "}",
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "const r = body.result;",
+                  "pm.test('Detail 含 setting + timeline', () => {",
+                  "  pm.expect(r).to.include.keys('setting', 'timeline');",
+                  "  pm.expect(r.setting).to.include.keys('setting_id', 'scope', 'display_status', 'action');",
+                  "  pm.expect(r.timeline).to.be.an('array');",
+                  "});",
+                  "if (r.timeline.length > 0) {",
+                  "  pm.test('TimelineItem 字段', () => {",
+                  "    pm.expect(r.timeline[0]).to.include.keys(",
+                  "      'action', 'action_desc', 'operator_role', 'created_at', 'display_status'",
+                  "    );",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/apiv2/commission_settings/history/{{settingId}}"
+          }
+        },
+        {
+          "name": "D02 GET /history/:setting_id 不存在",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=20001 未找到', () => pm.expect(body.ret_code).to.eql(20001));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/apiv2/commission_settings/history/999999999999"
+          }
+        }
+      ]
+    }
+  ]
+}
