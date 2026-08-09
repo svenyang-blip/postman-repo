@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BD Management · bd-users gRPC · Newman 报告</title>
+  <style>
+    :root {
+      --bg: #f2f2f2; --surface: #fff; --border: #e5e5e5; --text: #333; --muted: #888;
+      --header: #1e293b; --passed: #16a34a; --failed: #dc2626; --accent: #2563eb;
+      --shadow: 0 1px 3px rgba(0,0,0,.08); --radius: 6px;
+    }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: ui-sans-serif, system-ui, "PingFang SC", "Microsoft YaHei", sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; font-size: 14px; }
+    .topbar { background: var(--header); color: #fff; padding: 16px clamp(16px,4vw,40px); }
+    .topbar h1 { margin: 0 0 4px; font-size: 1.3rem; }
+    .topbar .sub { color: rgba(255,255,255,.75); font-size: .85rem; }
+    .topbar a { color: #93c5fd; text-decoration: none; font-size: .85rem; }
+    .topbar a:hover { text-decoration: underline; }
+    .page { padding: 20px clamp(16px,4vw,40px) 48px; max-width: 1320px; margin: 0 auto; }
+    .widgets { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin-bottom: 20px; }
+    .widget { background: var(--surface); border-radius: var(--radius); padding: 12px 14px; border-left: 4px solid var(--accent); box-shadow: var(--shadow); }
+    .widget h3 { margin: 0 0 6px; font-size: .7rem; text-transform: uppercase; color: var(--muted); }
+    .widget .val { font-size: 1.5rem; font-weight: 700; }
+    .widget.passed { border-left-color: var(--passed); } .widget.passed .val { color: var(--passed); }
+    .widget.failed { border-left-color: var(--failed); } .widget.failed .val { color: var(--failed); }
+    .badge { display: inline-block; padding: 4px 12px; border-radius: 4px; font-size: .8rem; font-weight: 600; color: #fff; margin-bottom: 20px; }
+    .badge.ok { background: var(--passed); } .badge.bad { background: var(--failed); }
+    section { margin-top: 28px; }
+    section h2 { font-size: .92rem; font-weight: 600; text-transform: uppercase; color: var(--muted); margin: 0 0 12px; padding-bottom: 8px; border-bottom: 2px solid var(--border); }
+    .hint { color: var(--muted); font-size: .82rem; margin: -6px 0 12px; }
+    table { width: 100%; border-collapse: collapse; font-size: .86rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+    th, td { padding: 9px 11px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+    th { background: #fafafa; color: var(--muted); font-size: .72rem; text-transform: uppercase; font-weight: 600; }
+    tr:last-child td { border-bottom: none; }
+    tr.row-fail { background: #fff5f5; }
+    .row-folder { font-size: .75rem; color: var(--muted); }
+    .api-code { font-size: .78rem; word-break: break-all; }
+    .focus-cell .kv { display: inline-block; margin: 2px 6px 2px 0; padding: 2px 6px; background: #f3f4f6; border-radius: 4px; font-size: .78rem; }
+    .focus-cell .kv.important { background: #eff6ff; border: 1px solid #bfdbfe; }
+    .focus-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: var(--radius); padding: 10px 12px; margin-bottom: 10px; }
+    .focus-title { font-size: .72rem; font-weight: 600; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+    .kv-grid .kv { display: inline-block; margin: 3px 8px 3px 0; font-size: .82rem; }
+    .kv-grid .kv.important b { color: var(--accent); }
+    .summary-api code { font-size: .82rem; }
+    details.details-folder, details.details-req { border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 8px; background: var(--surface); box-shadow: var(--shadow); }
+    details > summary { list-style: none; cursor: pointer; padding: 10px 14px; display: flex; flex-wrap: wrap; gap: 8px 14px; user-select: none; background: #fafafa; }
+    details[open] > summary { border-bottom: 1px solid var(--border); }
+    details > summary::-webkit-details-marker { display: none; }
+    details > summary::before { content: "▸"; color: var(--muted); margin-right: 6px; transition: transform .15s; }
+    details[open] > summary::before { transform: rotate(90deg); }
+    .folder-inner { padding: 8px 10px 10px; }
+    details.details-req { margin-left: 10px; }
+    .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+    .status-dot.passed { background: var(--passed); } .status-dot.failed { background: var(--failed); }
+    .sum-meta, .folder-meta, .meta { color: var(--muted); font-size: .8rem; }
+    .sum-title { font-weight: 600; }
+    .details-body { padding: 12px; }
+    .payload { max-height: 280px; overflow: auto; background: #f8f8f8; border: 1px solid var(--border); border-radius: var(--radius); padding: 10px; font-size: .78rem; white-space: pre-wrap; word-break: break-word; }
+    .payload-label { font-size: .7rem; font-weight: 600; color: var(--muted); margin: 10px 0 4px; text-transform: uppercase; }
+    .fail-card { border-left: 4px solid var(--failed); background: #fff5f5; padding: 12px; margin-bottom: 10px; border-radius: var(--radius); }
+    .assert-ok { color: var(--passed); font-weight: 600; }
+    .assert-bad { color: var(--failed); font-weight: 600; }
+    .bad { color: var(--failed); font-weight: 600; }
+    .ok-inline { color: var(--passed); }
+    .muted { color: var(--muted); }
+    footer { margin-top: 28px; padding-top: 14px; border-top: 1px solid var(--border); color: var(--muted); font-size: .78rem; }
+    footer a { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <p><a href="../index.html">← 返回汇总</a></p>
+    <h1>BD Management · bd-users gRPC</h1>
+    <div class="sub">CreateBdAccount / UpdateBdAccount · local · BD Management · bd-users · CreateBdAccount / UpdateBdAccount · 生成 2026/8/9 22:55:41</div>
+  </div>
+  <div class="page">
+    <div class="widgets">
+      <div class="widget"><h3>请求</h3><div class="val">10</div></div>
+      <div class="widget"><h3>断言</h3><div class="val">24</div></div>
+      <div class="widget passed"><h3>失败断言</h3><div class="val">0</div></div>
+      <div class="widget"><h3>平均耗时</h3><div class="val" style="font-size:1rem">796 ms</div></div>
+    </div>
+    <span class="badge ok">全部通过</span>
+
+    <section>
+      <h2>用例一览（测试要点）</h2>
+      <p class="hint">点击用例名跳转明细；<code>ret_code</code> 与 <code>result</code> 关键字段已提取。</p>
+      <table class="case-overview">
+        <thead><tr>
+          <th>#</th><th>用例</th><th>API</th><th>HTTP</th><th>ret_code</th>
+          <th>测试要点</th><th>断言</th><th>失败</th><th>耗时</th>
+        </tr></thead>
+        <tbody><tr class="">
+    <td>1</td>
+    <td><a href="#req-1">S01 Manager 登录 mgr.global@zoomex.com</a><div class="row-folder">00 Setup</div></td>
+    <td><code class="api-code">POST /api/v1/login</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=ok</span><span class="kv"><b>token</b>=eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vMTI3LjAuMC4xOjgwODAvYXBpL3YxL2xvZ2luIiwiaWF0IjoxNzg2Mjg3MzM0LCJuYmYiOjE3ODYyODczMzQsImV4cCI6MTc4NjMwODkzNCwianRpIjoiY2FkM2E4ZjI3YTNhNDVjMyIsInN1YiI6IjI5IiwidHlwIjoiYmQiLCJyb2xlIjoiTUFOQUdFUl9HTE9CQUwiLCJyZWdpb24iOiJOT05fS1IifQ.QJVmi6KMd6hHRHTMrE96i2yTKH1B-Ld4eLpFVnE8pQk</span><span class="kv"><b>mustChangePassword</b>=false</span></td>
+    <td>3</td>
+    <td class="assert-ok">0</td>
+    <td>988 ms</td>
+  </tr>
+<tr class="">
+    <td>2</td>
+    <td><a href="#req-2">[ok] H-01 POST /bd-users 创建本区域 BD</a><div class="row-folder">A · HTTP Manager 创建 BD [ok]</div></td>
+    <td><code class="api-code">POST /api/v1/bd-users</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=ok</span><span class="kv"><b>region</b>=NON_KR</span><span class="kv"><b>user_id</b>=39</span><span class="kv"><b>must_change_password</b>=false</span><span class="kv"><b>initial_password</b>=Passw0rd</span><span class="kv"><b>user_role</b>=BD</span></td>
+    <td>3</td>
+    <td class="assert-ok">0</td>
+    <td>1477 ms</td>
+  </tr>
+<tr class="">
+    <td>3</td>
+    <td><a href="#req-3">[ok] H-02 GET /bd-users 列表含 BD</a><div class="row-folder">A · HTTP Manager 创建 BD [ok]</div></td>
+    <td><code class="api-code">GET /api/v1/bd-users?page=1&amp;page_size=20&amp;region=non_kr</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=ok</span><span class="kv"><b>total</b>=4</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>page_size</b>=20</span></td>
+    <td>4</td>
+    <td class="assert-ok">0</td>
+    <td>592 ms</td>
+  </tr>
+<tr class="">
+    <td>4</td>
+    <td><a href="#req-4">[err] H-E01 HTTP 禁止创建 Manager</a><div class="row-folder">A · HTTP Manager 创建 BD [ok]</div></td>
+    <td><code class="api-code">POST /api/v1/bd-users</code></td>
+    <td>200</td>
+    <td><span class="assert-bad">10005</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=10005</span><span class="kv important"><b>ret_msg</b>=MANAGER_GLOBAL can only manage NON_KR</span></td>
+    <td>2</td>
+    <td class="assert-ok">0</td>
+    <td>497 ms</td>
+  </tr>
+<tr class="">
+    <td>5</td>
+    <td><a href="#req-5">[ok] CA-02 gRPC 创建账号可登录</a><div class="row-folder">B · gRPC CreateBdAccount HTTP 验收</div></td>
+    <td><code class="api-code">POST /api/v1/login</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=ok</span><span class="kv"><b>token</b>=eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vMTI3LjAuMC4xOjgwODAvYXBpL3YxL2xvZ2luIiwiaWF0IjoxNzg2Mjg3MzM3LCJuYmYiOjE3ODYyODczMzcsImV4cCI6MTc4NjMwODkzNywianRpIjoiYmRjZDJhYTFjOWZhNGRiNCIsInN1YiI6IjM4IiwidHlwIjoiYmQiLCJyb2xlIjoiTUFOQUdFUl9LUiIsInJlZ2lvbiI6IktSIn0.0iz2WOrLxJm2GnJsIJvQyCwVJ7FZrPWlz16fWx8YJ2g</span><span class="kv"><b>mustChangePassword</b>=false</span></td>
+    <td>2</td>
+    <td class="assert-ok">0</td>
+    <td>864 ms</td>
+  </tr>
+<tr class="">
+    <td>6</td>
+    <td><a href="#req-6">[ok] CA-03 GET /bd-users/me 校验 Manager 角色</a><div class="row-folder">B · gRPC CreateBdAccount HTTP 验收</div></td>
+    <td><code class="api-code">GET /api/v1/bd-users/me</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=ok</span><span class="kv important"><b>id</b>=38</span><span class="kv important"><b>status</b>=active</span><span class="kv"><b>name</b>=Manager GRPC Renamed 1786287324</span><span class="kv"><b>email</b>=mgr.grpc.1786287324@zoomex.com</span><span class="kv"><b>role</b>=manager</span><span class="kv"><b>region</b>=kr</span><span class="kv"><b>user_role</b>=MANAGER_KR</span><span class="kv"><b>login_disabled</b>=false</span><span class="kv"><b>parent_id</b>=0</span></td>
+    <td>3</td>
+    <td class="assert-ok">0</td>
+    <td>497 ms</td>
+  </tr>
+<tr class="">
+    <td>7</td>
+    <td><a href="#req-7">[ok] UA-03 GET /me 改名生效</a><div class="row-folder">C · gRPC UpdateBdAccount HTTP 验收</div></td>
+    <td><code class="api-code">POST /api/v1/login</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=ok</span><span class="kv"><b>token</b>=eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vMTI3LjAuMC4xOjgwODAvYXBpL3YxL2xvZ2luIiwiaWF0IjoxNzg2Mjg3MzM5LCJuYmYiOjE3ODYyODczMzksImV4cCI6MTc4NjMwODkzOSwianRpIjoiM2QzOGRmY2RiMmE4NGQyZiIsInN1YiI6IjM4IiwidHlwIjoiYmQiLCJyb2xlIjoiTUFOQUdFUl9LUiIsInJlZ2lvbiI6IktSIn0.d-abF1c0TKdXuU6VHzLynSqs3oXoRGlzY1_1lhreG7E</span><span class="kv"><b>mustChangePassword</b>=false</span></td>
+    <td>1</td>
+    <td class="assert-ok">0</td>
+    <td>866 ms</td>
+  </tr>
+<tr class="">
+    <td>8</td>
+    <td><a href="#req-8">[ok] UA-03b /me name 为 grpcUpdatedName</a><div class="row-folder">C · gRPC UpdateBdAccount HTTP 验收</div></td>
+    <td><code class="api-code">GET /api/v1/bd-users/me</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=ok</span><span class="kv important"><b>id</b>=38</span><span class="kv important"><b>status</b>=active</span><span class="kv"><b>name</b>=Manager GRPC Renamed 1786287324</span><span class="kv"><b>email</b>=mgr.grpc.1786287324@zoomex.com</span><span class="kv"><b>role</b>=manager</span><span class="kv"><b>region</b>=kr</span><span class="kv"><b>user_role</b>=MANAGER_KR</span><span class="kv"><b>login_disabled</b>=false</span><span class="kv"><b>parent_id</b>=0</span></td>
+    <td>3</td>
+    <td class="assert-ok">0</td>
+    <td>494 ms</td>
+  </tr>
+<tr class="">
+    <td>9</td>
+    <td><a href="#req-9">[err] UA-02 login_disabled=1 时登录失败</a><div class="row-folder">C · gRPC UpdateBdAccount HTTP 验收</div></td>
+    <td><code class="api-code">POST /api/v1/login</code></td>
+    <td>200</td>
+    <td><span class="assert-ok">0</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=ok</span><span class="kv"><b>token</b>=eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vMTI3LjAuMC4xOjgwODAvYXBpL3YxL2xvZ2luIiwiaWF0IjoxNzg2Mjg3MzQwLCJuYmYiOjE3ODYyODczNDAsImV4cCI6MTc4NjMwODk0MCwianRpIjoiMjUxNGVlYWM0ZmM0NDBhMyIsInN1YiI6IjM4IiwidHlwIjoiYmQiLCJyb2xlIjoiTUFOQUdFUl9LUiIsInJlZ2lvbiI6IktSIn0.1B0EDXzj5xSbvMdcT7O-Ih0Xb5xo8OxVEDhLjjl_WnU</span><span class="kv"><b>mustChangePassword</b>=false</span></td>
+    <td>1</td>
+    <td class="assert-ok">0</td>
+    <td>885 ms</td>
+  </tr>
+<tr class="">
+    <td>10</td>
+    <td><a href="#req-10">[err] H-E02 HTTP 不可编辑 Manager 账号</a><div class="row-folder">D · HTTP 权限边界 [err]</div></td>
+    <td><code class="api-code">PUT /api/v1/bd-users/38</code></td>
+    <td>200</td>
+    <td><span class="assert-bad">10005</span></td>
+    <td class="focus-cell"><span class="kv important"><b>ret_code</b>=10005</span><span class="kv important"><b>ret_msg</b>=manager accounts must be edited via internal gRPC</span></td>
+    <td>2</td>
+    <td class="assert-ok">0</td>
+    <td>796 ms</td>
+  </tr></tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>接口汇总</h2>
+      <table class="summary-api">
+        <thead><tr><th>接口</th><th>用例</th><th>断言</th><th>失败</th><th>结果</th></tr></thead>
+        <tbody><tr>
+    <td><code>GET /bd-users</code></td>
+    <td>1</td>
+    <td>4</td>
+    <td>0</td>
+    <td class="assert-ok">全通过</td>
+  </tr>
+<tr>
+    <td><code>POST /bd-users</code></td>
+    <td>2</td>
+    <td>5</td>
+    <td>0</td>
+    <td class="assert-ok">全通过</td>
+  </tr>
+<tr>
+    <td><code>PUT /bd-users/{id}</code></td>
+    <td>1</td>
+    <td>2</td>
+    <td>0</td>
+    <td class="assert-ok">全通过</td>
+  </tr>
+<tr>
+    <td><code>GET /bd-users/me</code></td>
+    <td>2</td>
+    <td>6</td>
+    <td>0</td>
+    <td class="assert-ok">全通过</td>
+  </tr>
+<tr>
+    <td><code>POST /login</code></td>
+    <td>4</td>
+    <td>7</td>
+    <td>0</td>
+    <td class="assert-ok">全通过</td>
+  </tr>
+</tbody>
+      </table>
+    </section>
+
+    
+
+    <section><h2>分节明细</h2><section id="api-bdUsersList">
+    <h2>一、GET /bd-users</h2>
+    <p class="hint">（本运行无此类请求）</p>
+  </section>
+
+<section id="api-bdUsersCreate">
+    <h2>二、POST /bd-users</h2>
+    <p class="hint">（本运行无此类请求）</p>
+  </section>
+
+<section id="api-bdUsersUpdate">
+    <h2>三、PUT /bd-users/{id}</h2>
+    <details class="details-folder">
+    <summary><span class="folder-title">D · HTTP 权限边界 [err]</span><span class="folder-meta">1 个用例 · <span class="ok-inline">断言全过</span></span></summary>
+    <div class="folder-inner"><details class="details-req" id="req-10">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>[err] H-E02 HTTP 不可编辑 Manager 账号</span><span class="sum-meta">PUT /api/v1/bd-users/38 · HTTP 200 · 796 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=10005</span><span class="kv important"><b>ret_msg</b>=manager accounts must be edited via internal gRPC</span></div>
+        </div>
+        <div class="meta">响应体积 107 字节</div>
+        <div class="meta">http://127.0.0.1:8080/api/v1/bd-users/38</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">PUT http://127.0.0.1:8080/api/v1/bd-users/38
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vMTI3LjAuMC4xOjgwODAvYXBpL3YxL2xvZ2luIiwiaWF0IjoxNzg2Mjg3MzM0LCJuYmYiOjE3ODYyODczMzQsImV4cCI6MTc4NjMwODkzNCwianRpIjoiY2FkM2E4ZjI3YTNhNDVjMyIsInN1YiI6IjI5IiwidHlwIjoiYmQiLCJyb2xlIjoiTUFOQUdFUl9HTE9CQUwiLCJyZWdpb24iOiJOT05fS1IifQ.QJVmi6KMd6hHRHTMrE96i2yTKH1B-Ld4eLpFVnE8pQk
+
+{
+  &quot;name&quot;: &quot;HTTP should fail&quot;
+}</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 10005,
+  &quot;ret_msg&quot;: &quot;manager accounts must be edited via internal gRPC&quot;,
+  &quot;time_now&quot;: &quot;1786287341502&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code=10005</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details></div>
+  </details>
+  </section>
+
+<section id="api-bdUsersMe">
+    <h2>四、GET /bd-users/me</h2>
+    <p class="hint">（本运行无此类请求）</p>
+  </section>
+
+<section id="api-login">
+    <h2>五、POST /login</h2>
+    <details class="details-folder">
+    <summary><span class="folder-title">00 Setup</span><span class="folder-meta">1 个用例 · <span class="ok-inline">断言全过</span></span></summary>
+    <div class="folder-inner"><details class="details-req" id="req-1">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>S01 Manager 登录 mgr.global@zoomex.com</span><span class="sum-meta">POST /api/v1/login · HTTP 200 · 988 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=ok</span><span class="kv"><b>token</b>=eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vMTI3LjAuMC4xOjgwODAvYXBpL3YxL2xvZ2luIiwiaWF0IjoxNzg2Mjg3MzM0LCJuYmYiOjE3ODYyODczMzQsImV4cCI6MTc4NjMwODkzNCwianRpIjoiY2FkM2E4ZjI3YTNhNDVjMyIsInN1YiI6IjI5IiwidHlwIjoiYmQiLCJyb2xlIjoiTUFOQUdFUl9HTE9CQUwiLCJyZWdpb24iOiJOT05fS1IifQ.QJVmi6KMd6hHRHTMrE96i2yTKH1B-Ld4eLpFVnE8pQk</span><span class="kv"><b>mustChangePassword</b>=false</span></div>
+        </div>
+        <div class="meta">响应体积 738 字节</div>
+        <div class="meta">http://127.0.0.1:8080/api/v1/login</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">POST http://127.0.0.1:8080/api/v1/login
+Content-Type: application/json
+
+{
+  &quot;data&quot;: &quot;{\&quot;email\&quot;:\&quot;mgr.global@zoomex.com\&quot;,\&quot;password\&quot;:\&quot;Passw0rd\&quot;,\&quot;broker_id\&quot;:1}&quot;,
+  &quot;broker_id&quot;: 1
+}</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;ok&quot;,
+  &quot;result&quot;: {
+    &quot;token&quot;: &quot;eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vMTI3LjAuMC4xOjgwODAvYXBpL3YxL2xvZ2luIiwiaWF0IjoxNzg2Mjg3MzM0LCJuYmYiOjE3ODYyODczMzQsImV4cCI6MTc4NjMwODkzNCwianRpIjoiY2FkM2E4ZjI3YTNhNDVjMyIsInN1YiI6IjI5IiwidHlwIjoiYmQiLCJyb2xlIjoiTUFOQUdFUl9HTE9CQUwiLCJyZWdpb24iOiJOT05fS1IifQ.QJVmi6KMd6hHRHTMrE96i2yTKH1B-Ld4eLpFVnE8pQk&quot;,
+    &quot;mustChangePassword&quot;: false
+  },
+  &quot;token&quot;: &quot;eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vMTI3LjAuMC4xOjgwODAvYXBpL3YxL2xvZ2luIiwiaWF0IjoxNzg2Mjg3MzM0LCJuYmYiOjE3ODYyODczMzQsImV4cCI6MTc4NjMwODkzNCwianRpIjoiY2FkM2E4ZjI3YTNhNDVjMyIsInN1YiI6IjI5IiwidHlwIjoiYmQiLCJyb2xlIjoiTUFOQUdFUl9HTE9CQUwiLCJyZWdpb24iOiJOT05fS1IifQ.QJVmi6KMd6hHRHTMrE96i2yTKH1B-Ld4eLpFVnE8pQk&quot;,
+  &quot;time_now&quot;: &quot;1786287334362&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code=0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — Manager token 非空</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details></div>
+  </details>
+  </section>
+
+<section id="api-other">
+    <h2>其它请求</h2>
+    <details class="details-folder">
+    <summary><span class="folder-title">A · HTTP Manager 创建 BD [ok]</span><span class="folder-meta">3 个用例 · <span class="ok-inline">断言全过</span></span></summary>
+    <div class="folder-inner"><details class="details-req" id="req-2">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>[ok] H-01 POST /bd-users 创建本区域 BD</span><span class="sum-meta">POST /api/v1/bd-users · HTTP 200 · 1477 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=ok</span><span class="kv"><b>region</b>=NON_KR</span><span class="kv"><b>user_id</b>=39</span><span class="kv"><b>must_change_password</b>=false</span><span class="kv"><b>initial_password</b>=Passw0rd</span><span class="kv"><b>user_role</b>=BD</span></div>
+        </div>
+        <div class="meta">响应体积 174 字节</div>
+        <div class="meta">http://127.0.0.1:8080/api/v1/bd-users</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">POST http://127.0.0.1:8080/api/v1/bd-users
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vMTI3LjAuMC4xOjgwODAvYXBpL3YxL2xvZ2luIiwiaWF0IjoxNzg2Mjg3MzM0LCJuYmYiOjE3ODYyODczMzQsImV4cCI6MTc4NjMwODkzNCwianRpIjoiY2FkM2E4ZjI3YTNhNDVjMyIsInN1YiI6IjI5IiwidHlwIjoiYmQiLCJyb2xlIjoiTUFOQUdFUl9HTE9CQUwiLCJyZWdpb24iOiJOT05fS1IifQ.QJVmi6KMd6hHRHTMrE96i2yTKH1B-Ld4eLpFVnE8pQk
+
+{
+  &quot;name&quot;: &quot;BD HTTP 1786287334390&quot;,
+  &quot;email&quot;: &quot;bd.http.1786287334390@zoomex.com&quot;,
+  &quot;role&quot;: &quot;bd&quot;,
+  &quot;region&quot;: &quot;non_kr&quot;,
+  &quot;initial_password&quot;: &quot;Passw0rd&quot;
+}</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;ok&quot;,
+  &quot;result&quot;: {
+    &quot;region&quot;: &quot;NON_KR&quot;,
+    &quot;user_id&quot;: 39,
+    &quot;must_change_password&quot;: false,
+    &quot;initial_password&quot;: &quot;Passw0rd&quot;,
+    &quot;user_role&quot;: &quot;BD&quot;
+  },
+  &quot;time_now&quot;: &quot;1786287335868&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code=0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — CreateBdUserResp 字段</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-3">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>[ok] H-02 GET /bd-users 列表含 BD</span><span class="sum-meta">GET /api/v1/bd-users?page=1&amp;page_size=20&amp;region=non_kr · HTTP 200 · 592 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=ok</span><span class="kv"><b>total</b>=4</span><span class="kv"><b>page</b>=1</span><span class="kv"><b>page_size</b>=20</span></div>
+        </div>
+        <div class="meta">响应体积 797 字节</div>
+        <div class="meta">http://127.0.0.1:8080/api/v1/bd-users?page=1&amp;page_size=20&amp;region=non_kr</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET http://127.0.0.1:8080/api/v1/bd-users?page=1&amp;page_size=20&amp;region=non_kr
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vMTI3LjAuMC4xOjgwODAvYXBpL3YxL2xvZ2luIiwiaWF0IjoxNzg2Mjg3MzM0LCJuYmYiOjE3ODYyODczMzQsImV4cCI6MTc4NjMwODkzNCwianRpIjoiY2FkM2E4ZjI3YTNhNDVjMyIsInN1YiI6IjI5IiwidHlwIjoiYmQiLCJyb2xlIjoiTUFOQUdFUl9HTE9CQUwiLCJyZWdpb24iOiJOT05fS1IifQ.QJVmi6KMd6hHRHTMrE96i2yTKH1B-Ld4eLpFVnE8pQk</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;ok&quot;,
+  &quot;result&quot;: {
+    &quot;list&quot;: [
+      {
+        &quot;id&quot;: 39,
+        &quot;name&quot;: &quot;BD HTTP 1786287334390&quot;,
+        &quot;email&quot;: &quot;bd.http.1786287334390@zoomex.com&quot;,
+        &quot;role&quot;: &quot;bd&quot;,
+        &quot;region&quot;: &quot;non_kr&quot;,
+        &quot;status&quot;: &quot;active&quot;,
+        &quot;user_role&quot;: &quot;BD&quot;,
+        &quot;login_disabled&quot;: false,
+        &quot;parent_id&quot;: 0
+      },
+      {
+        &quot;id&quot;: 37,
+        &quot;name&quot;: &quot;BD HTTP 1786287231732&quot;,
+        &quot;email&quot;: &quot;bd.http.1786287231732@zoomex.com&quot;,
+        &quot;role&quot;: &quot;bd&quot;,
+        &quot;region&quot;: &quot;non_kr&quot;,
+        &quot;status&quot;: &quot;active&quot;,
+        &quot;user_role&quot;: &quot;BD&quot;,
+        &quot;login_disabled&quot;: false,
+        &quot;parent_id&quot;: 0
+      },
+      {
+        &quot;id&quot;: 31,
+        &quot;name&quot;: &quot;Aiden&quot;,
+        &quot;email&quot;: &quot;aiden@zoomex.com&quot;,
+        &quot;role&quot;: &quot;bd&quot;,
+        &quot;region&quot;: &quot;non_kr&quot;,
+        &quot;status&quot;: &quot;active&quot;,
+        &quot;user_role&quot;: &quot;BD&quot;,
+        &quot;login_disabled&quot;: false,
+        &quot;parent_id&quot;: 29
+      },
+      {
+        &quot;id&quot;: 27,
+        &quot;name&quot;: &quot;jason.lu&quot;,
+        &quot;email&quot;: &quot;jason.lu@zoomex.com&quot;,
+        &quot;role&quot;: &quot;bd&quot;,
+        &quot;region&quot;: &quot;non_kr&quot;,
+        &quot;status&quot;: &quot;active&quot;,
+        &quot;user_role&quot;: &quot;BD&quot;,
+        &quot;login_disabled&quot;: false,
+        &quot;parent_id&quot;: 0
+      }
+    ],
+    &quot;total&quot;: 4,
+    &quot;page&quot;: 1,
+    &quot;page_size&quot;: 20
+  },
+  &quot;time_now&quot;: &quot;1786287336478&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code=0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 分页结构</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 列表项为 BD</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-4">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>[err] H-E01 HTTP 禁止创建 Manager</span><span class="sum-meta">POST /api/v1/bd-users · HTTP 200 · 497 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=10005</span><span class="kv important"><b>ret_msg</b>=MANAGER_GLOBAL can only manage NON_KR</span></div>
+        </div>
+        <div class="meta">响应体积 95 字节</div>
+        <div class="meta">http://127.0.0.1:8080/api/v1/bd-users</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">POST http://127.0.0.1:8080/api/v1/bd-users
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vMTI3LjAuMC4xOjgwODAvYXBpL3YxL2xvZ2luIiwiaWF0IjoxNzg2Mjg3MzM0LCJuYmYiOjE3ODYyODczMzQsImV4cCI6MTc4NjMwODkzNCwianRpIjoiY2FkM2E4ZjI3YTNhNDVjMyIsInN1YiI6IjI5IiwidHlwIjoiYmQiLCJyb2xlIjoiTUFOQUdFUl9HTE9CQUwiLCJyZWdpb24iOiJOT05fS1IifQ.QJVmi6KMd6hHRHTMrE96i2yTKH1B-Ld4eLpFVnE8pQk
+
+{
+  &quot;name&quot;: &quot;Mgr HTTP&quot;,
+  &quot;email&quot;: &quot;mgr.http.1786287336497@zoomex.com&quot;,
+  &quot;role&quot;: &quot;manager&quot;,
+  &quot;region&quot;: &quot;kr&quot;,
+  &quot;initial_password&quot;: &quot;Passw0rd&quot;
+}</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 10005,
+  &quot;ret_msg&quot;: &quot;MANAGER_GLOBAL can only manage NON_KR&quot;,
+  &quot;time_now&quot;: &quot;1786287336995&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code=10005 permission denied</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details></div>
+  </details>
+<details class="details-folder">
+    <summary><span class="folder-title">B · gRPC CreateBdAccount HTTP 验收</span><span class="folder-meta">2 个用例 · <span class="ok-inline">断言全过</span></span></summary>
+    <div class="folder-inner"><details class="details-req" id="req-5">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>[ok] CA-02 gRPC 创建账号可登录</span><span class="sum-meta">POST /api/v1/login · HTTP 200 · 864 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=ok</span><span class="kv"><b>token</b>=eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vMTI3LjAuMC4xOjgwODAvYXBpL3YxL2xvZ2luIiwiaWF0IjoxNzg2Mjg3MzM3LCJuYmYiOjE3ODYyODczMzcsImV4cCI6MTc4NjMwODkzNywianRpIjoiYmRjZDJhYTFjOWZhNGRiNCIsInN1YiI6IjM4IiwidHlwIjoiYmQiLCJyb2xlIjoiTUFOQUdFUl9LUiIsInJlZ2lvbiI6IktSIn0.0iz2WOrLxJm2GnJsIJvQyCwVJ7FZrPWlz16fWx8YJ2g</span><span class="kv"><b>mustChangePassword</b>=false</span></div>
+        </div>
+        <div class="meta">响应体积 716 字节</div>
+        <div class="meta">http://127.0.0.1:8080/api/v1/login</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">POST http://127.0.0.1:8080/api/v1/login
+Content-Type: application/json
+
+{
+  &quot;data&quot;: &quot;{\&quot;email\&quot;:\&quot;mgr.grpc.1786287324@zoomex.com\&quot;,\&quot;password\&quot;:\&quot;Passw0rd\&quot;,\&quot;broker_id\&quot;:1}&quot;,
+  &quot;broker_id&quot;: 1
+}</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;ok&quot;,
+  &quot;result&quot;: {
+    &quot;token&quot;: &quot;eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vMTI3LjAuMC4xOjgwODAvYXBpL3YxL2xvZ2luIiwiaWF0IjoxNzg2Mjg3MzM3LCJuYmYiOjE3ODYyODczMzcsImV4cCI6MTc4NjMwODkzNywianRpIjoiYmRjZDJhYTFjOWZhNGRiNCIsInN1YiI6IjM4IiwidHlwIjoiYmQiLCJyb2xlIjoiTUFOQUdFUl9LUiIsInJlZ2lvbiI6IktSIn0.0iz2WOrLxJm2GnJsIJvQyCwVJ7FZrPWlz16fWx8YJ2g&quot;,
+    &quot;mustChangePassword&quot;: false
+  },
+  &quot;token&quot;: &quot;eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vMTI3LjAuMC4xOjgwODAvYXBpL3YxL2xvZ2luIiwiaWF0IjoxNzg2Mjg3MzM3LCJuYmYiOjE3ODYyODczMzcsImV4cCI6MTc4NjMwODkzNywianRpIjoiYmRjZDJhYTFjOWZhNGRiNCIsInN1YiI6IjM4IiwidHlwIjoiYmQiLCJyb2xlIjoiTUFOQUdFUl9LUiIsInJlZ2lvbiI6IktSIn0.0iz2WOrLxJm2GnJsIJvQyCwVJ7FZrPWlz16fWx8YJ2g&quot;,
+  &quot;time_now&quot;: &quot;1786287337879&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code=0</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-6">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>[ok] CA-03 GET /bd-users/me 校验 Manager 角色</span><span class="sum-meta">GET /api/v1/bd-users/me · HTTP 200 · 497 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=ok</span><span class="kv important"><b>id</b>=38</span><span class="kv important"><b>status</b>=active</span><span class="kv"><b>name</b>=Manager GRPC Renamed 1786287324</span><span class="kv"><b>email</b>=mgr.grpc.1786287324@zoomex.com</span><span class="kv"><b>role</b>=manager</span><span class="kv"><b>region</b>=kr</span><span class="kv"><b>user_role</b>=MANAGER_KR</span><span class="kv"><b>login_disabled</b>=false</span><span class="kv"><b>parent_id</b>=0</span></div>
+        </div>
+        <div class="meta">响应体积 268 字节</div>
+        <div class="meta">http://127.0.0.1:8080/api/v1/bd-users/me</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET http://127.0.0.1:8080/api/v1/bd-users/me
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vMTI3LjAuMC4xOjgwODAvYXBpL3YxL2xvZ2luIiwiaWF0IjoxNzg2Mjg3MzM3LCJuYmYiOjE3ODYyODczMzcsImV4cCI6MTc4NjMwODkzNywianRpIjoiYmRjZDJhYTFjOWZhNGRiNCIsInN1YiI6IjM4IiwidHlwIjoiYmQiLCJyb2xlIjoiTUFOQUdFUl9LUiIsInJlZ2lvbiI6IktSIn0.0iz2WOrLxJm2GnJsIJvQyCwVJ7FZrPWlz16fWx8YJ2g</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;ok&quot;,
+  &quot;result&quot;: {
+    &quot;id&quot;: 38,
+    &quot;name&quot;: &quot;Manager GRPC Renamed 1786287324&quot;,
+    &quot;email&quot;: &quot;mgr.grpc.1786287324@zoomex.com&quot;,
+    &quot;role&quot;: &quot;manager&quot;,
+    &quot;region&quot;: &quot;kr&quot;,
+    &quot;status&quot;: &quot;active&quot;,
+    &quot;user_role&quot;: &quot;MANAGER_KR&quot;,
+    &quot;login_disabled&quot;: false,
+    &quot;parent_id&quot;: 0
+  },
+  &quot;time_now&quot;: &quot;1786287338393&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code=0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — BdUserItem 角色/邮箱</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details></div>
+  </details>
+<details class="details-folder">
+    <summary><span class="folder-title">C · gRPC UpdateBdAccount HTTP 验收</span><span class="folder-meta">3 个用例 · <span class="ok-inline">断言全过</span></span></summary>
+    <div class="folder-inner"><details class="details-req" id="req-7">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>[ok] UA-03 GET /me 改名生效</span><span class="sum-meta">POST /api/v1/login · HTTP 200 · 866 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=ok</span><span class="kv"><b>token</b>=eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vMTI3LjAuMC4xOjgwODAvYXBpL3YxL2xvZ2luIiwiaWF0IjoxNzg2Mjg3MzM5LCJuYmYiOjE3ODYyODczMzksImV4cCI6MTc4NjMwODkzOSwianRpIjoiM2QzOGRmY2RiMmE4NGQyZiIsInN1YiI6IjM4IiwidHlwIjoiYmQiLCJyb2xlIjoiTUFOQUdFUl9LUiIsInJlZ2lvbiI6IktSIn0.d-abF1c0TKdXuU6VHzLynSqs3oXoRGlzY1_1lhreG7E</span><span class="kv"><b>mustChangePassword</b>=false</span></div>
+        </div>
+        <div class="meta">响应体积 716 字节</div>
+        <div class="meta">http://127.0.0.1:8080/api/v1/login</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">POST http://127.0.0.1:8080/api/v1/login
+Content-Type: application/json
+
+{
+  &quot;data&quot;: &quot;{\&quot;email\&quot;:\&quot;mgr.grpc.1786287324@zoomex.com\&quot;,\&quot;password\&quot;:\&quot;Passw0rd\&quot;,\&quot;broker_id\&quot;:1}&quot;,
+  &quot;broker_id&quot;: 1
+}</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;ok&quot;,
+  &quot;result&quot;: {
+    &quot;token&quot;: &quot;eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vMTI3LjAuMC4xOjgwODAvYXBpL3YxL2xvZ2luIiwiaWF0IjoxNzg2Mjg3MzM5LCJuYmYiOjE3ODYyODczMzksImV4cCI6MTc4NjMwODkzOSwianRpIjoiM2QzOGRmY2RiMmE4NGQyZiIsInN1YiI6IjM4IiwidHlwIjoiYmQiLCJyb2xlIjoiTUFOQUdFUl9LUiIsInJlZ2lvbiI6IktSIn0.d-abF1c0TKdXuU6VHzLynSqs3oXoRGlzY1_1lhreG7E&quot;,
+    &quot;mustChangePassword&quot;: false
+  },
+  &quot;token&quot;: &quot;eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vMTI3LjAuMC4xOjgwODAvYXBpL3YxL2xvZ2luIiwiaWF0IjoxNzg2Mjg3MzM5LCJuYmYiOjE3ODYyODczMzksImV4cCI6MTc4NjMwODkzOSwianRpIjoiM2QzOGRmY2RiMmE4NGQyZiIsInN1YiI6IjM4IiwidHlwIjoiYmQiLCJyb2xlIjoiTUFOQUdFUl9LUiIsInJlZ2lvbiI6IktSIn0.d-abF1c0TKdXuU6VHzLynSqs3oXoRGlzY1_1lhreG7E&quot;,
+  &quot;time_now&quot;: &quot;1786287339276&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-8">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>[ok] UA-03b /me name 为 grpcUpdatedName</span><span class="sum-meta">GET /api/v1/bd-users/me · HTTP 200 · 494 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=ok</span><span class="kv important"><b>id</b>=38</span><span class="kv important"><b>status</b>=active</span><span class="kv"><b>name</b>=Manager GRPC Renamed 1786287324</span><span class="kv"><b>email</b>=mgr.grpc.1786287324@zoomex.com</span><span class="kv"><b>role</b>=manager</span><span class="kv"><b>region</b>=kr</span><span class="kv"><b>user_role</b>=MANAGER_KR</span><span class="kv"><b>login_disabled</b>=false</span><span class="kv"><b>parent_id</b>=0</span></div>
+        </div>
+        <div class="meta">响应体积 268 字节</div>
+        <div class="meta">http://127.0.0.1:8080/api/v1/bd-users/me</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">GET http://127.0.0.1:8080/api/v1/bd-users/me
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vMTI3LjAuMC4xOjgwODAvYXBpL3YxL2xvZ2luIiwiaWF0IjoxNzg2Mjg3MzM5LCJuYmYiOjE3ODYyODczMzksImV4cCI6MTc4NjMwODkzOSwianRpIjoiM2QzOGRmY2RiMmE4NGQyZiIsInN1YiI6IjM4IiwidHlwIjoiYmQiLCJyb2xlIjoiTUFOQUdFUl9LUiIsInJlZ2lvbiI6IktSIn0.d-abF1c0TKdXuU6VHzLynSqs3oXoRGlzY1_1lhreG7E</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;ok&quot;,
+  &quot;result&quot;: {
+    &quot;id&quot;: 38,
+    &quot;name&quot;: &quot;Manager GRPC Renamed 1786287324&quot;,
+    &quot;email&quot;: &quot;mgr.grpc.1786287324@zoomex.com&quot;,
+    &quot;role&quot;: &quot;manager&quot;,
+    &quot;region&quot;: &quot;kr&quot;,
+    &quot;status&quot;: &quot;active&quot;,
+    &quot;user_role&quot;: &quot;MANAGER_KR&quot;,
+    &quot;login_disabled&quot;: false,
+    &quot;parent_id&quot;: 0
+  },
+  &quot;time_now&quot;: &quot;1786287339786&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — HTTP 200</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — ret_code=0</td>
+            </tr>
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — 改名生效</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+<details class="details-req" id="req-9">
+      <summary><span class="sum-title"><span class="status-dot passed"></span>[err] UA-02 login_disabled=1 时登录失败</span><span class="sum-meta">POST /api/v1/login · HTTP 200 · 885 ms</span></summary>
+      <div class="details-body">
+        <div class="focus-card">
+          <div class="focus-title">测试要点</div>
+          <div class="kv-grid"><span class="kv important"><b>ret_code</b>=0</span><span class="kv"><b>ret_msg</b>=ok</span><span class="kv"><b>token</b>=eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vMTI3LjAuMC4xOjgwODAvYXBpL3YxL2xvZ2luIiwiaWF0IjoxNzg2Mjg3MzQwLCJuYmYiOjE3ODYyODczNDAsImV4cCI6MTc4NjMwODk0MCwianRpIjoiMjUxNGVlYWM0ZmM0NDBhMyIsInN1YiI6IjM4IiwidHlwIjoiYmQiLCJyb2xlIjoiTUFOQUdFUl9LUiIsInJlZ2lvbiI6IktSIn0.1B0EDXzj5xSbvMdcT7O-Ih0Xb5xo8OxVEDhLjjl_WnU</span><span class="kv"><b>mustChangePassword</b>=false</span></div>
+        </div>
+        <div class="meta">响应体积 716 字节</div>
+        <div class="meta">http://127.0.0.1:8080/api/v1/login</div>
+        <div class="payload-block">
+        <div class="payload-label">请求</div>
+        <pre class="payload">POST http://127.0.0.1:8080/api/v1/login
+Content-Type: application/json
+
+{
+  &quot;data&quot;: &quot;{\&quot;email\&quot;:\&quot;mgr.grpc.1786287324@zoomex.com\&quot;,\&quot;password\&quot;:\&quot;Passw0rd\&quot;,\&quot;broker_id\&quot;:1}&quot;,
+  &quot;broker_id&quot;: 1
+}</pre>
+      </div><div class="payload-block">
+        <div class="payload-label">响应</div>
+        <pre class="payload">HTTP 200
+Content-Type: application/json
+
+{
+  &quot;ret_code&quot;: 0,
+  &quot;ret_msg&quot;: &quot;ok&quot;,
+  &quot;result&quot;: {
+    &quot;token&quot;: &quot;eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vMTI3LjAuMC4xOjgwODAvYXBpL3YxL2xvZ2luIiwiaWF0IjoxNzg2Mjg3MzQwLCJuYmYiOjE3ODYyODczNDAsImV4cCI6MTc4NjMwODk0MCwianRpIjoiMjUxNGVlYWM0ZmM0NDBhMyIsInN1YiI6IjM4IiwidHlwIjoiYmQiLCJyb2xlIjoiTUFOQUdFUl9LUiIsInJlZ2lvbiI6IktSIn0.1B0EDXzj5xSbvMdcT7O-Ih0Xb5xo8OxVEDhLjjl_WnU&quot;,
+    &quot;mustChangePassword&quot;: false
+  },
+  &quot;token&quot;: &quot;eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vMTI3LjAuMC4xOjgwODAvYXBpL3YxL2xvZ2luIiwiaWF0IjoxNzg2Mjg3MzQwLCJuYmYiOjE3ODYyODczNDAsImV4cCI6MTc4NjMwODk0MCwianRpIjoiMjUxNGVlYWM0ZmM0NDBhMyIsInN1YiI6IjM4IiwidHlwIjoiYmQiLCJyb2xlIjoiTUFOQUdFUl9LUiIsInJlZ2lvbiI6IktSIn0.1B0EDXzj5xSbvMdcT7O-Ih0Xb5xo8OxVEDhLjjl_WnU&quot;,
+  &quot;time_now&quot;: &quot;1786287340688&quot;
+}</pre>
+      </div>
+        <table>
+          <tbody>
+            
+            <tr>
+              <th>断言</th>
+              <td class="assert-ok">通过 — grpcLoginDisabled≠1 — skip UA-02（可手动 update --login-disabled 1 后重跑）</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details></div>
+  </details>
+  </section></section>
+
+    <footer>由 <code>newman-json-to-zh-html.mjs</code> 生成 · registry <code>bd-bd-users-grpc-local</code></footer>
+  </div>
+</body>
+</html>

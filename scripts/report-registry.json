@@ -165,6 +165,21 @@
         { "id": "health", "pathIncludes": "/v1/health", "summaryLabel": "Setup health" },
         { "id": "other", "pathIncludes": null, "summaryLabel": "其它" }
       ]
+    },
+    {
+      "id": "bd-bd-users-grpc-local",
+      "title": "BD Management · bd-users gRPC",
+      "controller": "CreateBdAccount / UpdateBdAccount · local",
+      "json": "reports/newman-bd-users-grpc-local.json",
+      "html": "reports/controllers/bd-bd-users-grpc-local.html",
+      "apiGroups": [
+        { "id": "bdUsersList", "pathIncludes": "/bd-users?", "summaryLabel": "GET /bd-users" },
+        { "id": "bdUsersCreate", "pathIncludes": "/bd-users", "method": "POST", "summaryLabel": "POST /bd-users" },
+        { "id": "bdUsersUpdate", "pathIncludes": "/bd-users/", "method": "PUT", "summaryLabel": "PUT /bd-users/{id}" },
+        { "id": "bdUsersMe", "pathIncludes": "/bd-users/me", "summaryLabel": "GET /bd-users/me" },
+        { "id": "login", "pathIncludes": "/api/v1/login", "summaryLabel": "POST /login" },
+        { "id": "other", "pathIncludes": null, "summaryLabel": "其它" }
+      ]
     }
   ]
 }

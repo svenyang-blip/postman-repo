@@ -103,6 +103,7 @@ https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?categoryId=30101&page=1&
 - `postman/collections/pm-ce-updown-local.postman_collection.json` — **prediction-serv** `UpdownEventController`：`GET /ce/pm/v1/api/event/updown/{windows,history,chart}` + `event/list` / `event` 回归（本地 `dev` profile，见 `application-dev.yaml` 匿名放通）。
 - `postman/environments/pm-ce-local.postman_environment.json` — CE 本地环境（`baseUrl`、`seriesSlug`、`ceCookie`）。
 - `postman/collections/bd-auth-login-reset.postman_collection.json` — **bd-management** 登录 / 重置密码场景（见 [`docs/bd-auth-testing.md`](docs/bd-auth-testing.md)；`npm run pm:bd-auth:local`）。
+- `postman/collections/bd-bd-users-grpc.postman_collection.json` — **bd-management** `CreateBdAccount` / `UpdateBdAccount` gRPC + HTTP 验收（见 [`docs/bd-users-grpc-testing.md`](docs/bd-users-grpc-testing.md)；`npm run pm:bd-users-grpc:local`）。
 
 ## 更完整的接口测试说明
 
