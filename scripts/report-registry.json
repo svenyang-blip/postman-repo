@@ -150,6 +150,21 @@
         { "id": "history", "pathIncludes": "/commission_settings/history", "summaryLabel": "GET history" },
         { "id": "other", "pathIncludes": null, "summaryLabel": "其它" }
       ]
+    },
+    {
+      "id": "bd-auth-local",
+      "title": "BD Management · Auth",
+      "controller": "登录 / 重置密码 · local :8080",
+      "json": "reports/newman-bd-auth-local.json",
+      "html": "reports/controllers/bd-auth-local.html",
+      "apiGroups": [
+        { "id": "login", "pathIncludes": "/api/v1/login", "summaryLabel": "POST /login" },
+        { "id": "logout", "pathIncludes": "/api/v1/logout", "summaryLabel": "POST /logout" },
+        { "id": "changePassword", "pathIncludes": "/api/v1/change_password", "summaryLabel": "POST /change_password" },
+        { "id": "ping", "pathIncludes": "/bd-users/ping", "summaryLabel": "GET /bd-users/ping" },
+        { "id": "health", "pathIncludes": "/v1/health", "summaryLabel": "Setup health" },
+        { "id": "other", "pathIncludes": null, "summaryLabel": "其它" }
+      ]
     }
   ]
 }

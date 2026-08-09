@@ -1,0 +1,885 @@
+{
+  "info": {
+    "_postman_id": "b1d2a3u4-t5h6-7890-bdmg-auth-login-reset",
+    "name": "BD Management · Auth · login / reset password",
+    "description": "bd-management 登录（HTTP）与 Admin 重置密码（gRPC 效果验收）场景契约测试。\n\n**场景矩阵**：`docs/bd-auth-testing.md`\n\n| 目录 | 覆盖 |\n|------|------|\n| A | Login 正向 L-01~L-03 |\n| B | Login 异常 L-E01~L-E07 |\n| C | Reset 后登录 R-02（需先跑 scripts/bd-grpc-reset-password.sh） |\n| D | E2E F-01 / F-02 |\n\n**本地**：`apiBase=http://127.0.0.1:8080`，`allow-plain-data=true`\n\n**运行**：`npm run pm:bd-auth:local`",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "apiBase", "value": "http://127.0.0.1:8080" },
+    { "key": "accessToken", "value": "" },
+    { "key": "loginData", "value": "" },
+    { "key": "_oldToken", "value": "" },
+    { "key": "_newPassword", "value": "" }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.request.headers.upsert({ key: 'Accept', value: 'application/json' });",
+          "pm.request.headers.upsert({ key: 'Content-Type', value: 'application/json' });",
+          "",
+          "function buildLoginData(email, password, brokerId) {",
+          "  const plain = {",
+          "    email: String(email || ''),",
+          "    password: String(password || ''),",
+          "    broker_id: Number(brokerId || 1)",
+          "  };",
+          "  return JSON.stringify(plain);",
+          "}",
+          "",
+          "const email = pm.environment.get('bdEmail') || pm.collectionVariables.get('bdEmail');",
+          "const password = pm.environment.get('bdPassword') || pm.collectionVariables.get('bdPassword');",
+          "const brokerId = pm.environment.get('brokerId') || pm.collectionVariables.get('brokerId') || '1';",
+          "if (email && password) {",
+          "  pm.collectionVariables.set('loginData', JSON.stringify(buildLoginData(email, password, brokerId)));",
+          "}",
+          "",
+          "const token = (pm.environment.get('accessToken') || pm.collectionVariables.get('accessToken') || '').trim();",
+          "const name = (pm.info && pm.info.requestName) || '';",
+          "const needsAuth = /logout|change_password|ping|鉴权|Bearer/i.test(name) || /\\/logout|\\/change_password|\\/bd-users\\/ping/.test(pm.request.url.toString());",
+          "if (needsAuth && token && !/无\\s*Token|无\\s*auth|旧\\s*token/i.test(name)) {",
+          "  pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + token });",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const ct = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+          "const text = pm.response.text() || '';",
+          "if (ct.includes('text/html') || text.trimStart().startsWith('<!')) {",
+          "  pm.test('响应应为 JSON API', () => pm.expect.fail('got HTML'));",
+          "  return;",
+          "}",
+          "try {",
+          "  const body = pm.response.json();",
+          "  if (body && typeof body.token === 'string' && body.token.length > 0 && body.ret_code === 0) {",
+          "    pm.environment.set('accessToken', body.token);",
+          "    pm.collectionVariables.set('accessToken', body.token);",
+          "  }",
+          "} catch (e) { /* ignore */ }"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "00 Setup",
+      "description": "检查必填环境变量。",
+      "item": [
+        {
+          "name": "S01 检查 bdEmail / bdPassword",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const email = (pm.environment.get('bdEmail') || '').trim();",
+                  "const password = (pm.environment.get('bdPassword') || '').trim();",
+                  "if (!email || !password) {",
+                  "  throw new Error('请在环境 bd-management-local 中填写 bdEmail / bdPassword');",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('环境变量已配置', () => {",
+                  "  pm.expect((pm.environment.get('bdEmail') || '').trim()).to.not.eql('');",
+                  "  pm.expect((pm.environment.get('bdPassword') || '').trim()).to.not.eql('');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/v1/health"
+          }
+        }
+      ]
+    },
+    {
+      "name": "A · Login 正向 [ok]",
+      "item": [
+        {
+          "name": "[ok] L-01 正确账密登录",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const email = pm.environment.get('bdEmail');",
+                  "const password = pm.environment.get('bdPassword');",
+                  "const brokerId = pm.environment.get('brokerId') || '1';",
+                  "const plain = JSON.stringify({ email, password, broker_id: Number(brokerId) });",
+                  "pm.collectionVariables.set('loginData', JSON.stringify(plain));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "pm.test('双 token 一致非空', () => {",
+                  "  pm.expect(body.token).to.be.a('string').and.not.eql('');",
+                  "  pm.expect(body.result).to.be.an('object');",
+                  "  pm.expect(body.result.token).to.eql(body.token);",
+                  "});",
+                  "pm.test('mustChangePassword 为 boolean', () => {",
+                  "  pm.expect(body.result).to.have.property('mustChangePassword');",
+                  "  pm.expect(body.result.mustChangePassword).to.be.a('boolean');",
+                  "});",
+                  "pm.collectionVariables.set('accessToken', body.token);",
+                  "pm.environment.set('accessToken', body.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": {{loginData}},\n  \"broker_id\": {{brokerId}}\n}"
+            },
+            "url": "{{apiBase}}/api/v1/login"
+          }
+        },
+        {
+          "name": "[ok] L-02 响应壳字段",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const email = pm.environment.get('bdEmail');",
+                  "const password = pm.environment.get('bdPassword');",
+                  "const brokerId = pm.environment.get('brokerId') || '1';",
+                  "const plain = JSON.stringify({ email, password, broker_id: Number(brokerId) });",
+                  "pm.collectionVariables.set('loginData', JSON.stringify(plain));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Responses 壳字段', () => {",
+                  "  pm.expect(body).to.include.keys('ret_code', 'ret_msg', 'result', 'time_now');",
+                  "});",
+                  "pm.test('ret_msg=ok', () => pm.expect(body.ret_msg).to.eql('ok'));",
+                  "pm.test('result 含 token / mustChangePassword', () => {",
+                  "  pm.expect(body.result).to.include.keys('token', 'mustChangePassword');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": {{loginData}},\n  \"broker_id\": {{brokerId}}\n}"
+            },
+            "url": "{{apiBase}}/api/v1/login"
+          }
+        }
+      ]
+    },
+    {
+      "name": "B · Login 异常 [err]",
+      "description": "缺参、错密等预期失败；L-E06/L-E07 依赖可选环境账号。",
+      "item": [
+        {
+          "name": "[err] L-E01 缺 data",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=20101 AUTH_FAILED', () => pm.expect(body.ret_code).to.eql(20101));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": "{{apiBase}}/api/v1/login"
+          }
+        },
+        {
+          "name": "[err] L-E02 data 非 JSON",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=20101', () => pm.expect(body.ret_code).to.eql(20101));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": \"not-a-json-object\"\n}"
+            },
+            "url": "{{apiBase}}/api/v1/login"
+          }
+        },
+        {
+          "name": "[err] L-E03 缺 email/password",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=20101', () => pm.expect(body.ret_code).to.eql(20101));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": \"{\\\"broker_id\\\":1}\"\n}"
+            },
+            "url": "{{apiBase}}/api/v1/login"
+          }
+        },
+        {
+          "name": "[err] L-E04 邮箱不存在",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const brokerId = pm.environment.get('brokerId') || '1';",
+                  "const plain = JSON.stringify({",
+                  "  email: 'no-such-user-' + Date.now() + '@example.com',",
+                  "  password: 'Whatever1',",
+                  "  broker_id: Number(brokerId)",
+                  "});",
+                  "pm.collectionVariables.set('loginData', JSON.stringify(plain));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=20101', () => pm.expect(body.ret_code).to.eql(20101));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": {{loginData}},\n  \"broker_id\": {{brokerId}}\n}"
+            },
+            "url": "{{apiBase}}/api/v1/login"
+          }
+        },
+        {
+          "name": "[err] L-E05 密码错误",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const email = pm.environment.get('bdEmail');",
+                  "const brokerId = pm.environment.get('brokerId') || '1';",
+                  "const plain = JSON.stringify({",
+                  "  email,",
+                  "  password: 'WrongPass9x',",
+                  "  broker_id: Number(brokerId)",
+                  "});",
+                  "pm.collectionVariables.set('loginData', JSON.stringify(plain));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=20101', () => pm.expect(body.ret_code).to.eql(20101));",
+                  "pm.test('失败无业务 token', () => {",
+                  "  if (body.token) pm.expect(body.ret_code).to.not.eql(0);",
+                  "  pm.expect(body.ret_code).to.eql(20101);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": {{loginData}},\n  \"broker_id\": {{brokerId}}\n}"
+            },
+            "url": "{{apiBase}}/api/v1/login"
+          }
+        },
+        {
+          "name": "[err] L-E06 用户禁用（可选）",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const email = (pm.environment.get('disabledEmail') || '').trim();",
+                  "const password = pm.environment.get('bdPassword') || 'x';",
+                  "const brokerId = pm.environment.get('brokerId') || '1';",
+                  "if (!email) {",
+                  "  pm.collectionVariables.set('_skip', 'true');",
+                  "  const plain = JSON.stringify({ email: 'skip@example.com', password: 'SkipPass1', broker_id: Number(brokerId) });",
+                  "  pm.collectionVariables.set('loginData', JSON.stringify(plain));",
+                  "  return;",
+                  "}",
+                  "pm.collectionVariables.set('_skip', 'false');",
+                  "const plain = JSON.stringify({ email, password, broker_id: Number(brokerId) });",
+                  "pm.collectionVariables.set('loginData', JSON.stringify(plain));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('_skip') === 'true') {",
+                  "  pm.test('未配置 disabledEmail — skip L-E06', () => pm.expect(true).to.eql(true));",
+                  "  return;",
+                  "}",
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=20101', () => pm.expect(body.ret_code).to.eql(20101));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": {{loginData}},\n  \"broker_id\": {{brokerId}}\n}"
+            },
+            "url": "{{apiBase}}/api/v1/login"
+          }
+        },
+        {
+          "name": "[err] L-E07 登录停用（可选）",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const email = (pm.environment.get('loginDisabledEmail') || '').trim();",
+                  "const password = pm.environment.get('bdPassword') || 'x';",
+                  "const brokerId = pm.environment.get('brokerId') || '1';",
+                  "if (!email) {",
+                  "  pm.collectionVariables.set('_skip', 'true');",
+                  "  const plain = JSON.stringify({ email: 'skip@example.com', password: 'SkipPass1', broker_id: Number(brokerId) });",
+                  "  pm.collectionVariables.set('loginData', JSON.stringify(plain));",
+                  "  return;",
+                  "}",
+                  "pm.collectionVariables.set('_skip', 'false');",
+                  "const plain = JSON.stringify({ email, password, broker_id: Number(brokerId) });",
+                  "pm.collectionVariables.set('loginData', JSON.stringify(plain));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('_skip') === 'true') {",
+                  "  pm.test('未配置 loginDisabledEmail — skip L-E07', () => pm.expect(true).to.eql(true));",
+                  "  return;",
+                  "}",
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=20102 LOGIN_DISABLED', () => pm.expect(body.ret_code).to.eql(20102));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": {{loginData}},\n  \"broker_id\": {{brokerId}}\n}"
+            },
+            "url": "{{apiBase}}/api/v1/login"
+          }
+        }
+      ]
+    },
+    {
+      "name": "C · ResetPassword 效果 [ok]",
+      "description": "先执行 scripts/bd-grpc-reset-password.sh（R-01），再用临时密码登录验收 R-02 / L-03。未重置则 skip。",
+      "item": [
+        {
+          "name": "[ok] R-02/L-03 重置后登录 mustChangePassword=true",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const email = (pm.environment.get('bdEmail') || '').trim();",
+                  "const temp = (pm.environment.get('tempPassword') || '').trim();",
+                  "const userId = (pm.environment.get('bdUserId') || '').trim();",
+                  "const brokerId = pm.environment.get('brokerId') || '1';",
+                  "if (!email || !temp || !userId) {",
+                  "  pm.collectionVariables.set('_skipReset', 'true');",
+                  "  const plain = JSON.stringify({ email: email || 'skip@example.com', password: 'SkipPass1', broker_id: Number(brokerId) });",
+                  "  pm.collectionVariables.set('loginData', JSON.stringify(plain));",
+                  "  return;",
+                  "}",
+                  "pm.collectionVariables.set('_skipReset', 'false');",
+                  "const plain = JSON.stringify({ email, password: temp, broker_id: Number(brokerId) });",
+                  "pm.collectionVariables.set('loginData', JSON.stringify(plain));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('_skipReset') === 'true') {",
+                  "  pm.test('未配置 bdUserId/tempPassword 或未先 gRPC 重置 — skip R-02', () => pm.expect(true).to.eql(true));",
+                  "  return;",
+                  "}",
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "if (body.ret_code !== 0) {",
+                  "  pm.test('重置后可用 tempPassword 登录（请先跑 bd-grpc-reset-password.sh）', () => {",
+                  "    pm.expect.fail('ret_code=' + body.ret_code + ' msg=' + body.ret_msg);",
+                  "  });",
+                  "  return;",
+                  "}",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "pm.test('mustChangePassword=true', () => {",
+                  "  pm.expect(body.result.mustChangePassword).to.eql(true);",
+                  "});",
+                  "pm.collectionVariables.set('accessToken', body.token);",
+                  "pm.environment.set('accessToken', body.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": {{loginData}},\n  \"broker_id\": {{brokerId}}\n}"
+            },
+            "url": "{{apiBase}}/api/v1/login"
+          }
+        },
+        {
+          "name": "[ok] R-03 旧 JWT 在重置后失效（可选）",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const old = (pm.collectionVariables.get('_oldTokenBeforeReset') || '').trim();",
+                  "if (!old) {",
+                  "  pm.collectionVariables.set('_skipOld', 'true');",
+                  "  return;",
+                  "}",
+                  "pm.collectionVariables.set('_skipOld', 'false');",
+                  "pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + old });"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('_skipOld') === 'true') {",
+                  "  pm.test('未缓存 _oldTokenBeforeReset — skip R-03（可在重置前手动 set）', () => pm.expect(true).to.eql(true));",
+                  "  return;",
+                  "}",
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('旧 token 鉴权失败', () => {",
+                  "  pm.expect(body.ret_code).to.be.oneOf([10007, 20100, 20104, 20101]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/bd-users/ping"
+          }
+        }
+      ]
+    },
+    {
+      "name": "D · E2E 流程",
+      "item": [
+        {
+          "name": "[ok] F-01a 登录",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const email = pm.environment.get('bdEmail');",
+                  "const password = pm.environment.get('bdPassword');",
+                  "const brokerId = pm.environment.get('brokerId') || '1';",
+                  "const plain = JSON.stringify({ email, password, broker_id: Number(brokerId) });",
+                  "pm.collectionVariables.set('loginData', JSON.stringify(plain));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "pm.collectionVariables.set('accessToken', body.token);",
+                  "pm.environment.set('accessToken', body.token);",
+                  "pm.collectionVariables.set('_oldToken', body.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": {{loginData}},\n  \"broker_id\": {{brokerId}}\n}"
+            },
+            "url": "{{apiBase}}/api/v1/login"
+          }
+        },
+        {
+          "name": "[ok] F-01b ping 鉴权成功",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "pm.test('result=bd-auth', () => pm.expect(body.result).to.eql('bd-auth'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/bd-users/ping"
+          }
+        },
+        {
+          "name": "[ok] F-01c logout",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/logout"
+          }
+        },
+        {
+          "name": "[err] F-01d logout 后再 ping",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const old = pm.collectionVariables.get('_oldToken') || '';",
+                  "pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + old });"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('已登出鉴权失败', () => {",
+                  "  pm.expect(body.ret_code).to.not.eql(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/bd-users/ping"
+          }
+        },
+        {
+          "name": "[ok] F-02a 登录（改密前）",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const email = pm.environment.get('bdEmail');",
+                  "const password = pm.environment.get('bdPassword');",
+                  "const brokerId = pm.environment.get('brokerId') || '1';",
+                  "const plain = JSON.stringify({ email, password, broker_id: Number(brokerId) });",
+                  "pm.collectionVariables.set('loginData', JSON.stringify(plain));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "pm.collectionVariables.set('accessToken', body.token);",
+                  "pm.environment.set('accessToken', body.token);",
+                  "pm.collectionVariables.set('_oldToken', body.token);",
+                  "const np = 'Chg' + String(Date.now()).slice(-6) + 'Aa1';",
+                  "pm.collectionVariables.set('_newPassword', np);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": {{loginData}},\n  \"broker_id\": {{brokerId}}\n}"
+            },
+            "url": "{{apiBase}}/api/v1/login"
+          }
+        },
+        {
+          "name": "[ok] F-02b change_password",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const oldPwd = pm.environment.get('bdPassword');",
+                  "const newPwd = pm.collectionVariables.get('_newPassword');",
+                  "if (!newPwd) throw new Error('缺少 _newPassword');",
+                  "pm.collectionVariables.set('_changeBody', JSON.stringify({",
+                  "  old_password: oldPwd,",
+                  "  new_password: newPwd",
+                  "}));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{{_changeBody}}"
+            },
+            "url": "{{apiBase}}/api/v1/change_password"
+          }
+        },
+        {
+          "name": "[err] F-02c 旧 token ping 应失败",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const old = pm.collectionVariables.get('_oldToken') || '';",
+                  "pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + old });"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('改密后旧 token 失效', () => pm.expect(body.ret_code).to.not.eql(0));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/bd-users/ping"
+          }
+        },
+        {
+          "name": "[ok] F-02d 新密登录并恢复原密码",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const email = pm.environment.get('bdEmail');",
+                  "const newPwd = pm.collectionVariables.get('_newPassword');",
+                  "const brokerId = pm.environment.get('brokerId') || '1';",
+                  "const plain = JSON.stringify({ email, password: newPwd, broker_id: Number(brokerId) });",
+                  "pm.collectionVariables.set('loginData', JSON.stringify(plain));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('新密登录成功', () => pm.expect(body.ret_code).to.eql(0));",
+                  "pm.test('mustChangePassword=false', () => {",
+                  "  pm.expect(body.result.mustChangePassword).to.eql(false);",
+                  "});",
+                  "pm.collectionVariables.set('accessToken', body.token);",
+                  "pm.environment.set('accessToken', body.token);",
+                  "",
+                  "// 恢复环境原密码，避免污染后续跑次",
+                  "const orig = pm.environment.get('bdPassword');",
+                  "const cur = pm.collectionVariables.get('_newPassword');",
+                  "pm.sendRequest({",
+                  "  url: (pm.environment.get('apiBase') || pm.collectionVariables.get('apiBase')) + '/api/v1/change_password',",
+                  "  method: 'POST',",
+                  "  header: {",
+                  "    'Content-Type': 'application/json',",
+                  "    Authorization: 'Bearer ' + body.token",
+                  "  },",
+                  "  body: {",
+                  "    mode: 'raw',",
+                  "    raw: JSON.stringify({ old_password: cur, new_password: orig })",
+                  "  }",
+                  "}, (err, res) => {",
+                  "  pm.test('已尝试恢复原密码', () => {",
+                  "    pm.expect(err).to.eql(null);",
+                  "    if (res) pm.expect(res.code).to.eql(200);",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": {{loginData}},\n  \"broker_id\": {{brokerId}}\n}"
+            },
+            "url": "{{apiBase}}/api/v1/login"
+          }
+        }
+      ]
+    }
+  ]
+}
