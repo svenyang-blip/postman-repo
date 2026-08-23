@@ -1,0 +1,1513 @@
+{
+  "info": {
+    "_postman_id": "d1e2f3a4-b5c6-7890-testnet-bd-api",
+    "name": "BD Management · API · testnet (plain login)",
+    "description": "bd-management testnet HTTP：明文登录 + 查询 + Leads 导出 + Lead 审批 + BD 看板。\n\n**文档**：`docs/bd-api-testnet-testing.md`\n\n**运行**：`npm run pm:bd-api:testnet` 或 `npm run pm:bd-api:local`",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "apiBase", "value": "" },
+    { "key": "loginData", "value": "" },
+    { "key": "accessToken", "value": "" },
+    { "key": "managerToken", "value": "" },
+    { "key": "pendingApprovalId", "value": "" },
+    { "key": "bdAffiliateId", "value": "" },
+    { "key": "bdAffiliateKeyword", "value": "" }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.request.headers.upsert({ key: 'Accept', value: 'application/json' });",
+          "if (pm.request.body && pm.request.body.mode === 'raw') {",
+          "  pm.request.headers.upsert({ key: 'Content-Type', value: 'application/json' });",
+          "}",
+          "const referer = (pm.environment.get('referer') || '').trim();",
+          "if (referer) {",
+          "  pm.request.headers.upsert({ key: 'Referer', value: referer });",
+          "}",
+          "",
+          "const name = (pm.info && pm.info.requestName) || '';",
+          "const url = pm.request.url.toString();",
+          "const useManager = /Manager 登录|mgr\\.global/.test(name)",
+          "  || (/\\[ok\\] Q-0[23]|列表/.test(name) && /\\/bd-users(?!\\/me)/.test(url))",
+          "  || (/\\/leads\\/approvals/i.test(url) && !/BD token|无\\s*Token/.test(name))",
+          "  || (/\\/dashboard/i.test(url) && /Manager/.test(name));",
+          "const token = useManager",
+          "  ? (pm.environment.get('managerToken') || pm.collectionVariables.get('managerToken') || '')",
+          "  : (pm.environment.get('accessToken') || pm.collectionVariables.get('accessToken') || '');",
+          "const needsAuth = /\\/bd-users|\\/leads|\\/dashboard|\\/logout|\\/change_password/i.test(url) && !/login/.test(url);",
+          "const skipAuth = /S01 检查|无\\s*Token|E-E01/.test(name);",
+          "if (needsAuth && token && !skipAuth) {",
+          "  pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + token.trim() });",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (!pm.response || pm.response.code === undefined) {",
+          "  const err = (pm.response && pm.response.reason && pm.response.reason().message) || '请求失败';",
+          "  pm.test('请求可达（请检查 apiBase 是否为真实地址）', () => {",
+          "    pm.expect.fail(err);",
+          "  });",
+          "  return;",
+          "}",
+          "const ct = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+          "const text = pm.response.text() || '';",
+          "if (ct.includes('text/csv') || ct.includes('application/octet-stream')) {",
+          "  return;",
+          "}",
+          "if (ct.includes('text/html') || text.trimStart().startsWith('<!')) {",
+          "  pm.test('响应应为 JSON API（非 HTML）', () => {",
+          "    pm.expect.fail('got HTML — 请检查 apiBase 是否正确');",
+          "  });",
+          "  return;",
+          "}",
+          "try {",
+          "  const body = pm.response.json();",
+          "  if (body && body.ret_code === 0 && typeof body.token === 'string' && body.token) {",
+          "    const n = (pm.info && pm.info.requestName) || '';",
+          "    if (/Manager 登录/.test(n)) {",
+          "      pm.environment.set('managerToken', body.token);",
+          "      pm.collectionVariables.set('managerToken', body.token);",
+          "    } else if (/login/i.test(pm.request.url.toString())) {",
+          "      pm.environment.set('accessToken', body.token);",
+          "      pm.collectionVariables.set('accessToken', body.token);",
+          "    }",
+          "  }",
+          "} catch (e) { /* ignore */ }"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "00 Setup",
+      "item": [
+        {
+          "name": "S01 检查 apiBase / 账号",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const apiBase = (pm.environment.get('apiBase') || '').trim();",
+                  "if (!apiBase || apiBase.includes('CHANGE_ME')) {",
+                  "  throw new Error('请在环境中填写 apiBase');",
+                  "}",
+                  "const email = (pm.environment.get('bdEmail') || '').trim();",
+                  "const password = (pm.environment.get('bdPassword') || '').trim();",
+                  "if (!email || !password) {",
+                  "  throw new Error('请填写 bdEmail / bdPassword');",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('apiBase 已配置', () => {",
+                  "  const v = (pm.environment.get('apiBase') || '').trim();",
+                  "  pm.expect(v).to.not.eql('');",
+                  "  pm.expect(v).to.not.include('CHANGE_ME');",
+                  "});",
+                  "pm.test('测试账号已配置', () => {",
+                  "  pm.expect((pm.environment.get('bdEmail') || '').trim()).to.not.eql('');",
+                  "  pm.expect((pm.environment.get('managerEmail') || '').trim()).to.not.eql('');",
+                  "});",
+                  "pm.test('API 可达（未登录应返回 10007）', () => {",
+                  "  pm.expect(pm.response.code).to.eql(200);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.ret_code).to.eql(10007);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/bd-users/ping"
+          }
+        }
+      ]
+    },
+    {
+      "name": "A · Login 正向 [ok]",
+      "item": [
+        {
+          "name": "[ok] L-01 Manager 登录 mgr.global@zoomex.com",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const email = pm.environment.get('managerEmail');",
+                  "const password = pm.environment.get('managerPassword');",
+                  "const brokerId = pm.environment.get('brokerId') || '1';",
+                  "const plain = JSON.stringify({ email, password, broker_id: Number(brokerId) });",
+                  "pm.collectionVariables.set('loginData', JSON.stringify(plain));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "pm.test('token 非空', () => {",
+                  "  pm.expect(body.token).to.be.a('string').and.not.eql('');",
+                  "  pm.expect(body.result.token).to.eql(body.token);",
+                  "});",
+                  "pm.collectionVariables.set('managerToken', body.token);",
+                  "pm.environment.set('managerToken', body.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": {{loginData}},\n  \"broker_id\": {{brokerId}}\n}"
+            },
+            "url": "{{apiBase}}/api/v1/login"
+          }
+        },
+        {
+          "name": "[ok] L-02 BD 登录 aiden@zoomex.com",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const email = pm.environment.get('bdEmail');",
+                  "const password = pm.environment.get('bdPassword');",
+                  "const brokerId = pm.environment.get('brokerId') || '1';",
+                  "const plain = JSON.stringify({ email, password, broker_id: Number(brokerId) });",
+                  "pm.collectionVariables.set('loginData', JSON.stringify(plain));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "pm.test('双 token 一致', () => {",
+                  "  pm.expect(body.token).to.be.a('string').and.not.eql('');",
+                  "  pm.expect(body.result).to.include.keys('token', 'mustChangePassword');",
+                  "});",
+                  "pm.collectionVariables.set('accessToken', body.token);",
+                  "pm.environment.set('accessToken', body.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": {{loginData}},\n  \"broker_id\": {{brokerId}}\n}"
+            },
+            "url": "{{apiBase}}/api/v1/login"
+          }
+        },
+        {
+          "name": "[ok] L-03 响应壳字段",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const email = pm.environment.get('bdEmail');",
+                  "const password = pm.environment.get('bdPassword');",
+                  "const brokerId = pm.environment.get('brokerId') || '1';",
+                  "const plain = JSON.stringify({ email, password, broker_id: Number(brokerId) });",
+                  "pm.collectionVariables.set('loginData', JSON.stringify(plain));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test('Responses 壳', () => {",
+                  "  pm.expect(body).to.include.keys('ret_code', 'ret_msg', 'result', 'time_now');",
+                  "  pm.expect(body.ret_msg).to.eql('ok');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": {{loginData}},\n  \"broker_id\": {{brokerId}}\n}"
+            },
+            "url": "{{apiBase}}/api/v1/login"
+          }
+        }
+      ]
+    },
+    {
+      "name": "B · Login 异常 [err]",
+      "item": [
+        {
+          "name": "[err] L-E01 缺 data",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=20101', () => pm.expect(body.ret_code).to.eql(20101));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": "{{apiBase}}/api/v1/login"
+          }
+        },
+        {
+          "name": "[err] L-E05 错密",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const email = pm.environment.get('bdEmail');",
+                  "const password = pm.environment.get('wrongPassword') || 'WrongPass1A';",
+                  "const brokerId = pm.environment.get('brokerId') || '1';",
+                  "const plain = JSON.stringify({ email, password, broker_id: Number(brokerId) });",
+                  "pm.collectionVariables.set('loginData', JSON.stringify(plain));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=20101 AUTH_FAILED', () => pm.expect(body.ret_code).to.eql(20101));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": {{loginData}},\n  \"broker_id\": {{brokerId}}\n}"
+            },
+            "url": "{{apiBase}}/api/v1/login"
+          }
+        }
+      ]
+    },
+    {
+      "name": "C · Query 查询 [ok]",
+      "item": [
+        {
+          "name": "[ok] Q-01 GET /bd-users/me（BD token）",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "const r = body.result || {};",
+                  "pm.test('当前用户字段', () => {",
+                  "  pm.expect(r).to.include.keys('email', 'user_role', 'region');",
+                  "  pm.expect(r.email).to.eql(pm.environment.get('bdEmail'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/bd-users/me"
+          }
+        },
+        {
+          "name": "[ok] Q-02 GET /bd-users 列表（Manager token）",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "const r = body.result || {};",
+                  "pm.test('分页结构', () => {",
+                  "  pm.expect(r).to.include.keys('list', 'total', 'page', 'page_size');",
+                  "  pm.expect(r.list).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/bd-users?page=1&page_size=20"
+          }
+        },
+        {
+          "name": "[ok] Q-03 GET /bd-users?region=non_kr&status=active",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/bd-users?region=non_kr&status=active&page=1&page_size=10"
+          }
+        },
+        {
+          "name": "[ok] Q-04 GET /bd-users/ping",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "pm.test('result=bd-auth', () => pm.expect(body.result).to.eql('bd-auth'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/bd-users/ping"
+          }
+        }
+      ]
+    },
+    {
+      "name": "D · Session 会话 [ok]",
+      "item": [
+        {
+          "name": "[ok] F-01 登录 → ping → logout",
+          "item": [
+            {
+              "name": "F-01a BD 登录",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const email = pm.environment.get('bdEmail');",
+                      "const password = pm.environment.get('bdPassword');",
+                      "const brokerId = pm.environment.get('brokerId') || '1';",
+                      "const plain = JSON.stringify({ email, password, broker_id: Number(brokerId) });",
+                      "pm.collectionVariables.set('loginData', JSON.stringify(plain));"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('登录成功', () => {",
+                      "  pm.expect(pm.response.json().ret_code).to.eql(0);",
+                      "});",
+                      "const t = pm.response.json().token;",
+                      "pm.collectionVariables.set('accessToken', t);",
+                      "pm.environment.set('accessToken', t);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"data\": {{loginData}},\n  \"broker_id\": {{brokerId}}\n}"
+                },
+                "url": "{{apiBase}}/api/v1/login"
+              }
+            },
+            {
+              "name": "F-01b ping 鉴权通过",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('ping ret_code=0', () => pm.expect(pm.response.json().ret_code).to.eql(0));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{apiBase}}/api/v1/bd-users/ping"
+              }
+            },
+            {
+              "name": "F-01c logout",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('logout ret_code=0', () => pm.expect(pm.response.json().ret_code).to.eql(0));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{}"
+                },
+                "url": "{{apiBase}}/api/v1/logout"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "E · Leads 导出 [ok]",
+      "item": [
+        {
+          "name": "[ok] E-01 GET /leads/export tab=owned（BD token）",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.request.headers.upsert({ key: 'Accept', value: 'text/csv,*/*' });"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const ct = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+                  "pm.test('Content-Type 为 CSV', () => {",
+                  "  pm.expect(ct).to.include('csv');",
+                  "});",
+                  "const cd = pm.response.headers.get('Content-Disposition') || '';",
+                  "pm.test('Content-Disposition 含 leads_export.csv', () => {",
+                  "  pm.expect(cd).to.include('leads_export.csv');",
+                  "});",
+                  "const text = pm.response.text() || '';",
+                  "pm.test('CSV 含表头', () => {",
+                  "  pm.expect(text).to.match(/kol_name/i);",
+                  "  pm.expect(text).to.match(/linktree/i);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/leads/export?tab=owned"
+          }
+        },
+        {
+          "name": "[ok] E-02 GET /leads/export tab=owned + status 筛选",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.request.headers.upsert({ key: 'Accept', value: 'text/csv,*/*' });"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('CSV 响应', () => {",
+                  "  pm.expect((pm.response.headers.get('Content-Type') || '').toLowerCase()).to.include('csv');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/leads/export?tab=owned&status=New"
+          }
+        },
+        {
+          "name": "[ok] E-03 GET /leads/export（Manager token）",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.request.headers.upsert({ key: 'Accept', value: 'text/csv,*/*' });",
+                  "const t = (pm.environment.get('managerToken') || pm.collectionVariables.get('managerToken') || '').trim();",
+                  "if (t) pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + t });"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('CSV 响应', () => {",
+                  "  pm.expect((pm.response.headers.get('Content-Type') || '').toLowerCase()).to.include('csv');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/leads/export?tab=owned"
+          }
+        },
+        {
+          "name": "[err] E-E01 无 Token 导出",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.request.headers.remove('Authorization');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=10007 未登录', () => pm.expect(body.ret_code).to.eql(10007));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/leads/export?tab=owned"
+          }
+        }
+      ]
+    },
+    {
+      "name": "F · Lead 审批 approvals",
+      "item": [
+        {
+          "name": "[ok] AP-01 GET /leads/approvals（Manager token）",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "const r = body.result || {};",
+                  "pm.test('分页结构', () => {",
+                  "  pm.expect(r).to.include.keys('list', 'total', 'page', 'page_size');",
+                  "  pm.expect(r.list).to.be.an('array');",
+                  "  pm.expect(r.page).to.eql(1);",
+                  "  pm.expect(r.page_size).to.eql(20);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/leads/approvals"
+          }
+        },
+        {
+          "name": "[ok] AP-02 GET /leads/approvals?status=pending",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "const r = body.result || {};",
+                  "pm.test('list 为数组', () => pm.expect(r.list).to.be.an('array'));",
+                  "(r.list || []).forEach((it) => {",
+                  "  pm.expect(it.status).to.eql('pending');",
+                  "});",
+                  "const envId = (pm.environment.get('pendingApprovalId') || '').trim();",
+                  "if (envId) {",
+                  "  pm.collectionVariables.set('pendingApprovalId', envId);",
+                  "} else if (r.list && r.list.length > 0 && r.list[0].id != null) {",
+                  "  pm.collectionVariables.set('pendingApprovalId', String(r.list[0].id));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/leads/approvals?status=pending&page=1&page_size=20"
+          }
+        },
+        {
+          "name": "[ok] AP-03 GET /leads/approvals 分页 page_size=5",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "const r = body.result || {};",
+                  "pm.test('page_size=5', () => {",
+                  "  pm.expect(r.page).to.eql(1);",
+                  "  pm.expect(r.page_size).to.eql(5);",
+                  "  pm.expect(r.list.length).to.be.at.most(5);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/leads/approvals?page=1&page_size=5"
+          }
+        },
+        {
+          "name": "[err] AP-E01 无 Token 列表",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.request.headers.remove('Authorization');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=10007 未登录', () => pm.expect(body.ret_code).to.eql(10007));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/leads/approvals"
+          }
+        },
+        {
+          "name": "[err] AP-E02 BD token 列表",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=20300 permission denied', () => pm.expect(body.ret_code).to.eql(20300));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/leads/approvals"
+          }
+        },
+        {
+          "name": "[err] AP-E03 非法 status",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=10001 PARAMS_ERROR', () => pm.expect(body.ret_code).to.eql(10001));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/leads/approvals?status=foo"
+          }
+        },
+        {
+          "name": "[err] AP-E04 POST decision 缺 action",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=10001', () => pm.expect(body.ret_code).to.eql(10001));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"remark\": \"missing action\"\n}"
+            },
+            "url": "{{apiBase}}/api/v1/leads/approvals/999999999/decision"
+          }
+        },
+        {
+          "name": "[err] AP-E05 POST decision 非法 action",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=10001', () => pm.expect(body.ret_code).to.eql(10001));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"maybe\",\n  \"remark\": \"bad action\"\n}"
+            },
+            "url": "{{apiBase}}/api/v1/leads/approvals/999999999/decision"
+          }
+        },
+        {
+          "name": "[err] AP-E06 POST decision 审批单不存在",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=20209 LEAD_APPROVAL_NOT_FOUND', () => pm.expect(body.ret_code).to.eql(20209));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"reject\",\n  \"remark\": \"not found\"\n}"
+            },
+            "url": "{{apiBase}}/api/v1/leads/approvals/999999999/decision"
+          }
+        },
+        {
+          "name": "[err] AP-E07 BD token decision",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=20300 permission denied', () => pm.expect(body.ret_code).to.eql(20300));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"reject\",\n  \"remark\": \"bd forbidden\"\n}"
+            },
+            "url": "{{apiBase}}/api/v1/leads/approvals/999999999/decision"
+          }
+        },
+        {
+          "name": "[err] AP-E08 无 Token decision",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.request.headers.remove('Authorization');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=10007 未登录', () => pm.expect(body.ret_code).to.eql(10007));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"reject\"\n}"
+            },
+            "url": "{{apiBase}}/api/v1/leads/approvals/999999999/decision"
+          }
+        },
+        {
+          "name": "[ok] AP-04 POST decision reject（需 pendingApprovalId）",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const id = (pm.environment.get('pendingApprovalId') || pm.collectionVariables.get('pendingApprovalId') || '').trim();",
+                  "const run = String(pm.environment.get('runApprovalDecision') || '').toLowerCase() === 'true';",
+                  "if (!run || !id) {",
+                  "  console.log('跳过 AP-04：设置 runApprovalDecision=true 且提供 pendingApprovalId（或先跑 AP-02 有 pending）');",
+                  "  if (typeof pm.execution !== 'undefined' && pm.execution.skipRequest) {",
+                  "    pm.execution.skipRequest();",
+                  "  }",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const id = (pm.environment.get('pendingApprovalId') || pm.collectionVariables.get('pendingApprovalId') || '').trim();",
+                  "const run = String(pm.environment.get('runApprovalDecision') || '').toLowerCase() === 'true';",
+                  "if (!run || !id) {",
+                  "  pm.test('AP-04 已跳过（未开启 runApprovalDecision 或无 pendingApprovalId）', () => {",
+                  "    pm.expect(true).to.be.true;",
+                  "  });",
+                  "  return;",
+                  "}",
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "pm.test('reject result 为 null', () => pm.expect(body.result).to.eql(null));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"reject\",\n  \"remark\": \"newman reject\"\n}"
+            },
+            "url": "{{apiBase}}/api/v1/leads/approvals/{{pendingApprovalId}}/decision"
+          }
+        }
+      ]
+    },
+    {
+      "name": "G · Dashboard 看板",
+      "item": [
+        {
+          "name": "[ok] AC-20-01 GET /dashboard/bd/overview（BD token）",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0 ret_msg=ok', () => {",
+                  "  pm.expect(body.ret_code).to.eql(0);",
+                  "  pm.expect(body.ret_msg).to.eql('ok');",
+                  "});",
+                  "const kpis = (body.result && body.result.kpis) || {};",
+                  "const expected = [",
+                  "  'affiliate_count', 'affiliate_new_month', 'in_progress_leads', 'offer_stage_leads',",
+                  "  'stale_offer_count', 'deal_rate_month', 'leads_assigned_month', 'leads_created_month'",
+                  "];",
+                  "pm.test('kpis 仅含 8 个过程卡字段', () => {",
+                  "  pm.expect(Object.keys(kpis).sort()).to.eql(expected.slice().sort());",
+                  "});",
+                  "pm.test('计数非负且成交率为数字', () => {",
+                  "  expected.filter((k) => k !== 'deal_rate_month').forEach((k) => {",
+                  "    pm.expect(kpis[k], k).to.be.a('number');",
+                  "    pm.expect(kpis[k], k).to.be.at.least(0);",
+                  "  });",
+                  "  pm.expect(kpis.deal_rate_month).to.be.a('number');",
+                  "  pm.expect(kpis.deal_rate_month).to.be.at.least(0);",
+                  "});",
+                  "pm.collectionVariables.set('bdOverviewAffiliateCount', String(kpis.affiliate_count));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/dashboard/bd/overview"
+          }
+        },
+        {
+          "name": "[ok] AC-20-01b overview 忽略 range=lifetime",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('V1 忽略 range，仍成功', () => {",
+                  "  pm.expect(body.ret_code).to.eql(0);",
+                  "  pm.expect(body.result && body.result.kpis).to.be.an('object');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/dashboard/bd/overview?range=lifetime"
+          }
+        },
+        {
+          "name": "[ok] AC-20-02 GET overview（Manager token，不汇总下属）",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "const kpis = (body.result && body.result.kpis) || {};",
+                  "pm.test('Manager 也只返回自身过程卡', () => {",
+                  "  pm.expect(kpis).to.include.keys('affiliate_count', 'in_progress_leads', 'deal_rate_month');",
+                  "  pm.expect(kpis.affiliate_count).to.be.a('number');",
+                  "});",
+                  "pm.collectionVariables.set('mgrOverviewAffiliateCount', String(kpis.affiliate_count));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/dashboard/bd/overview"
+          }
+        },
+        {
+          "name": "[err] AC-20-03 无 Token overview",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.request.headers.remove('Authorization');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=10007 未登录', () => pm.expect(body.ret_code).to.eql(10007));",
+                  "pm.test('无业务 result.kpis', () => {",
+                  "  pm.expect(body.result == null || body.result.kpis == null).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/dashboard/bd/overview"
+          }
+        },
+        {
+          "name": "[ok] AC-20-04 空名下全零（需 emptyDashboardEmail）",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const email = (pm.environment.get('emptyDashboardEmail') || '').trim();",
+                  "const password = (pm.environment.get('emptyDashboardPassword') || '').trim();",
+                  "if (!email || !password) {",
+                  "  console.log('跳过 AC-20-04：未配置 emptyDashboardEmail / emptyDashboardPassword');",
+                  "  if (typeof pm.execution !== 'undefined' && pm.execution.skipRequest) {",
+                  "    pm.execution.skipRequest();",
+                  "  }",
+                  "  return;",
+                  "}",
+                  "const apiBase = (pm.environment.get('apiBase') || '').replace(/\\/$/, '');",
+                  "const brokerId = Number(pm.environment.get('brokerId') || 1);",
+                  "const payload = {",
+                  "  data: JSON.stringify({ email: email, password: password, broker_id: brokerId }),",
+                  "  broker_id: brokerId",
+                  "};",
+                  "pm.sendRequest({",
+                  "  url: apiBase + '/api/v1/login',",
+                  "  method: 'POST',",
+                  "  header: { 'Content-Type': 'application/json', Accept: 'application/json' },",
+                  "  body: { mode: 'raw', raw: JSON.stringify(payload) }",
+                  "}, function (err, res) {",
+                  "  if (err) { throw err; }",
+                  "  const body = res.json();",
+                  "  if (!body || !body.token) {",
+                  "    throw new Error('emptyDashboard 账号登录失败 ret_code=' + (body && body.ret_code));",
+                  "  }",
+                  "  pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + String(body.token).trim() });",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const email = (pm.environment.get('emptyDashboardEmail') || '').trim();",
+                  "const password = (pm.environment.get('emptyDashboardPassword') || '').trim();",
+                  "if (!email || !password) {",
+                  "  pm.test('AC-20-04 已跳过（未配置空名下账号）', () => pm.expect(true).to.be.true);",
+                  "  return;",
+                  "}",
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "const kpis = (body.result && body.result.kpis) || {};",
+                  "pm.test('各计数为 0 且 deal_rate_month=0', () => {",
+                  "  ['affiliate_count', 'affiliate_new_month', 'in_progress_leads', 'offer_stage_leads',",
+                  "    'stale_offer_count', 'leads_assigned_month', 'leads_created_month'].forEach((k) => {",
+                  "    pm.expect(kpis[k], k).to.eql(0);",
+                  "  });",
+                  "  pm.expect(Number(kpis.deal_rate_month)).to.eql(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/dashboard/bd/overview"
+          }
+        },
+        {
+          "name": "[ok] AC-21-01 GET /dashboard/bd/affiliates 默认 30d",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "const r = body.result || {};",
+                  "pm.test('默认 range=30d 分页 1/20', () => {",
+                  "  pm.expect(r.range).to.eql('30d');",
+                  "  pm.expect(r.page).to.eql(1);",
+                  "  pm.expect(r.page_size).to.eql(20);",
+                  "  pm.expect(r.total).to.be.a('number');",
+                  "  pm.expect(r.list).to.be.an('array');",
+                  "  pm.expect(r.list.length).to.be.at.most(20);",
+                  "});",
+                  "(r.list || []).forEach((it, i) => {",
+                  "  pm.test('list[' + i + '] 身份字段与口径', () => {",
+                  "    pm.expect(it).to.include.keys('affiliate_id', 'kol_name', 'sub_affiliate');",
+                  "    ['signup', 'volume', 'status', 'commission', 'ftd'].forEach((k) => {",
+                  "      pm.expect(it).to.not.have.property(k);",
+                  "    });",
+                  "    pm.expect(it.sub_affiliate).to.be.a('boolean');",
+                  "    if (it.parent_id == null || it.parent_id === 0) {",
+                  "      pm.expect(it.sub_affiliate).to.eql(false);",
+                  "    } else {",
+                  "      pm.expect(it.parent_id).to.be.above(0);",
+                  "      pm.expect(it.sub_affiliate).to.eql(true);",
+                  "    }",
+                  "  });",
+                  "});",
+                  "const lifetime = Number(pm.collectionVariables.get('bdOverviewAffiliateCount') || 'NaN');",
+                  "if (!Number.isNaN(lifetime)) {",
+                  "  pm.test('30d total 不超过 overview 生涯 affiliate_count', () => {",
+                  "    pm.expect(r.total).to.be.at.most(lifetime);",
+                  "  });",
+                  "}",
+                  "if (r.list && r.list.length > 0) {",
+                  "  pm.collectionVariables.set('bdAffiliateId', String(r.list[0].affiliate_id));",
+                  "}",
+                  "const envKw = (pm.environment.get('dashboardKeyword') || '').trim();",
+                  "if (envKw) {",
+                  "  pm.collectionVariables.set('bdAffiliateKeyword', envKw);",
+                  "} else if (r.list && r.list.length > 0) {",
+                  "  pm.collectionVariables.set('bdAffiliateKeyword', String(r.list[0].affiliate_id));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/dashboard/bd/affiliates"
+          }
+        },
+        {
+          "name": "[ok] AC-21-01b affiliates range=7d",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0 range=7d', () => {",
+                  "  pm.expect(body.ret_code).to.eql(0);",
+                  "  pm.expect(body.result.range).to.eql('7d');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/dashboard/bd/affiliates?range=7d"
+          }
+        },
+        {
+          "name": "[ok] AC-21-01c affiliates range=90d",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0 range=90d', () => {",
+                  "  pm.expect(body.ret_code).to.eql(0);",
+                  "  pm.expect(body.result.range).to.eql('90d');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/dashboard/bd/affiliates?range=90d"
+          }
+        },
+        {
+          "name": "[ok] AC-21-02 keyword 只命中本账号（BD token）",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const envKw = (pm.environment.get('dashboardKeyword') || '').trim();",
+                  "if (envKw) {",
+                  "  pm.collectionVariables.set('bdAffiliateKeyword', envKw);",
+                  "}",
+                  "const kw = (pm.collectionVariables.get('bdAffiliateKeyword') || '').trim();",
+                  "if (!kw) {",
+                  "  console.log('跳过 AC-21-02：无 dashboardKeyword 且 AC-21-01 列表为空');",
+                  "  if (typeof pm.execution !== 'undefined' && pm.execution.skipRequest) {",
+                  "    pm.execution.skipRequest();",
+                  "  }",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const kw = (pm.environment.get('dashboardKeyword') || pm.collectionVariables.get('bdAffiliateKeyword') || '').trim();",
+                  "if (!kw) {",
+                  "  pm.test('AC-21-02 已跳过（无名下代理可搜）', () => pm.expect(true).to.be.true);",
+                  "  return;",
+                  "}",
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "const list = (body.result && body.result.list) || [];",
+                  "const expectId = (pm.collectionVariables.get('bdAffiliateId') || '').trim();",
+                  "pm.test('命中本账号行', () => {",
+                  "  pm.expect(list.length).to.be.at.least(1);",
+                  "  if (expectId && kw === expectId) {",
+                  "    const ids = list.map((it) => String(it.affiliate_id));",
+                  "    pm.expect(ids).to.include(expectId);",
+                  "  }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/dashboard/bd/affiliates?range=90d&keyword={{bdAffiliateKeyword}}"
+          }
+        },
+        {
+          "name": "[ok] AC-21-02b keyword 他人账号不出现（Manager token）",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const id = (pm.collectionVariables.get('bdAffiliateId') || '').trim();",
+                  "if (!id) {",
+                  "  console.log('跳过 AC-21-02b：无 BD 名下 affiliate_id');",
+                  "  if (typeof pm.execution !== 'undefined' && pm.execution.skipRequest) {",
+                  "    pm.execution.skipRequest();",
+                  "  }",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const id = (pm.collectionVariables.get('bdAffiliateId') || '').trim();",
+                  "if (!id) {",
+                  "  pm.test('AC-21-02b 已跳过（无 BD 名下代理）', () => pm.expect(true).to.be.true);",
+                  "  return;",
+                  "}",
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "const ids = ((body.result && body.result.list) || []).map((it) => String(it.affiliate_id));",
+                  "pm.test('Manager 列表不含 BD 的 affiliate_id', () => {",
+                  "  pm.expect(ids).to.not.include(id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/dashboard/bd/affiliates?range=90d&keyword={{bdAffiliateId}}"
+          }
+        },
+        {
+          "name": "[err] AC-21-03 range=lifetime",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=10001 PARAMS_ERROR', () => pm.expect(body.ret_code).to.eql(10001));",
+                  "pm.test('不返回列表', () => {",
+                  "  pm.expect(body.result == null || body.result.list == null).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/dashboard/bd/affiliates?range=lifetime"
+          }
+        },
+        {
+          "name": "[err] AC-21-03b range=180d",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=10001 PARAMS_ERROR', () => pm.expect(body.ret_code).to.eql(10001));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/dashboard/bd/affiliates?range=180d"
+          }
+        },
+        {
+          "name": "[err] AC-21-04 无 Token affiliates",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.request.headers.remove('Authorization');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=10007 未登录', () => pm.expect(body.ret_code).to.eql(10007));",
+                  "pm.test('无业务 result', () => {",
+                  "  pm.expect(body.result == null || body.result.list == null).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/dashboard/bd/affiliates"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,273 @@
+# Lead 审批用例骨架（源文件）。编译：npm run pm:skeleton:compile
+# 对应 LeadApprovalController · GET /leads/approvals · POST .../decision
+# fill: skeleton=仅 HTTP+ret_code；filled=含字段断言（本文件为 filled）
+
+id: bd-lead-approvals
+title: BD Management · Lead 审批（YAML）
+controller: LeadApprovalController
+output: postman/collections/bd-lead-approvals.postman_collection.json
+postman_id: c0ffee00-lead-appr-yaml-0001
+
+folders:
+  - name: 00 Setup · 登录
+    cases:
+      - id: L-01
+        kind: ok
+        name: Manager 登录
+        given: managerEmail / managerPassword
+        branch: 明文登录成功，写入 managerToken
+        fill: filled
+        login_as: manager
+        when:
+          method: POST
+          path: /api/v1/login
+        then:
+          http: 200
+          ret_code: 0
+        asserts:
+          - type: token_nonempty
+
+      - id: L-02
+        kind: ok
+        name: BD 登录
+        given: bdEmail / bdPassword
+        branch: 明文登录成功，写入 accessToken
+        fill: filled
+        login_as: bd
+        when:
+          method: POST
+          path: /api/v1/login
+        then:
+          http: 200
+          ret_code: 0
+        asserts:
+          - type: token_nonempty
+
+  - name: F · Lead 审批 approvals
+    cases:
+      - id: AP-01
+        kind: ok
+        name: GET /leads/approvals（Manager token）
+        given: Manager 已登录
+        auth: manager
+        branch: 列表默认分页
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/leads/approvals
+        then:
+          http: 200
+          ret_code: 0
+        asserts:
+          - type: result_keys
+            keys: [list, total, page, page_size]
+          - type: eql
+            path: result.page
+            value: 1
+          - type: eql
+            path: result.page_size
+            value: 20
+          - type: is_array
+            path: result.list
+
+      - id: AP-02
+        kind: ok
+        name: GET /leads/approvals?status=pending
+        given: Manager 已登录
+        auth: manager
+        branch: status=pending 筛选；缓存首条 id
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/leads/approvals
+          query:
+            status: pending
+            page: "1"
+            page_size: "20"
+        then:
+          http: 200
+          ret_code: 0
+        asserts:
+          - type: is_array
+            path: result.list
+          - type: list_field
+            path: result.list
+            field: status
+            value: pending
+          - type: save_pending_id
+
+      - id: AP-03
+        kind: ok
+        name: GET /leads/approvals 分页 page_size=5
+        given: Manager 已登录
+        auth: manager
+        branch: page_size 生效
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/leads/approvals
+          query:
+            page: "1"
+            page_size: "5"
+        then:
+          http: 200
+          ret_code: 0
+        asserts:
+          - type: eql
+            path: result.page
+            value: 1
+          - type: eql
+            path: result.page_size
+            value: 5
+          - type: list_max
+            path: result.list
+            value: 5
+
+      - id: AP-E01
+        kind: err
+        name: 无 Token 列表
+        given: 不带 Authorization
+        auth: none
+        branch: 拦截器未登录
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/leads/approvals
+        then:
+          http: 200
+          ret_code: 10007
+
+      - id: AP-E02
+        kind: err
+        name: BD token 列表
+        given: BD 已登录
+        auth: bd
+        branch: 仅 Manager 可审
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/leads/approvals
+        then:
+          http: 200
+          ret_code: 20300
+
+      - id: AP-E03
+        kind: err
+        name: 非法 status
+        given: Manager 已登录
+        auth: manager
+        branch: status 枚举校验
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/leads/approvals
+          query:
+            status: foo
+        then:
+          http: 200
+          ret_code: 10001
+
+      - id: AP-E04
+        kind: err
+        name: POST decision 缺 action
+        given: Manager 已登录
+        auth: manager
+        branch: action 必填
+        fill: filled
+        when:
+          method: POST
+          path: /api/v1/leads/approvals/999999999/decision
+          body:
+            remark: missing action
+        then:
+          http: 200
+          ret_code: 10001
+
+      - id: AP-E05
+        kind: err
+        name: POST decision 非法 action
+        given: Manager 已登录
+        auth: manager
+        branch: action 枚举
+        fill: filled
+        when:
+          method: POST
+          path: /api/v1/leads/approvals/999999999/decision
+          body:
+            action: maybe
+            remark: bad action
+        then:
+          http: 200
+          ret_code: 10001
+
+      - id: AP-E06
+        kind: err
+        name: POST decision 审批单不存在
+        given: Manager 已登录
+        auth: manager
+        branch: LEAD_APPROVAL_NOT_FOUND
+        fill: filled
+        when:
+          method: POST
+          path: /api/v1/leads/approvals/999999999/decision
+          body:
+            action: reject
+            remark: not found
+        then:
+          http: 200
+          ret_code: 20209
+
+      - id: AP-E07
+        kind: err
+        name: BD token decision
+        given: BD 已登录
+        auth: bd
+        branch: 写操作同样拒绝 BD
+        fill: filled
+        when:
+          method: POST
+          path: /api/v1/leads/approvals/999999999/decision
+          body:
+            action: reject
+            remark: bd forbidden
+        then:
+          http: 200
+          ret_code: 20300
+
+      - id: AP-E08
+        kind: err
+        name: 无 Token decision
+        given: 不带 Authorization
+        auth: none
+        branch: 拦截器未登录
+        fill: filled
+        when:
+          method: POST
+          path: /api/v1/leads/approvals/999999999/decision
+          body:
+            action: reject
+        then:
+          http: 200
+          ret_code: 10007
+
+      - id: AP-04
+        kind: ok
+        name: POST decision reject（需 pendingApprovalId）
+        given: runApprovalDecision=true 且有 pending 单
+        auth: manager
+        branch: 可选写操作 reject
+        fill: filled
+        skip:
+          env: runApprovalDecision
+          var: pendingApprovalId
+        when:
+          method: POST
+          path: /api/v1/leads/approvals/{{pendingApprovalId}}/decision
+          body:
+            action: reject
+            remark: newman reject
+        then:
+          http: 200
+          ret_code: 0
+        asserts:
+          - type: result_null

@@ -1,0 +1,541 @@
+{
+  "info": {
+    "_postman_id": "c0ffee00-lead-appr-yaml-0001",
+    "name": "BD Management · Lead 审批（YAML）",
+    "description": "由 `postman/skeletons/bd-lead-approvals.yaml` 生成，不要手改本 JSON。修改 YAML 后执行 `npm run pm:skeleton:compile`。\n\nController：`LeadApprovalController`",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "apiBase",
+      "value": ""
+    },
+    {
+      "key": "loginData",
+      "value": ""
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "managerToken",
+      "value": ""
+    },
+    {
+      "key": "pendingApprovalId",
+      "value": ""
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.request.headers.upsert({ key: 'Accept', value: 'application/json' });",
+          "if (pm.request.body && pm.request.body.mode === 'raw') {",
+          "  pm.request.headers.upsert({ key: 'Content-Type', value: 'application/json' });",
+          "}",
+          "const referer = (pm.environment.get('referer') || '').trim();",
+          "if (referer) {",
+          "  pm.request.headers.upsert({ key: 'Referer', value: referer });",
+          "}",
+          "const name = (pm.info && pm.info.requestName) || '';",
+          "const url = pm.request.url.toString();",
+          "const useManager = /Manager 登录/.test(name)",
+          "  || (/\\/leads\\/approvals/i.test(url) && !/BD token|无\\s*Token/.test(name));",
+          "const token = useManager",
+          "  ? (pm.environment.get('managerToken') || pm.collectionVariables.get('managerToken') || '')",
+          "  : (pm.environment.get('accessToken') || pm.collectionVariables.get('accessToken') || '');",
+          "const needsAuth = /\\/leads\\/approvals/i.test(url);",
+          "const skipAuth = /无\\s*Token/.test(name);",
+          "if (needsAuth && token && !skipAuth) {",
+          "  pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + token.trim() });",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (!pm.response || pm.response.code === undefined) {",
+          "  const err = (pm.response && pm.response.reason && pm.response.reason().message) || '请求失败';",
+          "  pm.test('请求可达（请检查 apiBase 是否为真实地址）', () => {",
+          "    pm.expect.fail(err);",
+          "  });",
+          "  return;",
+          "}",
+          "const ct = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+          "const text = pm.response.text() || '';",
+          "if (ct.includes('text/html') || text.trimStart().startsWith('<!')) {",
+          "  pm.test('响应应为 JSON API（非 HTML）', () => {",
+          "    pm.expect.fail('got HTML — 请检查 apiBase 是否正确');",
+          "  });",
+          "  return;",
+          "}",
+          "try {",
+          "  const body = pm.response.json();",
+          "  if (body && body.ret_code === 0 && typeof body.token === 'string' && body.token) {",
+          "    const n = (pm.info && pm.info.requestName) || '';",
+          "    if (/Manager 登录/.test(n)) {",
+          "      pm.environment.set('managerToken', body.token);",
+          "      pm.collectionVariables.set('managerToken', body.token);",
+          "    } else if (/login/i.test(pm.request.url.toString())) {",
+          "      pm.environment.set('accessToken', body.token);",
+          "      pm.collectionVariables.set('accessToken', body.token);",
+          "    }",
+          "  }",
+          "} catch (e) { /* ignore */ }"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "00 Setup · 登录",
+      "item": [
+        {
+          "name": "[ok] L-01 Manager 登录",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const email = pm.environment.get('managerEmail');",
+                  "const password = pm.environment.get('managerPassword');",
+                  "const brokerId = pm.environment.get('brokerId') || '1';",
+                  "const plain = JSON.stringify({ email, password, broker_id: Number(brokerId) });",
+                  "pm.collectionVariables.set('loginData', JSON.stringify(plain));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "pm.test('token 非空', () => {",
+                  "  pm.expect(body.token).to.be.a('string').and.not.eql('');",
+                  "  pm.expect(body.result.token).to.eql(body.token);",
+                  "});",
+                  "pm.collectionVariables.set('managerToken', body.token);",
+                  "pm.environment.set('managerToken', body.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": {{loginData}},\n  \"broker_id\": {{brokerId}}\n}"
+            }
+          }
+        },
+        {
+          "name": "[ok] L-02 BD 登录",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const email = pm.environment.get('bdEmail');",
+                  "const password = pm.environment.get('bdPassword');",
+                  "const brokerId = pm.environment.get('brokerId') || '1';",
+                  "const plain = JSON.stringify({ email, password, broker_id: Number(brokerId) });",
+                  "pm.collectionVariables.set('loginData', JSON.stringify(plain));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "pm.test('token 非空', () => {",
+                  "  pm.expect(body.token).to.be.a('string').and.not.eql('');",
+                  "  pm.expect(body.result.token).to.eql(body.token);",
+                  "});",
+                  "pm.collectionVariables.set('accessToken', body.token);",
+                  "pm.environment.set('accessToken', body.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": {{loginData}},\n  \"broker_id\": {{brokerId}}\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "F · Lead 审批 approvals",
+      "item": [
+        {
+          "name": "[ok] AP-01 GET /leads/approvals（Manager token）",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "const r = body.result || {};",
+                  "pm.test('分页结构', () => {",
+                  "  pm.expect(r).to.include.keys(\"list\", \"total\", \"page\", \"page_size\");",
+                  "  pm.expect(r.list).to.be.an('array');",
+                  "});",
+                  "pm.test('result.page=1', () => pm.expect(r..page).to.eql(1));",
+                  "pm.test('result.page_size=20', () => pm.expect(r..page_size).to.eql(20));",
+                  "pm.test('result.list 为数组', () => pm.expect(r..list).to.be.an('array'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/leads/approvals"
+          }
+        },
+        {
+          "name": "[ok] AP-02 GET /leads/approvals?status=pending",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "const r = body.result || {};",
+                  "pm.test('result.list 为数组', () => pm.expect(r..list).to.be.an('array'));",
+                  "(r..list || []).forEach((it) => {",
+                  "  pm.expect(it.status).to.eql(\"pending\");",
+                  "});",
+                  "const envId = (pm.environment.get('pendingApprovalId') || '').trim();",
+                  "if (envId) {",
+                  "  pm.collectionVariables.set('pendingApprovalId', envId);",
+                  "} else if (r.list && r.list.length > 0 && r.list[0].id != null) {",
+                  "  pm.collectionVariables.set('pendingApprovalId', String(r.list[0].id));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/leads/approvals?status=pending&page=1&page_size=20"
+          }
+        },
+        {
+          "name": "[ok] AP-03 GET /leads/approvals 分页 page_size=5",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "const r = body.result || {};",
+                  "pm.test('result.page=1', () => pm.expect(r..page).to.eql(1));",
+                  "pm.test('result.page_size=5', () => pm.expect(r..page_size).to.eql(5));",
+                  "pm.test('result.list.length<=5', () => {",
+                  "  pm.expect((r..list || []).length).to.be.at.most(5);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/leads/approvals?page=1&page_size=5"
+          }
+        },
+        {
+          "name": "[err] AP-E01 无 Token 列表",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.request.headers.remove('Authorization');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=10007', () => pm.expect(body.ret_code).to.eql(10007));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/leads/approvals"
+          }
+        },
+        {
+          "name": "[err] AP-E02 BD token 列表",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=20300', () => pm.expect(body.ret_code).to.eql(20300));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/leads/approvals"
+          }
+        },
+        {
+          "name": "[err] AP-E03 非法 status",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=10001', () => pm.expect(body.ret_code).to.eql(10001));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/leads/approvals?status=foo"
+          }
+        },
+        {
+          "name": "[err] AP-E04 POST decision 缺 action",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=10001', () => pm.expect(body.ret_code).to.eql(10001));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/leads/approvals/999999999/decision",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"remark\": \"missing action\"\n}"
+            }
+          }
+        },
+        {
+          "name": "[err] AP-E05 POST decision 非法 action",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=10001', () => pm.expect(body.ret_code).to.eql(10001));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/leads/approvals/999999999/decision",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"maybe\",\n  \"remark\": \"bad action\"\n}"
+            }
+          }
+        },
+        {
+          "name": "[err] AP-E06 POST decision 审批单不存在",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=20209', () => pm.expect(body.ret_code).to.eql(20209));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/leads/approvals/999999999/decision",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"reject\",\n  \"remark\": \"not found\"\n}"
+            }
+          }
+        },
+        {
+          "name": "[err] AP-E07 BD token decision",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=20300', () => pm.expect(body.ret_code).to.eql(20300));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/leads/approvals/999999999/decision",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"reject\",\n  \"remark\": \"bd forbidden\"\n}"
+            }
+          }
+        },
+        {
+          "name": "[err] AP-E08 无 Token decision",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.request.headers.remove('Authorization');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=10007', () => pm.expect(body.ret_code).to.eql(10007));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/leads/approvals/999999999/decision",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"reject\"\n}"
+            }
+          }
+        },
+        {
+          "name": "[ok] AP-04 POST decision reject（需 pendingApprovalId）",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const id = (pm.environment.get('pendingApprovalId') || pm.collectionVariables.get('pendingApprovalId') || '').trim();",
+                  "const run = String(pm.environment.get('runApprovalDecision') || '').toLowerCase() === 'true';",
+                  "if (!run || !id) {",
+                  "  console.log('跳过：设置 runApprovalDecision=true 且提供 pendingApprovalId');",
+                  "  if (typeof pm.execution !== \"undefined\" && pm.execution.skipRequest) {",
+                  "    pm.execution.skipRequest();",
+                  "  }",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const id = (pm.environment.get('pendingApprovalId') || pm.collectionVariables.get('pendingApprovalId') || '').trim();",
+                  "const run = String(pm.environment.get('runApprovalDecision') || '').toLowerCase() === 'true';",
+                  "if (!run || !id) {",
+                  "  pm.test('已跳过（未开启 runApprovalDecision 或无 pendingApprovalId）', () => {",
+                  "    pm.expect(true).to.be.true;",
+                  "  });",
+                  "  return;",
+                  "}",
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "const r = body.result || {};",
+                  "pm.test('result 为 null', () => pm.expect(body.result).to.eql(null));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/leads/approvals/{{pendingApprovalId}}/decision",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"reject\",\n  \"remark\": \"newman reject\"\n}"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
