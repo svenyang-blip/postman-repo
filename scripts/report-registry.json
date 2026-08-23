@@ -180,6 +180,19 @@
         { "id": "login", "pathIncludes": "/api/v1/login", "summaryLabel": "POST /login" },
         { "id": "other", "pathIncludes": null, "summaryLabel": "其它" }
       ]
+    },
+    {
+      "id": "bd-lead-approvals-local",
+      "title": "BD Management · Lead 审批",
+      "controller": "LeadApprovalController · YAML · local",
+      "json": "reports/newman-bd-lead-approvals-local.json",
+      "html": "reports/controllers/bd-lead-approvals-local.html",
+      "apiGroups": [
+        { "id": "login", "pathIncludes": "/api/v1/login", "summaryLabel": "POST /login" },
+        { "id": "approvals", "pathIncludes": "/leads/approvals", "method": "GET", "summaryLabel": "GET /leads/approvals" },
+        { "id": "decision", "pathIncludes": "/decision", "method": "POST", "summaryLabel": "POST .../decision" },
+        { "id": "other", "pathIncludes": null, "summaryLabel": "其它" }
+      ]
     }
   ]
 }

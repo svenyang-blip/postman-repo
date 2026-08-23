@@ -1,11 +1,10 @@
 .DS_Store
 .idea/
 node_modules/
-# Newman 产物（本地生成；需要入库可删掉下列规则）
-reports/newman-event-list.json
-reports/newman-event-list.xml
-reports/newman-summary-zh.html
-reports/newman-dashboard.html
+# Newman 产物（本地生成，不入库）
+reports/**/*.html
+reports/newman-*.json
+reports/newman-*.xml
 # 历史/误跑产生的分接口报告（已废弃，勿再提交）
 reports/newman-categories*
 reports/newman-admin-sync*

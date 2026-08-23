@@ -2,7 +2,7 @@
 
 ## 入口（推荐）
 
-打开 **`reports/index.html`** — 汇总所有 Controller 报告，可跳转到各独立报告。
+打开 **`reports/index.html`** — 汇总所有 Controller 报告，可跳转到各独立报告。HTML 报告仅本地生成，**不提交 git**。
 
 ## 目录结构
 

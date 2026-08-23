@@ -28,7 +28,7 @@
 
 | 变量 | 默认 | 说明 |
 |------|------|------|
-| `apiBase` | `http://127.0.0.1:8080` | HTTP |
+| `apiBase` | `http://127.0.0.1:8080/bd-manage` | HTTP |
 | `grpcHost` | `127.0.0.1:9090` | gRPC（plaintext） |
 | `bdEmail` / `bdPassword` / `brokerId` | 需填 | 可登录测试账号 |
 | `bdUserId` | 需填 | 与上账号对应的 `bd_users.id`（重置用） |

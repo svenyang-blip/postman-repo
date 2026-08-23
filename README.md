@@ -53,8 +53,8 @@ npm run pm:reports:index                 # 刷新 reports/index.html 汇总页
 npm run pm:report:zh           # 仅根据已有 JSON 重新生成中文 HTML（需先跑过 pm:event-list）
 ```
 
-- **`reports/index.html`**：所有 Controller 报告汇总入口
-- **`reports/controllers/*.html`**：每个 Controller 独立中文报告（用例要点 + 接口汇总 + 明细）
+- **`reports/index.html`**：所有 Controller 报告汇总入口（本地生成，不入库）
+- **`reports/controllers/*.html`**：每个 Controller 独立中文报告（用例要点 + 接口汇总 + 明细；不入库）
 
 全局安装（方式 B）时，等价命令示例：
 
