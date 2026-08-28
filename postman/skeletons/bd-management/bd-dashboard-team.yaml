@@ -1,0 +1,995 @@
+# 团队看板用例骨架。编译：npm run pm:skeleton:compile
+# 对应 DashboardController · ac-dashboard-team.md · AC-TM-01 / AC-32-01 / AC-33-01 / AC-35-01
+# 错误码：10001 PARAMS_ERROR · 10007 未登录 · 20300 PERMISSION_DENIED
+# Admin 用例如未配 adminEmail/adminPassword 则跳过
+
+id: bd-dashboard-team
+title: BD Management · 团队看板（YAML）
+controller: DashboardController
+output: postman/collections/bd-management/bd-dashboard-team.postman_collection.json
+postman_id: c0ffee00-bd-dash-team-0001
+
+variables:
+  - okrBdUserId
+  - okrManagerUserId
+  - okrOtherRegionBdUserId
+  - krManagerToken
+  - krBdToken
+  - adminToken
+  - teamAffiliateKeyword
+
+folders:
+  - name: 00 Setup · 登录与本区 BD
+    cases:
+      - id: L-01
+        kind: ok
+        name: Manager 登录
+        given: managerEmail / managerPassword（本区，默认 mgr.global）
+        branch: 明文登录成功，写入 managerToken
+        fill: filled
+        login_as: manager
+        when:
+          method: POST
+          path: /api/v1/login
+        then:
+          http: 200
+          ret_code: 0
+        asserts:
+          - type: token_nonempty
+
+      - id: L-02
+        kind: ok
+        name: BD 登录
+        given: bdEmail / bdPassword（本区在职 BD，默认 aiden）
+        branch: 明文登录成功，写入 accessToken
+        fill: filled
+        login_as: bd
+        when:
+          method: POST
+          path: /api/v1/login
+        then:
+          http: 200
+          ret_code: 0
+        asserts:
+          - type: token_nonempty
+
+      - id: L-03
+        kind: ok
+        name: KR Manager 登录
+        given: krManagerEmail / krManagerPassword（未配则跳过）
+        branch: 跨区 Manager token
+        fill: filled
+        skip_unless: [krManagerEmail, krManagerPassword]
+        login_as: kr_manager
+        when:
+          method: POST
+          path: /api/v1/login
+        then:
+          http: 200
+          ret_code: 0
+        asserts:
+          - type: token_nonempty
+
+      - id: L-04
+        kind: ok
+        name: KR BD 登录
+        given: krBdEmail / krBdPassword（未配则跳过）
+        branch: 解析跨区 BD id
+        fill: filled
+        skip_unless: [krBdEmail, krBdPassword]
+        login_as: kr_bd
+        when:
+          method: POST
+          path: /api/v1/login
+        then:
+          http: 200
+          ret_code: 0
+        asserts:
+          - type: token_nonempty
+
+      - id: L-05
+        kind: ok
+        name: Admin 登录
+        given: adminEmail / adminPassword（未配则跳过）
+        branch: ADMIN token，供 region/manager_id 下钻
+        fill: filled
+        skip_unless: [adminEmail, adminPassword]
+        login_as: admin
+        when:
+          method: POST
+          path: /api/v1/login
+        then:
+          http: 200
+          ret_code: 0
+        asserts:
+          - type: token_nonempty
+
+      - id: S-03
+        kind: ok
+        name: GET /bd-users/me（KR BD）解析 okrOtherRegionBdUserId
+        given: KR BD 已登录
+        auth: kr_bd
+        skip_unless: [krBdToken]
+        branch: 团队外 BD id
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/bd-users/me
+        then:
+          http: 200
+          ret_code: 0
+        asserts:
+          - type: save_var
+            path: result.id
+            var: okrOtherRegionBdUserId
+            if_empty: true
+
+      - id: S-01
+        kind: ok
+        name: GET /bd-users/me（BD）解析 okrBdUserId
+        given: BD 已登录
+        auth: bd
+        branch: 本区在职 BD
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/bd-users/me
+        then:
+          http: 200
+          ret_code: 0
+        asserts:
+          - type: save_var
+            path: result.id
+            var: okrBdUserId
+            if_empty: true
+
+      - id: S-02
+        kind: ok
+        name: GET /bd-users/me（Manager）解析 okrManagerUserId
+        given: 本区 Manager 已登录
+        auth: manager
+        branch: 自己的 manager_id
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/bd-users/me
+        then:
+          http: 200
+          ret_code: 0
+        asserts:
+          - type: save_var
+            path: result.id
+            var: okrManagerUserId
+            if_empty: true
+
+  - name: A · AC-TM-01 GET /dashboard/team/okr-progress
+    cases:
+      - id: AC-TM-01
+        kind: ok
+        name: 本区 Manager 默认季
+        given: Manager 已登录；不传 region/manager_id
+        auth: manager
+        branch: 当前 UTC 季闭区间 + 本区下级 BD 五行卡
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/dashboard/team/okr-progress
+        then:
+          http: 200
+          ret_code: 0
+        asserts:
+          - type: result_keys
+            keys: [period, period_key, begin, end, list]
+          - type: current_utc_period
+            period: quarter
+          - type: list_item_keys
+            path: result.list
+            keys: [bd_user_id, name, manager_name, items, overall_ratio]
+          - type: okr_five_cards
+            path: result.list
+          - type: overall_bounded
+            path: result.list
+          - type: save_json
+            path: result.list
+            var: teamOkrQuarterList
+
+      - id: AC-TM-01b
+        kind: ok
+        name: period=month 当前 UTC 月
+        given: Manager 已登录
+        auth: manager
+        branch: 只切当前月粒度
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/dashboard/team/okr-progress
+          query:
+            period: month
+        then:
+          http: 200
+          ret_code: 0
+        asserts:
+          - type: current_utc_period
+            period: month
+          - type: okr_five_cards
+            path: result.list
+
+      - id: AC-TM-01c
+        kind: ok
+        name: period=week 当前 UTC ISO 周
+        given: Manager 已登录
+        auth: manager
+        branch: 只切当前周粒度
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/dashboard/team/okr-progress
+          query:
+            period: week
+        then:
+          http: 200
+          ret_code: 0
+        asserts:
+          - type: current_utc_period
+            period: week
+          - type: okr_five_cards
+            path: result.list
+          - type: save_json
+            path: result.list
+            var: teamOkrWeekList
+
+      - id: AC-TM-01d
+        kind: ok
+        name: KR Manager 不含本区 BD
+        given: krManagerToken；okrBdUserId 为本区 BD
+        auth: kr_manager
+        skip_unless: [krManagerToken, okrBdUserId]
+        branch: 仅自己下级
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/dashboard/team/okr-progress
+        then:
+          http: 200
+          ret_code: 0
+        asserts:
+          - type: list_not_id
+            path: result.list
+            field: bd_user_id
+            var: okrBdUserId
+
+      - id: AC-TM-01e
+        kind: err
+        name: ADMIN 传 manager_id 与 region 不一致
+        given: Admin token；manager_id 为本区 Manager；region=kr
+        auth: admin
+        skip_unless: [adminToken, okrManagerUserId]
+        branch: 区域不一致失败
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/dashboard/team/okr-progress
+          query:
+            manager_id: "{{okrManagerUserId}}"
+            region: kr
+        then:
+          http: 200
+          ret_code: 20300
+
+      - id: AC-TM-01f
+        kind: err
+        name: ADMIN 传 manager_id 非 Manager
+        given: Admin token；manager_id 为本区 BD
+        auth: admin
+        skip_unless: [adminToken, okrBdUserId]
+        branch: manager_id must be a manager
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/dashboard/team/okr-progress
+          query:
+            manager_id: "{{okrBdUserId}}"
+        then:
+          http: 200
+          ret_code: 10001
+
+      - id: AC-TM-01g
+        kind: err
+        name: ADMIN 传 manager_id 不存在
+        given: Admin token
+        auth: admin
+        skip_unless: [adminToken]
+        branch: 用户不存在
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/dashboard/team/okr-progress
+          query:
+            manager_id: "999999999"
+        then:
+          http: 200
+          ret_code: 10001
+
+      - id: AC-TM-01h
+        kind: ok
+        name: ADMIN 传合法 manager_id
+        given: Admin token；manager_id 为本区 Manager
+        auth: admin
+        skip_unless: [adminToken, okrManagerUserId]
+        branch: 仅该 Manager 名下 BD
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/dashboard/team/okr-progress
+          query:
+            manager_id: "{{okrManagerUserId}}"
+        then:
+          http: 200
+          ret_code: 0
+        asserts:
+          - type: is_array
+            path: result.list
+          - type: okr_five_cards
+            path: result.list
+
+      - id: AC-TM-01i
+        kind: ok
+        name: ADMIN 传 region=non_kr
+        given: Admin token
+        auth: admin
+        skip_unless: [adminToken]
+        branch: 仅该区域
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/dashboard/team/okr-progress
+          query:
+            region: non_kr
+        then:
+          http: 200
+          ret_code: 0
+        asserts:
+          - type: is_array
+            path: result.list
+
+      - id: AC-TM-01j
+        kind: ok
+        name: ADMIN 不传 region 全区域
+        given: Admin token
+        auth: admin
+        skip_unless: [adminToken]
+        branch: 全区域汇总
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/dashboard/team/okr-progress
+        then:
+          http: 200
+          ret_code: 0
+        asserts:
+          - type: result_keys
+            keys: [period, period_key, begin, end, list]
+
+      - id: AC-TM-01k
+        kind: err
+        name: Manager 传他人 manager_id
+        given: 本区 Manager；manager_id 用跨区 BD 充数（非自己）
+        auth: manager
+        skip_unless: [okrOtherRegionBdUserId]
+        branch: 无权限
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/dashboard/team/okr-progress
+          query:
+            manager_id: "{{okrOtherRegionBdUserId}}"
+        then:
+          http: 200
+          ret_code: 20300
+
+      - id: AC-TM-01l
+        kind: err
+        name: 普通 BD 调用
+        given: BD token
+        auth: bd
+        branch: requireManager
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/dashboard/team/okr-progress
+        then:
+          http: 200
+          ret_code: 20300
+
+      - id: AC-TM-01m
+        kind: err
+        name: period 非法
+        given: Manager token；period=year
+        auth: manager
+        branch: period must be quarter|month|week
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/dashboard/team/okr-progress
+          query:
+            period: year
+        then:
+          http: 200
+          ret_code: 10001
+
+      - id: AC-TM-01n
+        kind: err
+        name: 无 Token
+        given: 不带 Authorization
+        auth: none
+        branch: 拦截器未登录
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/dashboard/team/okr-progress
+        then:
+          http: 200
+          ret_code: 10007
+
+  - name: B · AC-32-01 GET /dashboard/team/overview
+    cases:
+      - id: AC-32-01
+        kind: ok
+        name: 本区 Manager 过程卡 + bd_okr
+        given: Manager 已登录
+        auth: manager
+        branch: team_kpis 与当前季 bd_okr
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/dashboard/team/overview
+        then:
+          http: 200
+          ret_code: 0
+        asserts:
+          - type: team_kpis
+          - type: is_array
+            path: result.bd_okr
+          - type: okr_five_cards
+            path: result.bd_okr
+          - type: overall_bounded
+            path: result.bd_okr
+          - type: eql_json_var
+            path: result.bd_okr
+            var: teamOkrQuarterList
+          - type: save_json
+            path: result.team_kpis
+            var: teamKpisDefault
+
+      - id: AC-32-01b
+        kind: ok
+        name: period=week 只改 bd_okr
+        given: Manager 已登录
+        auth: manager
+        branch: period 不影响过程卡
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/dashboard/team/overview
+          query:
+            period: week
+        then:
+          http: 200
+          ret_code: 0
+        asserts:
+          - type: eql_json_var
+            path: result.team_kpis
+            var: teamKpisDefault
+          - type: eql_json_var
+            path: result.bd_okr
+            var: teamOkrWeekList
+
+      - id: AC-32-01c
+        kind: err
+        name: 普通 BD 调用
+        given: BD token
+        auth: bd
+        branch: 无权限
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/dashboard/team/overview
+        then:
+          http: 200
+          ret_code: 20300
+
+      - id: AC-32-01d
+        kind: err
+        name: 无 Token
+        given: 不带 Authorization
+        auth: none
+        branch: 拦截器未登录
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/dashboard/team/overview
+        then:
+          http: 200
+          ret_code: 10007
+
+      - id: AC-32-01e
+        kind: ok
+        name: ADMIN manager_id 范围
+        given: Admin token
+        auth: admin
+        skip_unless: [adminToken, okrManagerUserId]
+        branch: 与 AC-TM-01 相同范围
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/dashboard/team/overview
+          query:
+            manager_id: "{{okrManagerUserId}}"
+        then:
+          http: 200
+          ret_code: 0
+        asserts:
+          - type: team_kpis
+          - type: is_array
+            path: result.bd_okr
+
+  - name: C · AC-33-01 GET /dashboard/team/bd-progress
+    cases:
+      - id: AC-33-01
+        kind: ok
+        name: 本区 Manager 默认 30d
+        given: Manager 已登录；不传时间参数
+        auth: manager
+        branch: range=30d；季 overall_ratio；树一层
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/dashboard/team/bd-progress
+        then:
+          http: 200
+          ret_code: 0
+        asserts:
+          - type: eql
+            path: result.range
+            value: 30d
+          - type: list_item_keys
+            path: result.list
+            keys:
+              - bd_user_id
+              - name
+              - manager_name
+              - leads_count
+              - created_count
+              - follow_up_ontime_rate
+              - active_rate
+              - active_count
+              - affiliate_count
+              - campaign_link_count
+              - total_signup
+              - total_deposit
+              - total_ftd
+              - total_volume
+              - overall_ratio
+              - children
+          - type: null_fields
+            path: result.list
+            fields: [login_count, campaign_pv, campaign_uv]
+          - type: progress_tree
+            path: result.list
+          - type: overall_matches_var
+            path: result.list
+            var: teamOkrQuarterList
+
+      - id: AC-33-01b
+        kind: ok
+        name: range=7d
+        given: Manager 已登录
+        auth: manager
+        branch: 近 7 天窗
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/dashboard/team/bd-progress
+          query:
+            range: 7d
+        then:
+          http: 200
+          ret_code: 0
+        asserts:
+          - type: eql
+            path: result.range
+            value: 7d
+          - type: is_array
+            path: result.list
+
+      - id: AC-33-01c
+        kind: ok
+        name: range=90d
+        given: Manager 已登录
+        auth: manager
+        branch: 近 90 天窗
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/dashboard/team/bd-progress
+          query:
+            range: 90d
+        then:
+          http: 200
+          ret_code: 0
+        asserts:
+          - type: eql
+            path: result.range
+            value: 90d
+
+      - id: AC-33-01d
+        kind: ok
+        name: begin/end 覆盖 range
+        given: Manager 已登录
+        auth: manager
+        branch: 同时传时以 begin/end 为准
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/dashboard/team/bd-progress
+          query:
+            range: 7d
+            begin: "2026-08-01"
+            end: "2026-08-28"
+        then:
+          http: 200
+          ret_code: 0
+        asserts:
+          - type: eql
+            path: result.begin
+            value: "2026-08-01"
+          - type: eql
+            path: result.end
+            value: "2026-08-28"
+          - type: is_null
+            path: result.range
+
+      - id: AC-33-01e
+        kind: err
+        name: 普通 BD 调用
+        given: BD token
+        auth: bd
+        branch: 无权限
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/dashboard/team/bd-progress
+        then:
+          http: 200
+          ret_code: 20300
+
+      - id: AC-33-01f
+        kind: err
+        name: 无 Token
+        given: 不带 Authorization
+        auth: none
+        branch: 拦截器未登录
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/dashboard/team/bd-progress
+        then:
+          http: 200
+          ret_code: 10007
+
+      - id: AC-33-01g
+        kind: ok
+        name: ADMIN manager_id 范围
+        given: Admin token
+        auth: admin
+        skip_unless: [adminToken, okrManagerUserId]
+        branch: 与 AC-TM-01 相同范围
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/dashboard/team/bd-progress
+          query:
+            manager_id: "{{okrManagerUserId}}"
+        then:
+          http: 200
+          ret_code: 0
+        asserts:
+          - type: is_array
+            path: result.list
+          - type: progress_tree
+            path: result.list
+
+  - name: D · AC-35-01 GET /dashboard/team/affiliates
+    cases:
+      - id: AC-35-01
+        kind: ok
+        name: 本区 Manager 默认分页
+        given: Manager 已登录
+        auth: manager
+        branch: page=1 page_size=20 range=30d
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/dashboard/team/affiliates
+        then:
+          http: 200
+          ret_code: 0
+        asserts:
+          - type: result_keys
+            keys: [list, total, page, page_size, range]
+          - type: eql
+            path: result.page
+            value: 1
+          - type: eql
+            path: result.page_size
+            value: 20
+          - type: eql
+            path: result.range
+            value: 30d
+          - type: list_item_keys
+            path: result.list
+            keys: [affiliate_id, bd_user_id, bd_name, affiliate_source, lead_id]
+          - type: affiliate_source_enum
+            path: result.list
+          - type: save_var
+            path: result.list.0.kol_name
+            var: teamAffiliateKeyword
+            if_empty: true
+          - type: save_var
+            path: result.list.0.bd_user_id
+            var: okrBdUserId
+            if_empty: true
+
+      - id: AC-35-01b
+        kind: ok
+        name: page_size 最大 100
+        given: Manager 已登录；page_size=200
+        auth: manager
+        branch: 服务端截断
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/dashboard/team/affiliates
+          query:
+            page_size: "200"
+        then:
+          http: 200
+          ret_code: 0
+        asserts:
+          - type: eql
+            path: result.page_size
+            value: 100
+          - type: list_max
+            path: result.list
+            value: 100
+
+      - id: AC-35-01c
+        kind: ok
+        name: bd_user_id 只返回该 BD
+        given: Manager；bd_user_id 为本区 BD
+        auth: manager
+        skip_unless: [okrBdUserId]
+        branch: 仅该 BD 代理
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/dashboard/team/affiliates
+          query:
+            bd_user_id: "{{okrBdUserId}}"
+        then:
+          http: 200
+          ret_code: 0
+        asserts:
+          - type: list_field
+            path: result.list
+            field: bd_user_id
+            value_from: okrBdUserId
+            coerce: number
+
+      - id: AC-35-01d
+        kind: ok
+        name: bd_user_id 团队外为空
+        given: Manager；bd_user_id 为跨区 BD
+        auth: manager
+        skip_unless: [okrOtherRegionBdUserId]
+        branch: 不报错，空列表
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/dashboard/team/affiliates
+          query:
+            bd_user_id: "{{okrOtherRegionBdUserId}}"
+        then:
+          http: 200
+          ret_code: 0
+        asserts:
+          - type: eql
+            path: result.total
+            value: 0
+          - type: list_max
+            path: result.list
+            value: 0
+
+      - id: AC-35-01e
+        kind: ok
+        name: keyword 筛选
+        given: Manager；keyword 来自首条 kol_name
+        auth: manager
+        skip_unless: [teamAffiliateKeyword]
+        branch: KOL 名模糊
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/dashboard/team/affiliates
+          query:
+            keyword: "{{teamAffiliateKeyword}}"
+        then:
+          http: 200
+          ret_code: 0
+        asserts:
+          - type: is_array
+            path: result.list
+
+      - id: AC-35-01f
+        kind: ok
+        name: has_sub=true
+        given: Manager 已登录
+        auth: manager
+        branch: 有直属已审子代理
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/dashboard/team/affiliates
+          query:
+            has_sub: "true"
+        then:
+          http: 200
+          ret_code: 0
+        asserts:
+          - type: is_array
+            path: result.list
+
+      - id: AC-35-01g
+        kind: ok
+        name: has_sub=false
+        given: Manager 已登录
+        auth: manager
+        branch: 无直属已审子代理
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/dashboard/team/affiliates
+          query:
+            has_sub: "false"
+        then:
+          http: 200
+          ret_code: 0
+        asserts:
+          - type: is_array
+            path: result.list
+
+      - id: AC-35-01h
+        kind: ok
+        name: affiliate_source=lead
+        given: Manager 已登录
+        auth: manager
+        branch: 来源筛选
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/dashboard/team/affiliates
+          query:
+            affiliate_source: lead
+        then:
+          http: 200
+          ret_code: 0
+        asserts:
+          - type: list_field
+            path: result.list
+            field: affiliate_source
+            value: lead
+
+      - id: AC-35-01i
+        kind: ok
+        name: affiliate_source=self
+        given: Manager 已登录
+        auth: manager
+        branch: 来源筛选
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/dashboard/team/affiliates
+          query:
+            affiliate_source: self
+        then:
+          http: 200
+          ret_code: 0
+        asserts:
+          - type: list_field
+            path: result.list
+            field: affiliate_source
+            value: self
+
+      - id: AC-35-01j
+        kind: err
+        name: affiliate_source 非法
+        given: Manager token；affiliate_source=unknown
+        auth: manager
+        branch: 必须 lead|self
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/dashboard/team/affiliates
+          query:
+            affiliate_source: unknown
+        then:
+          http: 200
+          ret_code: 10001
+
+      - id: AC-35-01k
+        kind: ok
+        name: range=7d 指标窗
+        given: Manager 已登录
+        auth: manager
+        branch: 默认外的交易窗
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/dashboard/team/affiliates
+          query:
+            range: 7d
+        then:
+          http: 200
+          ret_code: 0
+        asserts:
+          - type: eql
+            path: result.range
+            value: 7d
+
+      - id: AC-35-01l
+        kind: err
+        name: 普通 BD 调用
+        given: BD token
+        auth: bd
+        branch: 无权限
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/dashboard/team/affiliates
+        then:
+          http: 200
+          ret_code: 20300
+
+      - id: AC-35-01m
+        kind: err
+        name: 无 Token
+        given: 不带 Authorization
+        auth: none
+        branch: 拦截器未登录
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/dashboard/team/affiliates
+        then:
+          http: 200
+          ret_code: 10007
+
+      - id: AC-35-01n
+        kind: ok
+        name: ADMIN manager_id 范围
+        given: Admin token
+        auth: admin
+        skip_unless: [adminToken, okrManagerUserId]
+        branch: 与 AC-TM-01 相同范围
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/dashboard/team/affiliates
+          query:
+            manager_id: "{{okrManagerUserId}}"
+        then:
+          http: 200
+          ret_code: 0
+        asserts:
+          - type: result_keys
+            keys: [list, total, page, page_size, range]
