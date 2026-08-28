@@ -1,0 +1,2310 @@
+{
+  "info": {
+    "_postman_id": "c0ffee00-bd-okr-yaml-0001",
+    "name": "BD Management · OKR（YAML）",
+    "description": "由 `postman/skeletons/bd-okr.yaml` 生成，不要手改本 JSON。修改 YAML 后执行 `npm run pm:skeleton:compile`。\n\nController：`OkrController`",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "apiBase",
+      "value": ""
+    },
+    {
+      "key": "loginData",
+      "value": ""
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "managerToken",
+      "value": ""
+    },
+    {
+      "key": "pendingApprovalId",
+      "value": ""
+    },
+    {
+      "key": "okrBdUserId",
+      "value": ""
+    },
+    {
+      "key": "okrManagerUserId",
+      "value": ""
+    },
+    {
+      "key": "okrId",
+      "value": ""
+    },
+    {
+      "key": "krManagerToken",
+      "value": ""
+    },
+    {
+      "key": "krBdToken",
+      "value": ""
+    },
+    {
+      "key": "okrOtherRegionBdUserId",
+      "value": ""
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.request.headers.upsert({ key: 'Accept', value: 'application/json' });",
+          "if (pm.request.body && pm.request.body.mode === 'raw') {",
+          "  pm.request.headers.upsert({ key: 'Content-Type', value: 'application/json' });",
+          "}",
+          "const referer = (pm.environment.get('referer') || '').trim();",
+          "if (referer) {",
+          "  pm.request.headers.upsert({ key: 'Referer', value: referer });",
+          "}",
+          "const name = (pm.info && pm.info.requestName) || '';",
+          "const url = pm.request.url.toString();",
+          "const useKr = /KR Manager/.test(name) && !/登录/.test(name);",
+          "const useManager = /Manager 登录/.test(name) && !/KR Manager 登录/.test(name)",
+          "  || (!useKr && /\\/leads\\/approvals|\\/api\\/v1\\/okr/i.test(url) && !/BD token|无\\s*Token|普通 BD/.test(name))",
+          "  || (/\\/bd-users\\/me/.test(url) && /Manager/.test(name) && !/KR Manager/.test(name));",
+          "const token = useKr",
+          "  ? (pm.environment.get('krManagerToken') || pm.collectionVariables.get('krManagerToken') || '')",
+          "  : useManager",
+          "  ? (pm.environment.get('managerToken') || pm.collectionVariables.get('managerToken') || '')",
+          "  : (pm.environment.get('accessToken') || pm.collectionVariables.get('accessToken') || '');",
+          "const needsAuth = /\\/leads\\/approvals|\\/api\\/v1\\/okr|\\/bd-users/i.test(url);",
+          "const skipAuth = /无\\s*Token/.test(name);",
+          "if (needsAuth && token && !skipAuth) {",
+          "  pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + token.trim() });",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (!pm.response || pm.response.code === undefined) {",
+          "  const err = (pm.response && pm.response.reason && pm.response.reason().message) || '请求失败';",
+          "  pm.test('请求可达（请检查 apiBase 是否为真实地址）', () => {",
+          "    pm.expect.fail(err);",
+          "  });",
+          "  return;",
+          "}",
+          "const ct = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+          "const text = pm.response.text() || '';",
+          "if (ct.includes('text/html') || text.trimStart().startsWith('<!')) {",
+          "  pm.test('响应应为 JSON API（非 HTML）', () => {",
+          "    pm.expect.fail('got HTML — 请检查 apiBase 是否正确');",
+          "  });",
+          "  return;",
+          "}",
+          "try {",
+          "  const body = pm.response.json();",
+          "  if (body && body.ret_code === 0 && typeof body.token === 'string' && body.token) {",
+          "    const n = (pm.info && pm.info.requestName) || '';",
+          "    if (/KR Manager 登录/.test(n)) {",
+          "      pm.environment.set('krManagerToken', body.token);",
+          "      pm.collectionVariables.set('krManagerToken', body.token);",
+          "    } else if (/KR BD 登录/.test(n)) {",
+          "      pm.environment.set('krBdToken', body.token);",
+          "      pm.collectionVariables.set('krBdToken', body.token);",
+          "    } else if (/Manager 登录/.test(n)) {",
+          "      pm.environment.set('managerToken', body.token);",
+          "      pm.collectionVariables.set('managerToken', body.token);",
+          "    } else if (/login/i.test(pm.request.url.toString())) {",
+          "      pm.environment.set('accessToken', body.token);",
+          "      pm.collectionVariables.set('accessToken', body.token);",
+          "    }",
+          "  }",
+          "} catch (e) { /* ignore */ }"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "00 Setup · 登录与本区 BD",
+      "item": [
+        {
+          "name": "[ok] L-01 Manager 登录",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const email = pm.environment.get('managerEmail');",
+                  "const password = pm.environment.get('managerPassword');",
+                  "const brokerId = pm.environment.get('brokerId') || '1';",
+                  "const plain = JSON.stringify({ email, password, broker_id: Number(brokerId) });",
+                  "pm.collectionVariables.set('loginData', JSON.stringify(plain));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "pm.test('token 非空', () => {",
+                  "  pm.expect(body.token).to.be.a('string').and.not.eql('');",
+                  "  pm.expect(body.result.token).to.eql(body.token);",
+                  "});",
+                  "pm.collectionVariables.set('managerToken', body.token);",
+                  "pm.environment.set('managerToken', body.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": {{loginData}},\n  \"broker_id\": {{brokerId}}\n}"
+            }
+          }
+        },
+        {
+          "name": "[ok] L-02 BD 登录",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const email = pm.environment.get('bdEmail');",
+                  "const password = pm.environment.get('bdPassword');",
+                  "const brokerId = pm.environment.get('brokerId') || '1';",
+                  "const plain = JSON.stringify({ email, password, broker_id: Number(brokerId) });",
+                  "pm.collectionVariables.set('loginData', JSON.stringify(plain));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "pm.test('token 非空', () => {",
+                  "  pm.expect(body.token).to.be.a('string').and.not.eql('');",
+                  "  pm.expect(body.result.token).to.eql(body.token);",
+                  "});",
+                  "pm.collectionVariables.set('accessToken', body.token);",
+                  "pm.environment.set('accessToken', body.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": {{loginData}},\n  \"broker_id\": {{brokerId}}\n}"
+            }
+          }
+        },
+        {
+          "name": "[ok] L-03 KR Manager 登录",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const email = pm.environment.get('krManagerEmail');",
+                  "const password = pm.environment.get('krManagerPassword');",
+                  "const brokerId = pm.environment.get('brokerId') || '1';",
+                  "const plain = JSON.stringify({ email, password, broker_id: Number(brokerId) });",
+                  "pm.collectionVariables.set('loginData', JSON.stringify(plain));",
+                  "const _need = [\"krManagerEmail\",\"krManagerPassword\"];",
+                  "const _missing = _need.filter((k) => !String(pm.environment.get(k) || pm.collectionVariables.get(k) || \"\").trim());",
+                  "if (_missing.length) {",
+                  "  console.log('跳过：缺少 ' + _missing.join(', '));",
+                  "  if (typeof pm.execution !== \"undefined\" && pm.execution.skipRequest) {",
+                  "    pm.execution.skipRequest();",
+                  "  }",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _need = [\"krManagerEmail\",\"krManagerPassword\"];",
+                  "const _missing = _need.filter((k) => !String(pm.environment.get(k) || pm.collectionVariables.get(k) || \"\").trim());",
+                  "if (_missing.length) {",
+                  "  pm.test('已跳过（缺少 ' + _missing.join(', ') + '）', () => {",
+                  "    pm.expect(true).to.be.true;",
+                  "  });",
+                  "  return;",
+                  "}",
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "pm.test('token 非空', () => {",
+                  "  pm.expect(body.token).to.be.a('string').and.not.eql('');",
+                  "  pm.expect(body.result.token).to.eql(body.token);",
+                  "});",
+                  "pm.collectionVariables.set('krManagerToken', body.token);",
+                  "pm.environment.set('krManagerToken', body.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": {{loginData}},\n  \"broker_id\": {{brokerId}}\n}"
+            }
+          }
+        },
+        {
+          "name": "[ok] L-04 KR BD 登录",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const email = pm.environment.get('krBdEmail');",
+                  "const password = pm.environment.get('krBdPassword');",
+                  "const brokerId = pm.environment.get('brokerId') || '1';",
+                  "const plain = JSON.stringify({ email, password, broker_id: Number(brokerId) });",
+                  "pm.collectionVariables.set('loginData', JSON.stringify(plain));",
+                  "const _need = [\"krBdEmail\",\"krBdPassword\"];",
+                  "const _missing = _need.filter((k) => !String(pm.environment.get(k) || pm.collectionVariables.get(k) || \"\").trim());",
+                  "if (_missing.length) {",
+                  "  console.log('跳过：缺少 ' + _missing.join(', '));",
+                  "  if (typeof pm.execution !== \"undefined\" && pm.execution.skipRequest) {",
+                  "    pm.execution.skipRequest();",
+                  "  }",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _need = [\"krBdEmail\",\"krBdPassword\"];",
+                  "const _missing = _need.filter((k) => !String(pm.environment.get(k) || pm.collectionVariables.get(k) || \"\").trim());",
+                  "if (_missing.length) {",
+                  "  pm.test('已跳过（缺少 ' + _missing.join(', ') + '）', () => {",
+                  "    pm.expect(true).to.be.true;",
+                  "  });",
+                  "  return;",
+                  "}",
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "pm.test('token 非空', () => {",
+                  "  pm.expect(body.token).to.be.a('string').and.not.eql('');",
+                  "  pm.expect(body.result.token).to.eql(body.token);",
+                  "});",
+                  "pm.collectionVariables.set('krBdToken', body.token);",
+                  "pm.environment.set('krBdToken', body.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": {{loginData}},\n  \"broker_id\": {{brokerId}}\n}"
+            }
+          }
+        },
+        {
+          "name": "[ok] S-03 GET /bd-users/me（KR BD）解析 okrOtherRegionBdUserId",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _tok = (pm.environment.get('krBdToken') || pm.collectionVariables.get('krBdToken') || '').trim();",
+                  "if (_tok) {",
+                  "  pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + _tok });",
+                  "}",
+                  "const _need = [\"krBdToken\"];",
+                  "const _missing = _need.filter((k) => !String(pm.environment.get(k) || pm.collectionVariables.get(k) || \"\").trim());",
+                  "if (_missing.length) {",
+                  "  console.log('跳过：缺少 ' + _missing.join(', '));",
+                  "  if (typeof pm.execution !== \"undefined\" && pm.execution.skipRequest) {",
+                  "    pm.execution.skipRequest();",
+                  "  }",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _need = [\"krBdToken\"];",
+                  "const _missing = _need.filter((k) => !String(pm.environment.get(k) || pm.collectionVariables.get(k) || \"\").trim());",
+                  "if (_missing.length) {",
+                  "  pm.test('已跳过（缺少 ' + _missing.join(', ') + '）', () => {",
+                  "    pm.expect(true).to.be.true;",
+                  "  });",
+                  "  return;",
+                  "}",
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "const r = body.result || {};",
+                  "if (r.id != null && r.id !== '') {",
+                  "  const _v = String(r.id);",
+                  "  const _env = (pm.environment.get(\"okrOtherRegionBdUserId\") || '').toString().trim();",
+                  "  const _col = (pm.collectionVariables.get(\"okrOtherRegionBdUserId\") || '').toString().trim();",
+                  "  if (!_col) {",
+                  "    pm.collectionVariables.set(\"okrOtherRegionBdUserId\", _v);",
+                  "  }",
+                  "  if (!_env) {",
+                  "    pm.environment.set(\"okrOtherRegionBdUserId\", _v);",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/bd-users/me"
+          }
+        },
+        {
+          "name": "[ok] S-01 GET /bd-users/me（BD）解析 okrBdUserId",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _tok = (pm.environment.get('accessToken') || pm.collectionVariables.get('accessToken') || '').trim();",
+                  "if (_tok) {",
+                  "  pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + _tok });",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "const r = body.result || {};",
+                  "if (r.id != null && r.id !== '') {",
+                  "  const _v = String(r.id);",
+                  "  const _env = (pm.environment.get(\"okrBdUserId\") || '').toString().trim();",
+                  "  const _col = (pm.collectionVariables.get(\"okrBdUserId\") || '').toString().trim();",
+                  "  if (!_col) {",
+                  "    pm.collectionVariables.set(\"okrBdUserId\", _v);",
+                  "  }",
+                  "  if (!_env) {",
+                  "    pm.environment.set(\"okrBdUserId\", _v);",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/bd-users/me"
+          }
+        },
+        {
+          "name": "[ok] S-02 GET /bd-users/me（Manager）解析 okrManagerUserId",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _tok = (pm.environment.get('managerToken') || pm.collectionVariables.get('managerToken') || '').trim();",
+                  "if (_tok) {",
+                  "  pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + _tok });",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "const r = body.result || {};",
+                  "if (r.id != null && r.id !== '') {",
+                  "  const _v = String(r.id);",
+                  "  const _env = (pm.environment.get(\"okrManagerUserId\") || '').toString().trim();",
+                  "  const _col = (pm.collectionVariables.get(\"okrManagerUserId\") || '').toString().trim();",
+                  "  if (!_col) {",
+                  "    pm.collectionVariables.set(\"okrManagerUserId\", _v);",
+                  "  }",
+                  "  if (!_env) {",
+                  "    pm.environment.set(\"okrManagerUserId\", _v);",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/bd-users/me"
+          }
+        }
+      ]
+    },
+    {
+      "name": "A · AC-37-01 下发 KPI  POST /okr",
+      "item": [
+        {
+          "name": "[ok] AC-37-01 本区 Manager 下发 Q3 仅 signup",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _tok = (pm.environment.get('managerToken') || pm.collectionVariables.get('managerToken') || '').trim();",
+                  "if (_tok) {",
+                  "  pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + _tok });",
+                  "}",
+                  "const _need = [\"okrBdUserId\"];",
+                  "const _missing = _need.filter((k) => !String(pm.environment.get(k) || pm.collectionVariables.get(k) || \"\").trim());",
+                  "if (_missing.length) {",
+                  "  console.log('跳过：缺少 ' + _missing.join(', '));",
+                  "  if (typeof pm.execution !== \"undefined\" && pm.execution.skipRequest) {",
+                  "    pm.execution.skipRequest();",
+                  "  }",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _need = [\"okrBdUserId\"];",
+                  "const _missing = _need.filter((k) => !String(pm.environment.get(k) || pm.collectionVariables.get(k) || \"\").trim());",
+                  "if (_missing.length) {",
+                  "  pm.test('已跳过（缺少 ' + _missing.join(', ') + '）', () => {",
+                  "    pm.expect(true).to.be.true;",
+                  "  });",
+                  "  return;",
+                  "}",
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code in [0,20224]', () => pm.expect([0,20224]).to.include(body.ret_code));",
+                  "const r = body.result || {};",
+                  "if (r.id != null && r.id !== '') {",
+                  "  const _v = String(r.id);",
+                  "  pm.collectionVariables.set(\"okrId\", _v);",
+                  "  if (!(pm.environment.get(\"okrId\") || '').toString().trim()) {",
+                  "    pm.environment.set(\"okrId\", _v);",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/okr",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bd_user_id\": {{okrBdUserId}},\n  \"begin\": \"2026-07-01\",\n  \"end\": \"2026-09-30\",\n  \"signup\": 5000\n}"
+            }
+          }
+        },
+        {
+          "name": "[ok] AC-37-01b 列表核验 Q3 period / period_key 并缓存 okrId",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _tok = (pm.environment.get('managerToken') || pm.collectionVariables.get('managerToken') || '').trim();",
+                  "if (_tok) {",
+                  "  pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + _tok });",
+                  "}",
+                  "const _need = [\"okrBdUserId\"];",
+                  "const _missing = _need.filter((k) => !String(pm.environment.get(k) || pm.collectionVariables.get(k) || \"\").trim());",
+                  "if (_missing.length) {",
+                  "  console.log('跳过：缺少 ' + _missing.join(', '));",
+                  "  if (typeof pm.execution !== \"undefined\" && pm.execution.skipRequest) {",
+                  "    pm.execution.skipRequest();",
+                  "  }",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _need = [\"okrBdUserId\"];",
+                  "const _missing = _need.filter((k) => !String(pm.environment.get(k) || pm.collectionVariables.get(k) || \"\").trim());",
+                  "if (_missing.length) {",
+                  "  pm.test('已跳过（缺少 ' + _missing.join(', ') + '）', () => {",
+                  "    pm.expect(true).to.be.true;",
+                  "  });",
+                  "  return;",
+                  "}",
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "const r = body.result || {};",
+                  "pm.test('result.list 为数组', () => pm.expect(r.list).to.be.an('array'));",
+                  "pm.test('result.list[].period', () => {",
+                  "  (r.list || []).forEach((it) => {",
+                  "    pm.expect(it.period).to.eql(\"quarter\");",
+                  "  });",
+                  "});",
+                  "pm.test('result.list[].period_key', () => {",
+                  "  (r.list || []).forEach((it) => {",
+                  "    pm.expect(it.period_key).to.eql(\"2026Q3\");",
+                  "  });",
+                  "});",
+                  "pm.test('result.list[].begin', () => {",
+                  "  (r.list || []).forEach((it) => {",
+                  "    pm.expect(it.begin).to.eql(\"2026-07-01\");",
+                  "  });",
+                  "});",
+                  "pm.test('result.list[].end', () => {",
+                  "  (r.list || []).forEach((it) => {",
+                  "    pm.expect(it.end).to.eql(\"2026-09-30\");",
+                  "  });",
+                  "});",
+                  "{",
+                  "  const _list = r.list || [];",
+                  "  const _uid = Number((pm.environment.get(\"okrBdUserId\") || pm.collectionVariables.get(\"okrBdUserId\") || ''));",
+                  "  const _pk = \"2026Q3\";",
+                  "  const hit = _list.find((it) => {",
+                  "    if (_uid && Number(it.bd_user_id) !== _uid) { return false; }",
+                  "    if (_pk && it.period_key !== _pk) { return false; }",
+                  "    return true;",
+                  "  });",
+                  "  pm.test('列表能定位目标行', () => pm.expect(hit, 'missing matched okr row').to.exist);",
+                  "  if (hit && hit.id != null) {",
+                  "    const _id = String(hit.id);",
+                  "    pm.collectionVariables.set(\"okrId\", _id);",
+                  "    if (!(pm.environment.get(\"okrId\") || '').toString().trim()) {",
+                  "      pm.environment.set(\"okrId\", _id);",
+                  "    }",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/okr?begin=2026-07-01&end=2026-09-30&bd_user_id={{okrBdUserId}}"
+          }
+        },
+        {
+          "name": "[ok] AC-37-02 下发自然月 2026-08",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _tok = (pm.environment.get('managerToken') || pm.collectionVariables.get('managerToken') || '').trim();",
+                  "if (_tok) {",
+                  "  pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + _tok });",
+                  "}",
+                  "const _need = [\"okrBdUserId\"];",
+                  "const _missing = _need.filter((k) => !String(pm.environment.get(k) || pm.collectionVariables.get(k) || \"\").trim());",
+                  "if (_missing.length) {",
+                  "  console.log('跳过：缺少 ' + _missing.join(', '));",
+                  "  if (typeof pm.execution !== \"undefined\" && pm.execution.skipRequest) {",
+                  "    pm.execution.skipRequest();",
+                  "  }",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _need = [\"okrBdUserId\"];",
+                  "const _missing = _need.filter((k) => !String(pm.environment.get(k) || pm.collectionVariables.get(k) || \"\").trim());",
+                  "if (_missing.length) {",
+                  "  pm.test('已跳过（缺少 ' + _missing.join(', ') + '）', () => {",
+                  "    pm.expect(true).to.be.true;",
+                  "  });",
+                  "  return;",
+                  "}",
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code in [0,20224]', () => pm.expect([0,20224]).to.include(body.ret_code));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/okr",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bd_user_id\": {{okrBdUserId}},\n  \"begin\": \"2026-08-01\",\n  \"end\": \"2026-08-31\",\n  \"signup\": 100\n}"
+            }
+          }
+        },
+        {
+          "name": "[ok] AC-37-02b 列表核验 month / 2026-08",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _tok = (pm.environment.get('managerToken') || pm.collectionVariables.get('managerToken') || '').trim();",
+                  "if (_tok) {",
+                  "  pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + _tok });",
+                  "}",
+                  "const _need = [\"okrBdUserId\"];",
+                  "const _missing = _need.filter((k) => !String(pm.environment.get(k) || pm.collectionVariables.get(k) || \"\").trim());",
+                  "if (_missing.length) {",
+                  "  console.log('跳过：缺少 ' + _missing.join(', '));",
+                  "  if (typeof pm.execution !== \"undefined\" && pm.execution.skipRequest) {",
+                  "    pm.execution.skipRequest();",
+                  "  }",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _need = [\"okrBdUserId\"];",
+                  "const _missing = _need.filter((k) => !String(pm.environment.get(k) || pm.collectionVariables.get(k) || \"\").trim());",
+                  "if (_missing.length) {",
+                  "  pm.test('已跳过（缺少 ' + _missing.join(', ') + '）', () => {",
+                  "    pm.expect(true).to.be.true;",
+                  "  });",
+                  "  return;",
+                  "}",
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "const r = body.result || {};",
+                  "pm.test('result.list[].period', () => {",
+                  "  (r.list || []).forEach((it) => {",
+                  "    pm.expect(it.period).to.eql(\"month\");",
+                  "  });",
+                  "});",
+                  "pm.test('result.list[].period_key', () => {",
+                  "  (r.list || []).forEach((it) => {",
+                  "    pm.expect(it.period_key).to.eql(\"2026-08\");",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/okr?begin=2026-08-01&end=2026-08-31&bd_user_id={{okrBdUserId}}"
+          }
+        },
+        {
+          "name": "[ok] AC-37-03 下发 ISO 周 2026-08-24～2026-08-30",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _tok = (pm.environment.get('managerToken') || pm.collectionVariables.get('managerToken') || '').trim();",
+                  "if (_tok) {",
+                  "  pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + _tok });",
+                  "}",
+                  "const _need = [\"okrBdUserId\"];",
+                  "const _missing = _need.filter((k) => !String(pm.environment.get(k) || pm.collectionVariables.get(k) || \"\").trim());",
+                  "if (_missing.length) {",
+                  "  console.log('跳过：缺少 ' + _missing.join(', '));",
+                  "  if (typeof pm.execution !== \"undefined\" && pm.execution.skipRequest) {",
+                  "    pm.execution.skipRequest();",
+                  "  }",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _need = [\"okrBdUserId\"];",
+                  "const _missing = _need.filter((k) => !String(pm.environment.get(k) || pm.collectionVariables.get(k) || \"\").trim());",
+                  "if (_missing.length) {",
+                  "  pm.test('已跳过（缺少 ' + _missing.join(', ') + '）', () => {",
+                  "    pm.expect(true).to.be.true;",
+                  "  });",
+                  "  return;",
+                  "}",
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code in [0,20224]', () => pm.expect([0,20224]).to.include(body.ret_code));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/okr",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bd_user_id\": {{okrBdUserId}},\n  \"begin\": \"2026-08-24\",\n  \"end\": \"2026-08-30\",\n  \"signup\": 10\n}"
+            }
+          }
+        },
+        {
+          "name": "[ok] AC-37-03b 列表核验 week / 2026-W35",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _tok = (pm.environment.get('managerToken') || pm.collectionVariables.get('managerToken') || '').trim();",
+                  "if (_tok) {",
+                  "  pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + _tok });",
+                  "}",
+                  "const _need = [\"okrBdUserId\"];",
+                  "const _missing = _need.filter((k) => !String(pm.environment.get(k) || pm.collectionVariables.get(k) || \"\").trim());",
+                  "if (_missing.length) {",
+                  "  console.log('跳过：缺少 ' + _missing.join(', '));",
+                  "  if (typeof pm.execution !== \"undefined\" && pm.execution.skipRequest) {",
+                  "    pm.execution.skipRequest();",
+                  "  }",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _need = [\"okrBdUserId\"];",
+                  "const _missing = _need.filter((k) => !String(pm.environment.get(k) || pm.collectionVariables.get(k) || \"\").trim());",
+                  "if (_missing.length) {",
+                  "  pm.test('已跳过（缺少 ' + _missing.join(', ') + '）', () => {",
+                  "    pm.expect(true).to.be.true;",
+                  "  });",
+                  "  return;",
+                  "}",
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "const r = body.result || {};",
+                  "pm.test('result.list[].period', () => {",
+                  "  (r.list || []).forEach((it) => {",
+                  "    pm.expect(it.period).to.eql(\"week\");",
+                  "  });",
+                  "});",
+                  "pm.test('result.list[].period_key', () => {",
+                  "  (r.list || []).forEach((it) => {",
+                  "    pm.expect(it.period_key).to.eql(\"2026-W35\");",
+                  "  });",
+                  "});",
+                  "pm.test('result.list[].signup', () => {",
+                  "  (r.list || []).forEach((it) => {",
+                  "    pm.expect(it.signup).to.eql(10);",
+                  "  });",
+                  "});",
+                  "pm.test('result.list[].eftd', () => {",
+                  "  (r.list || []).forEach((it) => {",
+                  "    pm.expect(it.eftd).to.eql(null);",
+                  "  });",
+                  "});",
+                  "pm.test('result.list[].daut', () => {",
+                  "  (r.list || []).forEach((it) => {",
+                  "    pm.expect(it.daut).to.eql(null);",
+                  "  });",
+                  "});",
+                  "pm.test('result.list[].volume', () => {",
+                  "  (r.list || []).forEach((it) => {",
+                  "    pm.expect(it.volume).to.eql(null);",
+                  "  });",
+                  "});",
+                  "pm.test('result.list[].new_affiliates', () => {",
+                  "  (r.list || []).forEach((it) => {",
+                  "    pm.expect(it.new_affiliates).to.eql(null);",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/okr?begin=2026-08-24&end=2026-08-30&bd_user_id={{okrBdUserId}}"
+          }
+        },
+        {
+          "name": "[err] AC-37-04 同一 BD+同一周期桶再下发",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _tok = (pm.environment.get('managerToken') || pm.collectionVariables.get('managerToken') || '').trim();",
+                  "if (_tok) {",
+                  "  pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + _tok });",
+                  "}",
+                  "const _need = [\"okrBdUserId\"];",
+                  "const _missing = _need.filter((k) => !String(pm.environment.get(k) || pm.collectionVariables.get(k) || \"\").trim());",
+                  "if (_missing.length) {",
+                  "  console.log('跳过：缺少 ' + _missing.join(', '));",
+                  "  if (typeof pm.execution !== \"undefined\" && pm.execution.skipRequest) {",
+                  "    pm.execution.skipRequest();",
+                  "  }",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _need = [\"okrBdUserId\"];",
+                  "const _missing = _need.filter((k) => !String(pm.environment.get(k) || pm.collectionVariables.get(k) || \"\").trim());",
+                  "if (_missing.length) {",
+                  "  pm.test('已跳过（缺少 ' + _missing.join(', ') + '）', () => {",
+                  "    pm.expect(true).to.be.true;",
+                  "  });",
+                  "  return;",
+                  "}",
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=20224', () => pm.expect(body.ret_code).to.eql(20224));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/okr",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bd_user_id\": {{okrBdUserId}},\n  \"begin\": \"2026-07-01\",\n  \"end\": \"2026-09-30\",\n  \"signup\": 1\n}"
+            }
+          }
+        },
+        {
+          "name": "[err] AC-37-05 滚动窗未对齐区间",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _tok = (pm.environment.get('managerToken') || pm.collectionVariables.get('managerToken') || '').trim();",
+                  "if (_tok) {",
+                  "  pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + _tok });",
+                  "}",
+                  "const _need = [\"okrBdUserId\"];",
+                  "const _missing = _need.filter((k) => !String(pm.environment.get(k) || pm.collectionVariables.get(k) || \"\").trim());",
+                  "if (_missing.length) {",
+                  "  console.log('跳过：缺少 ' + _missing.join(', '));",
+                  "  if (typeof pm.execution !== \"undefined\" && pm.execution.skipRequest) {",
+                  "    pm.execution.skipRequest();",
+                  "  }",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _need = [\"okrBdUserId\"];",
+                  "const _missing = _need.filter((k) => !String(pm.environment.get(k) || pm.collectionVariables.get(k) || \"\").trim());",
+                  "if (_missing.length) {",
+                  "  pm.test('已跳过（缺少 ' + _missing.join(', ') + '）', () => {",
+                  "    pm.expect(true).to.be.true;",
+                  "  });",
+                  "  return;",
+                  "}",
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=10001', () => pm.expect(body.ret_code).to.eql(10001));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/okr",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bd_user_id\": {{okrBdUserId}},\n  \"begin\": \"2026-07-18\",\n  \"end\": \"2026-08-18\",\n  \"signup\": 1\n}"
+            }
+          }
+        },
+        {
+          "name": "[err] AC-37-06 目标为其他区域 BD",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _tok = (pm.environment.get('managerToken') || pm.collectionVariables.get('managerToken') || '').trim();",
+                  "if (_tok) {",
+                  "  pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + _tok });",
+                  "}",
+                  "const _need = [\"okrOtherRegionBdUserId\"];",
+                  "const _missing = _need.filter((k) => !String(pm.environment.get(k) || pm.collectionVariables.get(k) || \"\").trim());",
+                  "if (_missing.length) {",
+                  "  console.log('跳过：缺少 ' + _missing.join(', '));",
+                  "  if (typeof pm.execution !== \"undefined\" && pm.execution.skipRequest) {",
+                  "    pm.execution.skipRequest();",
+                  "  }",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _need = [\"okrOtherRegionBdUserId\"];",
+                  "const _missing = _need.filter((k) => !String(pm.environment.get(k) || pm.collectionVariables.get(k) || \"\").trim());",
+                  "if (_missing.length) {",
+                  "  pm.test('已跳过（缺少 ' + _missing.join(', ') + '）', () => {",
+                  "    pm.expect(true).to.be.true;",
+                  "  });",
+                  "  return;",
+                  "}",
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=20300', () => pm.expect(body.ret_code).to.eql(20300));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/okr",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bd_user_id\": {{okrOtherRegionBdUserId}},\n  \"begin\": \"2026-08-01\",\n  \"end\": \"2026-08-31\",\n  \"signup\": 1\n}"
+            }
+          }
+        },
+        {
+          "name": "[err] AC-37-07 目标为 Manager",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _tok = (pm.environment.get('managerToken') || pm.collectionVariables.get('managerToken') || '').trim();",
+                  "if (_tok) {",
+                  "  pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + _tok });",
+                  "}",
+                  "const _need = [\"okrManagerUserId\"];",
+                  "const _missing = _need.filter((k) => !String(pm.environment.get(k) || pm.collectionVariables.get(k) || \"\").trim());",
+                  "if (_missing.length) {",
+                  "  console.log('跳过：缺少 ' + _missing.join(', '));",
+                  "  if (typeof pm.execution !== \"undefined\" && pm.execution.skipRequest) {",
+                  "    pm.execution.skipRequest();",
+                  "  }",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _need = [\"okrManagerUserId\"];",
+                  "const _missing = _need.filter((k) => !String(pm.environment.get(k) || pm.collectionVariables.get(k) || \"\").trim());",
+                  "if (_missing.length) {",
+                  "  pm.test('已跳过（缺少 ' + _missing.join(', ') + '）', () => {",
+                  "    pm.expect(true).to.be.true;",
+                  "  });",
+                  "  return;",
+                  "}",
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=10001', () => pm.expect(body.ret_code).to.eql(10001));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/okr",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bd_user_id\": {{okrManagerUserId}},\n  \"begin\": \"2026-08-24\",\n  \"end\": \"2026-08-30\",\n  \"signup\": 1\n}"
+            }
+          }
+        },
+        {
+          "name": "[err] AC-37-08 目标账号不存在",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _tok = (pm.environment.get('managerToken') || pm.collectionVariables.get('managerToken') || '').trim();",
+                  "if (_tok) {",
+                  "  pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + _tok });",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=20105', () => pm.expect(body.ret_code).to.eql(20105));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/okr",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bd_user_id\": 999999999,\n  \"begin\": \"2026-08-01\",\n  \"end\": \"2026-08-31\",\n  \"signup\": 1\n}"
+            }
+          }
+        },
+        {
+          "name": "[err] AC-37-09 目标账号停用",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _tok = (pm.environment.get('managerToken') || pm.collectionVariables.get('managerToken') || '').trim();",
+                  "if (_tok) {",
+                  "  pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + _tok });",
+                  "}",
+                  "const _need = [\"okrDisabledBdUserId\"];",
+                  "const _missing = _need.filter((k) => !String(pm.environment.get(k) || pm.collectionVariables.get(k) || \"\").trim());",
+                  "if (_missing.length) {",
+                  "  console.log('跳过：缺少 ' + _missing.join(', '));",
+                  "  if (typeof pm.execution !== \"undefined\" && pm.execution.skipRequest) {",
+                  "    pm.execution.skipRequest();",
+                  "  }",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _need = [\"okrDisabledBdUserId\"];",
+                  "const _missing = _need.filter((k) => !String(pm.environment.get(k) || pm.collectionVariables.get(k) || \"\").trim());",
+                  "if (_missing.length) {",
+                  "  pm.test('已跳过（缺少 ' + _missing.join(', ') + '）', () => {",
+                  "    pm.expect(true).to.be.true;",
+                  "  });",
+                  "  return;",
+                  "}",
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=20105', () => pm.expect(body.ret_code).to.eql(20105));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/okr",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bd_user_id\": {{okrDisabledBdUserId}},\n  \"begin\": \"2026-08-01\",\n  \"end\": \"2026-08-31\",\n  \"signup\": 1\n}"
+            }
+          }
+        },
+        {
+          "name": "[err] AC-37-10 普通 BD 下发",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _tok = (pm.environment.get('accessToken') || pm.collectionVariables.get('accessToken') || '').trim();",
+                  "if (_tok) {",
+                  "  pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + _tok });",
+                  "}",
+                  "const _need = [\"okrBdUserId\"];",
+                  "const _missing = _need.filter((k) => !String(pm.environment.get(k) || pm.collectionVariables.get(k) || \"\").trim());",
+                  "if (_missing.length) {",
+                  "  console.log('跳过：缺少 ' + _missing.join(', '));",
+                  "  if (typeof pm.execution !== \"undefined\" && pm.execution.skipRequest) {",
+                  "    pm.execution.skipRequest();",
+                  "  }",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _need = [\"okrBdUserId\"];",
+                  "const _missing = _need.filter((k) => !String(pm.environment.get(k) || pm.collectionVariables.get(k) || \"\").trim());",
+                  "if (_missing.length) {",
+                  "  pm.test('已跳过（缺少 ' + _missing.join(', ') + '）', () => {",
+                  "    pm.expect(true).to.be.true;",
+                  "  });",
+                  "  return;",
+                  "}",
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=20300', () => pm.expect(body.ret_code).to.eql(20300));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/okr",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bd_user_id\": {{okrBdUserId}},\n  \"begin\": \"2026-07-01\",\n  \"end\": \"2026-09-30\",\n  \"signup\": 1\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "B · AC-36-01 查看 KPI  GET /okr",
+      "item": [
+        {
+          "name": "[ok] AC-36-01 Manager 不带筛选看本区列表",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _tok = (pm.environment.get('managerToken') || pm.collectionVariables.get('managerToken') || '').trim();",
+                  "if (_tok) {",
+                  "  pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + _tok });",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "const r = body.result || {};",
+                  "pm.test('result.list 为数组', () => pm.expect(r.list).to.be.an('array'));",
+                  "pm.test('result.list[] 含 id/bd_user_id/begin/end/period/period_key', () => {",
+                  "  pm.expect(r.list).to.be.an('array');",
+                  "  (r.list || []).forEach((it) => {",
+                  "    pm.expect(it).to.include.keys(\"id\", \"bd_user_id\", \"begin\", \"end\", \"period\", \"period_key\");",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/okr"
+          }
+        },
+        {
+          "name": "[ok] AC-36-01q begin/end=Q3 闭区间只返回该季度桶",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _tok = (pm.environment.get('managerToken') || pm.collectionVariables.get('managerToken') || '').trim();",
+                  "if (_tok) {",
+                  "  pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + _tok });",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "const r = body.result || {};",
+                  "pm.test('result.list[].period', () => {",
+                  "  (r.list || []).forEach((it) => {",
+                  "    pm.expect(it.period).to.eql(\"quarter\");",
+                  "  });",
+                  "});",
+                  "pm.test('result.list[].period_key', () => {",
+                  "  (r.list || []).forEach((it) => {",
+                  "    pm.expect(it.period_key).to.eql(\"2026Q3\");",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/okr?begin=2026-07-01&end=2026-09-30"
+          }
+        },
+        {
+          "name": "[ok] AC-36-03 bd_user_id 只返回该人",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _tok = (pm.environment.get('managerToken') || pm.collectionVariables.get('managerToken') || '').trim();",
+                  "if (_tok) {",
+                  "  pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + _tok });",
+                  "}",
+                  "const _need = [\"okrBdUserId\"];",
+                  "const _missing = _need.filter((k) => !String(pm.environment.get(k) || pm.collectionVariables.get(k) || \"\").trim());",
+                  "if (_missing.length) {",
+                  "  console.log('跳过：缺少 ' + _missing.join(', '));",
+                  "  if (typeof pm.execution !== \"undefined\" && pm.execution.skipRequest) {",
+                  "    pm.execution.skipRequest();",
+                  "  }",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _need = [\"okrBdUserId\"];",
+                  "const _missing = _need.filter((k) => !String(pm.environment.get(k) || pm.collectionVariables.get(k) || \"\").trim());",
+                  "if (_missing.length) {",
+                  "  pm.test('已跳过（缺少 ' + _missing.join(', ') + '）', () => {",
+                  "    pm.expect(true).to.be.true;",
+                  "  });",
+                  "  return;",
+                  "}",
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "const r = body.result || {};",
+                  "pm.test('result.list[].bd_user_id', () => {",
+                  "  (r.list || []).forEach((it) => {",
+                  "    pm.expect(it.bd_user_id).to.eql(Number((pm.environment.get(\"okrBdUserId\") || pm.collectionVariables.get(\"okrBdUserId\") || '')));",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/okr?bd_user_id={{okrBdUserId}}"
+          }
+        },
+        {
+          "name": "[err] AC-36-04 只传 begin",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _tok = (pm.environment.get('managerToken') || pm.collectionVariables.get('managerToken') || '').trim();",
+                  "if (_tok) {",
+                  "  pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + _tok });",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=10001', () => pm.expect(body.ret_code).to.eql(10001));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/okr?begin=2026-07-01"
+          }
+        },
+        {
+          "name": "[err] AC-36-05 只传 end",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _tok = (pm.environment.get('managerToken') || pm.collectionVariables.get('managerToken') || '').trim();",
+                  "if (_tok) {",
+                  "  pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + _tok });",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=10001', () => pm.expect(body.ret_code).to.eql(10001));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/okr?end=2026-09-30"
+          }
+        },
+        {
+          "name": "[err] AC-36-06 区间不是完整周/月/季",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _tok = (pm.environment.get('managerToken') || pm.collectionVariables.get('managerToken') || '').trim();",
+                  "if (_tok) {",
+                  "  pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + _tok });",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=10001', () => pm.expect(body.ret_code).to.eql(10001));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/okr?begin=2026-07-18&end=2026-08-18"
+          }
+        },
+        {
+          "name": "[err] AC-36-07 普通 BD 查看列表",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _tok = (pm.environment.get('accessToken') || pm.collectionVariables.get('accessToken') || '').trim();",
+                  "if (_tok) {",
+                  "  pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + _tok });",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=20300', () => pm.expect(body.ret_code).to.eql(20300));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/okr"
+          }
+        },
+        {
+          "name": "[ok] AC-36-08 KR Manager 看不到本区配置行",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _tok = (pm.environment.get('krManagerToken') || pm.collectionVariables.get('krManagerToken') || '').trim();",
+                  "if (_tok) {",
+                  "  pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + _tok });",
+                  "}",
+                  "const _need = [\"krManagerToken\",\"okrId\"];",
+                  "const _missing = _need.filter((k) => !String(pm.environment.get(k) || pm.collectionVariables.get(k) || \"\").trim());",
+                  "if (_missing.length) {",
+                  "  console.log('跳过：缺少 ' + _missing.join(', '));",
+                  "  if (typeof pm.execution !== \"undefined\" && pm.execution.skipRequest) {",
+                  "    pm.execution.skipRequest();",
+                  "  }",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _need = [\"krManagerToken\",\"okrId\"];",
+                  "const _missing = _need.filter((k) => !String(pm.environment.get(k) || pm.collectionVariables.get(k) || \"\").trim());",
+                  "if (_missing.length) {",
+                  "  pm.test('已跳过（缺少 ' + _missing.join(', ') + '）', () => {",
+                  "    pm.expect(true).to.be.true;",
+                  "  });",
+                  "  return;",
+                  "}",
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "const r = body.result || {};",
+                  "pm.test('result.list 为数组', () => pm.expect(r.list).to.be.an('array'));",
+                  "pm.test('result.list 不含 id=' + (pm.environment.get(\"okrId\") || pm.collectionVariables.get(\"okrId\") || ''), () => {",
+                  "  const nid = Number((pm.environment.get(\"okrId\") || pm.collectionVariables.get(\"okrId\") || ''));",
+                  "  const hit = (r.list || []).some((it) => Number(it.id) === nid);",
+                  "  pm.expect(hit).to.eql(false);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/okr"
+          }
+        },
+        {
+          "name": "[err] AC-36-09 无 Token 列表",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.request.headers.remove('Authorization');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=10007', () => pm.expect(body.ret_code).to.eql(10007));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/okr"
+          }
+        }
+      ]
+    },
+    {
+      "name": "B2 · AC-36-02 周期区间 GET /okr/period-range",
+      "item": [
+        {
+          "name": "[ok] AC-36-02 Manager 查 UTC 当年季/月/周闭区间",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _tok = (pm.environment.get('managerToken') || pm.collectionVariables.get('managerToken') || '').trim();",
+                  "if (_tok) {",
+                  "  pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + _tok });",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "const r = body.result || {};",
+                  "pm.test('year + 季/月/周条数', () => {",
+                  "  pm.expect(r.year).to.be.a('number');",
+                  "  pm.expect(r.quarters).to.be.an('array').and.have.lengthOf(4);",
+                  "  pm.expect(r.months).to.be.an('array').and.have.lengthOf(12);",
+                  "  pm.expect(r.weeks).to.be.an('array');",
+                  "  pm.expect(r.weeks.length).to.be.at.least(52);",
+                  "});",
+                  "pm.test('季为日历年闭区间', () => {",
+                  "  const y = r.year;",
+                  "  pm.expect(r.quarters[0]).to.include({ period: 'quarter', period_key: y + 'Q1', begin: y + '-01-01', end: y + '-03-31' });",
+                  "  pm.expect(r.quarters[3]).to.include({ period: 'quarter', period_key: y + 'Q4', begin: y + '-10-01', end: y + '-12-31' });",
+                  "});",
+                  "pm.test('月为 1 月1 日到 12 月末', () => {",
+                  "  pm.expect(r.months[0].period).to.eql('month');",
+                  "  pm.expect(r.months[0].begin).to.eql(r.year + '-01-01');",
+                  "  pm.expect(r.months[11].end).to.eql(r.year + '-12-31');",
+                  "});",
+                  "pm.test('季/月/周各恰好一条 current', () => {",
+                  "  ['quarters', 'months', 'weeks'].forEach((k) => {",
+                  "    const n = (r[k] || []).filter((it) => it.current === true).length;",
+                  "    pm.expect(n).to.eql(1);",
+                  "  });",
+                  "});",
+                  "if (r.year === 2026) {",
+                  "  pm.test('2026-W01 为 2025-12-29～2026-01-04', () => {",
+                  "    const w = (r.weeks || []).find((it) => it.period_key === '2026-W01');",
+                  "    pm.expect(w, 'missing 2026-W01').to.exist;",
+                  "    pm.expect(w.begin).to.eql('2025-12-29');",
+                  "    pm.expect(w.end).to.eql('2026-01-04');",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/okr/period-range"
+          }
+        },
+        {
+          "name": "[ok] AC-36-02b 普通 BD 也可调 period-range",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _tok = (pm.environment.get('accessToken') || pm.collectionVariables.get('accessToken') || '').trim();",
+                  "if (_tok) {",
+                  "  pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + _tok });",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "const r = body.result || {};",
+                  "pm.test('year + 季/月/周条数', () => {",
+                  "  pm.expect(r.year).to.be.a('number');",
+                  "  pm.expect(r.quarters).to.be.an('array').and.have.lengthOf(4);",
+                  "  pm.expect(r.months).to.be.an('array').and.have.lengthOf(12);",
+                  "  pm.expect(r.weeks).to.be.an('array');",
+                  "  pm.expect(r.weeks.length).to.be.at.least(52);",
+                  "});",
+                  "pm.test('季为日历年闭区间', () => {",
+                  "  const y = r.year;",
+                  "  pm.expect(r.quarters[0]).to.include({ period: 'quarter', period_key: y + 'Q1', begin: y + '-01-01', end: y + '-03-31' });",
+                  "  pm.expect(r.quarters[3]).to.include({ period: 'quarter', period_key: y + 'Q4', begin: y + '-10-01', end: y + '-12-31' });",
+                  "});",
+                  "pm.test('月为 1 月1 日到 12 月末', () => {",
+                  "  pm.expect(r.months[0].period).to.eql('month');",
+                  "  pm.expect(r.months[0].begin).to.eql(r.year + '-01-01');",
+                  "  pm.expect(r.months[11].end).to.eql(r.year + '-12-31');",
+                  "});",
+                  "pm.test('季/月/周各恰好一条 current', () => {",
+                  "  ['quarters', 'months', 'weeks'].forEach((k) => {",
+                  "    const n = (r[k] || []).filter((it) => it.current === true).length;",
+                  "    pm.expect(n).to.eql(1);",
+                  "  });",
+                  "});",
+                  "if (r.year === 2026) {",
+                  "  pm.test('2026-W01 为 2025-12-29～2026-01-04', () => {",
+                  "    const w = (r.weeks || []).find((it) => it.period_key === '2026-W01');",
+                  "    pm.expect(w, 'missing 2026-W01').to.exist;",
+                  "    pm.expect(w.begin).to.eql('2025-12-29');",
+                  "    pm.expect(w.end).to.eql('2026-01-04');",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/okr/period-range"
+          }
+        },
+        {
+          "name": "[err] AC-36-02c 无 Token period-range",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.request.headers.remove('Authorization');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=10007', () => pm.expect(body.ret_code).to.eql(10007));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/okr/period-range"
+          }
+        }
+      ]
+    },
+    {
+      "name": "C · AC-38-01 编辑 KPI  POST /okr/{id}",
+      "item": [
+        {
+          "name": "[ok] AC-38-01 改已有行 signup",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _tok = (pm.environment.get('managerToken') || pm.collectionVariables.get('managerToken') || '').trim();",
+                  "if (_tok) {",
+                  "  pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + _tok });",
+                  "}",
+                  "const _need = [\"okrId\"];",
+                  "const _missing = _need.filter((k) => !String(pm.environment.get(k) || pm.collectionVariables.get(k) || \"\").trim());",
+                  "if (_missing.length) {",
+                  "  console.log('跳过：缺少 ' + _missing.join(', '));",
+                  "  if (typeof pm.execution !== \"undefined\" && pm.execution.skipRequest) {",
+                  "    pm.execution.skipRequest();",
+                  "  }",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _need = [\"okrId\"];",
+                  "const _missing = _need.filter((k) => !String(pm.environment.get(k) || pm.collectionVariables.get(k) || \"\").trim());",
+                  "if (_missing.length) {",
+                  "  pm.test('已跳过（缺少 ' + _missing.join(', ') + '）', () => {",
+                  "    pm.expect(true).to.be.true;",
+                  "  });",
+                  "  return;",
+                  "}",
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "const r = body.result || {};",
+                  "pm.test('result 为空（null 或省略）', () => {",
+                  "  pm.expect(body.result === null || body.result === undefined).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/okr/{{okrId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"signup\": 8000\n}"
+            }
+          }
+        },
+        {
+          "name": "[ok] AC-38-01b 列表中 signup 已更新",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _tok = (pm.environment.get('managerToken') || pm.collectionVariables.get('managerToken') || '').trim();",
+                  "if (_tok) {",
+                  "  pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + _tok });",
+                  "}",
+                  "const _need = [\"okrId\",\"okrBdUserId\"];",
+                  "const _missing = _need.filter((k) => !String(pm.environment.get(k) || pm.collectionVariables.get(k) || \"\").trim());",
+                  "if (_missing.length) {",
+                  "  console.log('跳过：缺少 ' + _missing.join(', '));",
+                  "  if (typeof pm.execution !== \"undefined\" && pm.execution.skipRequest) {",
+                  "    pm.execution.skipRequest();",
+                  "  }",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _need = [\"okrId\",\"okrBdUserId\"];",
+                  "const _missing = _need.filter((k) => !String(pm.environment.get(k) || pm.collectionVariables.get(k) || \"\").trim());",
+                  "if (_missing.length) {",
+                  "  pm.test('已跳过（缺少 ' + _missing.join(', ') + '）', () => {",
+                  "    pm.expect(true).to.be.true;",
+                  "  });",
+                  "  return;",
+                  "}",
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "const r = body.result || {};",
+                  "{",
+                  "  const _id = Number((pm.environment.get(\"okrId\") || pm.collectionVariables.get(\"okrId\") || ''));",
+                  "  const hit = (r.list || []).find((it) => Number(it.id) === _id);",
+                  "  pm.test('list 含 okrId', () => pm.expect(hit, 'row ' + _id).to.exist);",
+                  "  if (hit) {",
+                  "    pm.expect(hit.signup).to.eql(8000);",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/okr?begin=2026-07-01&end=2026-09-30&bd_user_id={{okrBdUserId}}"
+          }
+        },
+        {
+          "name": "[ok] AC-38-02 未出现的指标保持原值",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _tok = (pm.environment.get('managerToken') || pm.collectionVariables.get('managerToken') || '').trim();",
+                  "if (_tok) {",
+                  "  pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + _tok });",
+                  "}",
+                  "const _need = [\"okrId\"];",
+                  "const _missing = _need.filter((k) => !String(pm.environment.get(k) || pm.collectionVariables.get(k) || \"\").trim());",
+                  "if (_missing.length) {",
+                  "  console.log('跳过：缺少 ' + _missing.join(', '));",
+                  "  if (typeof pm.execution !== \"undefined\" && pm.execution.skipRequest) {",
+                  "    pm.execution.skipRequest();",
+                  "  }",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _need = [\"okrId\"];",
+                  "const _missing = _need.filter((k) => !String(pm.environment.get(k) || pm.collectionVariables.get(k) || \"\").trim());",
+                  "if (_missing.length) {",
+                  "  pm.test('已跳过（缺少 ' + _missing.join(', ') + '）', () => {",
+                  "    pm.expect(true).to.be.true;",
+                  "  });",
+                  "  return;",
+                  "}",
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "const r = body.result || {};",
+                  "pm.test('result 为空（null 或省略）', () => {",
+                  "  pm.expect(body.result === null || body.result === undefined).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/okr/{{okrId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eftd\": 100\n}"
+            }
+          }
+        },
+        {
+          "name": "[ok] AC-38-02b 核验 eftd 更新且 signup 未改",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _tok = (pm.environment.get('managerToken') || pm.collectionVariables.get('managerToken') || '').trim();",
+                  "if (_tok) {",
+                  "  pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + _tok });",
+                  "}",
+                  "const _need = [\"okrId\",\"okrBdUserId\"];",
+                  "const _missing = _need.filter((k) => !String(pm.environment.get(k) || pm.collectionVariables.get(k) || \"\").trim());",
+                  "if (_missing.length) {",
+                  "  console.log('跳过：缺少 ' + _missing.join(', '));",
+                  "  if (typeof pm.execution !== \"undefined\" && pm.execution.skipRequest) {",
+                  "    pm.execution.skipRequest();",
+                  "  }",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _need = [\"okrId\",\"okrBdUserId\"];",
+                  "const _missing = _need.filter((k) => !String(pm.environment.get(k) || pm.collectionVariables.get(k) || \"\").trim());",
+                  "if (_missing.length) {",
+                  "  pm.test('已跳过（缺少 ' + _missing.join(', ') + '）', () => {",
+                  "    pm.expect(true).to.be.true;",
+                  "  });",
+                  "  return;",
+                  "}",
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "const r = body.result || {};",
+                  "{",
+                  "  const _id = Number((pm.environment.get(\"okrId\") || pm.collectionVariables.get(\"okrId\") || ''));",
+                  "  const hit = (r.list || []).find((it) => Number(it.id) === _id);",
+                  "  pm.test('list 含 okrId', () => pm.expect(hit, 'row ' + _id).to.exist);",
+                  "  if (hit) {",
+                  "    pm.expect(hit.signup).to.eql(8000);",
+                  "    pm.expect(hit.eftd).to.eql(100);",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/okr?begin=2026-07-01&end=2026-09-30&bd_user_id={{okrBdUserId}}"
+          }
+        },
+        {
+          "name": "[ok] AC-38-03 将 signup 改为 0 变为不考核",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _tok = (pm.environment.get('managerToken') || pm.collectionVariables.get('managerToken') || '').trim();",
+                  "if (_tok) {",
+                  "  pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + _tok });",
+                  "}",
+                  "const _need = [\"okrId\"];",
+                  "const _missing = _need.filter((k) => !String(pm.environment.get(k) || pm.collectionVariables.get(k) || \"\").trim());",
+                  "if (_missing.length) {",
+                  "  console.log('跳过：缺少 ' + _missing.join(', '));",
+                  "  if (typeof pm.execution !== \"undefined\" && pm.execution.skipRequest) {",
+                  "    pm.execution.skipRequest();",
+                  "  }",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _need = [\"okrId\"];",
+                  "const _missing = _need.filter((k) => !String(pm.environment.get(k) || pm.collectionVariables.get(k) || \"\").trim());",
+                  "if (_missing.length) {",
+                  "  pm.test('已跳过（缺少 ' + _missing.join(', ') + '）', () => {",
+                  "    pm.expect(true).to.be.true;",
+                  "  });",
+                  "  return;",
+                  "}",
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/okr/{{okrId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"signup\": 0\n}"
+            }
+          }
+        },
+        {
+          "name": "[ok] AC-38-03b 列表 signup 为 null 且 eftd 仍在",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _tok = (pm.environment.get('managerToken') || pm.collectionVariables.get('managerToken') || '').trim();",
+                  "if (_tok) {",
+                  "  pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + _tok });",
+                  "}",
+                  "const _need = [\"okrId\",\"okrBdUserId\"];",
+                  "const _missing = _need.filter((k) => !String(pm.environment.get(k) || pm.collectionVariables.get(k) || \"\").trim());",
+                  "if (_missing.length) {",
+                  "  console.log('跳过：缺少 ' + _missing.join(', '));",
+                  "  if (typeof pm.execution !== \"undefined\" && pm.execution.skipRequest) {",
+                  "    pm.execution.skipRequest();",
+                  "  }",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _need = [\"okrId\",\"okrBdUserId\"];",
+                  "const _missing = _need.filter((k) => !String(pm.environment.get(k) || pm.collectionVariables.get(k) || \"\").trim());",
+                  "if (_missing.length) {",
+                  "  pm.test('已跳过（缺少 ' + _missing.join(', ') + '）', () => {",
+                  "    pm.expect(true).to.be.true;",
+                  "  });",
+                  "  return;",
+                  "}",
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
+                  "const r = body.result || {};",
+                  "{",
+                  "  const _id = Number((pm.environment.get(\"okrId\") || pm.collectionVariables.get(\"okrId\") || ''));",
+                  "  const hit = (r.list || []).find((it) => Number(it.id) === _id);",
+                  "  pm.test('list 含 okrId', () => pm.expect(hit, 'row ' + _id).to.exist);",
+                  "  if (hit) {",
+                  "    pm.expect(hit.signup).to.eql(null);",
+                  "    pm.expect(hit.eftd).to.eql(100);",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/okr?begin=2026-07-01&end=2026-09-30&bd_user_id={{okrBdUserId}}"
+          }
+        },
+        {
+          "name": "[err] AC-38-04 id 不存在",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _tok = (pm.environment.get('managerToken') || pm.collectionVariables.get('managerToken') || '').trim();",
+                  "if (_tok) {",
+                  "  pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + _tok });",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=20223', () => pm.expect(body.ret_code).to.eql(20223));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/okr/999999999",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"signup\": 1\n}"
+            }
+          }
+        },
+        {
+          "name": "[err] AC-38-05 编辑其他区域的行",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _tok = (pm.environment.get('managerToken') || pm.collectionVariables.get('managerToken') || '').trim();",
+                  "if (_tok) {",
+                  "  pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + _tok });",
+                  "}",
+                  "const _need = [\"okrOtherRegionRowId\"];",
+                  "const _missing = _need.filter((k) => !String(pm.environment.get(k) || pm.collectionVariables.get(k) || \"\").trim());",
+                  "if (_missing.length) {",
+                  "  console.log('跳过：缺少 ' + _missing.join(', '));",
+                  "  if (typeof pm.execution !== \"undefined\" && pm.execution.skipRequest) {",
+                  "    pm.execution.skipRequest();",
+                  "  }",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _need = [\"okrOtherRegionRowId\"];",
+                  "const _missing = _need.filter((k) => !String(pm.environment.get(k) || pm.collectionVariables.get(k) || \"\").trim());",
+                  "if (_missing.length) {",
+                  "  pm.test('已跳过（缺少 ' + _missing.join(', ') + '）', () => {",
+                  "    pm.expect(true).to.be.true;",
+                  "  });",
+                  "  return;",
+                  "}",
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=20300', () => pm.expect(body.ret_code).to.eql(20300));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/okr/{{okrOtherRegionRowId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"signup\": 1\n}"
+            }
+          }
+        },
+        {
+          "name": "[err] AC-38-06 普通 BD 编辑",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _tok = (pm.environment.get('accessToken') || pm.collectionVariables.get('accessToken') || '').trim();",
+                  "if (_tok) {",
+                  "  pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + _tok });",
+                  "}",
+                  "const _need = [\"okrId\"];",
+                  "const _missing = _need.filter((k) => !String(pm.environment.get(k) || pm.collectionVariables.get(k) || \"\").trim());",
+                  "if (_missing.length) {",
+                  "  console.log('跳过：缺少 ' + _missing.join(', '));",
+                  "  if (typeof pm.execution !== \"undefined\" && pm.execution.skipRequest) {",
+                  "    pm.execution.skipRequest();",
+                  "  }",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _need = [\"okrId\"];",
+                  "const _missing = _need.filter((k) => !String(pm.environment.get(k) || pm.collectionVariables.get(k) || \"\").trim());",
+                  "if (_missing.length) {",
+                  "  pm.test('已跳过（缺少 ' + _missing.join(', ') + '）', () => {",
+                  "    pm.expect(true).to.be.true;",
+                  "  });",
+                  "  return;",
+                  "}",
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=20300', () => pm.expect(body.ret_code).to.eql(20300));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/okr/{{okrId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"signup\": 1\n}"
+            }
+          }
+        },
+        {
+          "name": "[err] AC-38-07 无 Token 编辑",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.request.headers.remove('Authorization');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ret_code=10007', () => pm.expect(body.ret_code).to.eql(10007));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{apiBase}}/api/v1/okr/999999999",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"signup\": 1\n}"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

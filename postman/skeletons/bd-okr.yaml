@@ -1,0 +1,906 @@
+# OKR 设置用例骨架（源文件）。编译：npm run pm:skeleton:compile
+# 对应 OkrController · AC-36/37/38 · 闭区间 begin/end；GET /okr/period-range
+# 错误码：10001 PARAMS_ERROR · 10007 未登录 · 20105 BD_USER_NOT_FOUND
+#         20223 OKR_TARGET_NOT_FOUND · 20224 OKR_TARGET_DUPLICATE · 20300 PERMISSION_DENIED
+
+id: bd-okr
+title: BD Management · OKR（YAML）
+controller: OkrController
+output: postman/collections/bd-okr.postman_collection.json
+postman_id: c0ffee00-bd-okr-yaml-0001
+
+variables:
+  - okrBdUserId
+  - okrManagerUserId
+  - okrId
+  - krManagerToken
+  - krBdToken
+  - okrOtherRegionBdUserId
+
+folders:
+  - name: 00 Setup · 登录与本区 BD
+    cases:
+      - id: L-01
+        kind: ok
+        name: Manager 登录
+        given: managerEmail / managerPassword（本区，默认 mgr.global）
+        branch: 明文登录成功，写入 managerToken
+        fill: filled
+        login_as: manager
+        when:
+          method: POST
+          path: /api/v1/login
+        then:
+          http: 200
+          ret_code: 0
+        asserts:
+          - type: token_nonempty
+
+      - id: L-02
+        kind: ok
+        name: BD 登录
+        given: bdEmail / bdPassword（本区在职 BD，默认 aiden）
+        branch: 明文登录成功，写入 accessToken
+        fill: filled
+        login_as: bd
+        when:
+          method: POST
+          path: /api/v1/login
+        then:
+          http: 200
+          ret_code: 0
+        asserts:
+          - type: token_nonempty
+
+      - id: L-03
+        kind: ok
+        name: KR Manager 登录
+        given: krManagerEmail / krManagerPassword（默认 mgr.kr；未配则跳过）
+        branch: 跨区 Manager token，供 AC-36-07 / AC-37-06
+        fill: filled
+        skip_unless: [krManagerEmail, krManagerPassword]
+        login_as: kr_manager
+        when:
+          method: POST
+          path: /api/v1/login
+        then:
+          http: 200
+          ret_code: 0
+        asserts:
+          - type: token_nonempty
+
+      - id: L-04
+        kind: ok
+        name: KR BD 登录
+        given: krBdEmail / krBdPassword（默认 bd.kr；未配则跳过）
+        branch: 解析跨区目标 BD id
+        fill: filled
+        skip_unless: [krBdEmail, krBdPassword]
+        login_as: kr_bd
+        when:
+          method: POST
+          path: /api/v1/login
+        then:
+          http: 200
+          ret_code: 0
+        asserts:
+          - type: token_nonempty
+
+      - id: S-03
+        kind: ok
+        name: GET /bd-users/me（KR BD）解析 okrOtherRegionBdUserId
+        given: KR BD 已登录
+        auth: kr_bd
+        skip_unless: [krBdToken]
+        branch: 给本区 Manager 下发跨区 BD 应失败
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/bd-users/me
+        then:
+          http: 200
+          ret_code: 0
+        asserts:
+          - type: save_var
+            path: result.id
+            var: okrOtherRegionBdUserId
+            if_empty: true
+
+      - id: S-01
+        kind: ok
+        name: GET /bd-users/me（BD）解析 okrBdUserId
+        given: BD 已登录；环境 okrBdUserId 可覆盖
+        auth: bd
+        branch: 下发目标为本区在职 BD
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/bd-users/me
+        then:
+          http: 200
+          ret_code: 0
+        asserts:
+          - type: save_var
+            path: result.id
+            var: okrBdUserId
+            if_empty: true
+
+      - id: S-02
+        kind: ok
+        name: GET /bd-users/me（Manager）解析 okrManagerUserId
+        given: Manager 已登录
+        auth: manager
+        branch: 给 Manager 下发 KPI 应失败
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/bd-users/me
+        then:
+          http: 200
+          ret_code: 0
+        asserts:
+          - type: save_var
+            path: result.id
+            var: okrManagerUserId
+            if_empty: true
+
+  - name: A · AC-37-01 下发 KPI  POST /okr
+    cases:
+      - id: AC-37-01
+        kind: ok
+        name: 本区 Manager 下发 Q3 仅 signup
+        given: 本区在职 BD；begin=2026-07-01 end=2026-09-30
+        auth: manager
+        skip_unless: [okrBdUserId]
+        branch: 成功返回 id；重复跑允许 20224
+        fill: filled
+        when:
+          method: POST
+          path: /api/v1/okr
+          body_raw: |-
+            {
+              "bd_user_id": {{okrBdUserId}},
+              "begin": "2026-07-01",
+              "end": "2026-09-30",
+              "signup": 5000
+            }
+        then:
+          http: 200
+          ret_code_in: [0, 20224]
+        asserts:
+          - type: save_var
+            path: result.id
+            var: okrId
+
+      - id: AC-37-01b
+        kind: ok
+        name: 列表核验 Q3 period / period_key 并缓存 okrId
+        given: AC-37-01 已下发或库中已有同行
+        auth: manager
+        skip_unless: [okrBdUserId]
+        branch: period=quarter period_key=2026Q3（指标值可能被 AC-38 改过，此处只核周期并缓存 id）
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/okr
+          query:
+            begin: "2026-07-01"
+            end: "2026-09-30"
+            bd_user_id: "{{okrBdUserId}}"
+        then:
+          http: 200
+          ret_code: 0
+        asserts:
+          - type: is_array
+            path: result.list
+          - type: list_field
+            path: result.list
+            field: period
+            value: quarter
+          - type: list_field
+            path: result.list
+            field: period_key
+            value: 2026Q3
+          - type: list_field
+            path: result.list
+            field: begin
+            value: "2026-07-01"
+          - type: list_field
+            path: result.list
+            field: end
+            value: "2026-09-30"
+          - type: save_list_match
+            list: result.list
+            period_key: 2026Q3
+            bd_user_id_from: okrBdUserId
+            var: okrId
+            field: id
+
+      - id: AC-37-02
+        kind: ok
+        name: 下发自然月 2026-08
+        given: begin=2026-08-01 end=2026-08-31
+        auth: manager
+        skip_unless: [okrBdUserId]
+        branch: period=month period_key=2026-08
+        fill: filled
+        when:
+          method: POST
+          path: /api/v1/okr
+          body_raw: |-
+            {
+              "bd_user_id": {{okrBdUserId}},
+              "begin": "2026-08-01",
+              "end": "2026-08-31",
+              "signup": 100
+            }
+        then:
+          http: 200
+          ret_code_in: [0, 20224]
+
+      - id: AC-37-02b
+        kind: ok
+        name: 列表核验 month / 2026-08
+        given: AC-37-02
+        auth: manager
+        skip_unless: [okrBdUserId]
+        branch: 月桶
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/okr
+          query:
+            begin: "2026-08-01"
+            end: "2026-08-31"
+            bd_user_id: "{{okrBdUserId}}"
+        then:
+          http: 200
+          ret_code: 0
+        asserts:
+          - type: list_field
+            path: result.list
+            field: period
+            value: month
+          - type: list_field
+            path: result.list
+            field: period_key
+            value: "2026-08"
+
+      - id: AC-37-03
+        kind: ok
+        name: 下发 ISO 周 2026-08-24～2026-08-30
+        given: 周一到下周一
+        auth: manager
+        skip_unless: [okrBdUserId]
+        branch: period=week
+        fill: filled
+        when:
+          method: POST
+          path: /api/v1/okr
+          body_raw: |-
+            {
+              "bd_user_id": {{okrBdUserId}},
+              "begin": "2026-08-24",
+              "end": "2026-08-30",
+              "signup": 10
+            }
+        then:
+          http: 200
+          ret_code_in: [0, 20224]
+
+      - id: AC-37-03b
+        kind: ok
+        name: 列表核验 week / 2026-W35
+        given: AC-37-03
+        auth: manager
+        skip_unless: [okrBdUserId]
+        branch: ISO 周桶；未传指标读出 null（本行不做编辑，可重复跑）
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/okr
+          query:
+            begin: "2026-08-24"
+            end: "2026-08-30"
+            bd_user_id: "{{okrBdUserId}}"
+        then:
+          http: 200
+          ret_code: 0
+        asserts:
+          - type: list_field
+            path: result.list
+            field: period
+            value: week
+          - type: list_field
+            path: result.list
+            field: period_key
+            value: "2026-W35"
+          - type: list_field
+            path: result.list
+            field: signup
+            value: 10
+          - type: list_field
+            path: result.list
+            field: eftd
+            value: null
+          - type: list_field
+            path: result.list
+            field: daut
+            value: null
+          - type: list_field
+            path: result.list
+            field: volume
+            value: null
+          - type: list_field
+            path: result.list
+            field: new_affiliates
+            value: null
+
+      - id: AC-37-04
+        kind: err
+        name: 同一 BD+同一周期桶再下发
+        given: Q3 行已存在
+        auth: manager
+        skip_unless: [okrBdUserId]
+        branch: OKR_TARGET_DUPLICATE 不覆盖
+        fill: filled
+        when:
+          method: POST
+          path: /api/v1/okr
+          body_raw: |-
+            {
+              "bd_user_id": {{okrBdUserId}},
+              "begin": "2026-07-01",
+              "end": "2026-09-30",
+              "signup": 1
+            }
+        then:
+          http: 200
+          ret_code: 20224
+
+      - id: AC-37-05
+        kind: err
+        name: 滚动窗未对齐区间
+        given: 2026-07-18～2026-08-18
+        auth: manager
+        skip_unless: [okrBdUserId]
+        branch: PARAMS_ERROR
+        fill: filled
+        when:
+          method: POST
+          path: /api/v1/okr
+          body_raw: |-
+            {
+              "bd_user_id": {{okrBdUserId}},
+              "begin": "2026-07-18",
+              "end": "2026-08-18",
+              "signup": 1
+            }
+        then:
+          http: 200
+          ret_code: 10001
+
+      - id: AC-37-06
+        kind: err
+        name: 目标为其他区域 BD
+        given: okrOtherRegionBdUserId（如 KR BD）
+        auth: manager
+        skip_unless: [okrOtherRegionBdUserId]
+        branch: PERMISSION_DENIED
+        fill: filled
+        when:
+          method: POST
+          path: /api/v1/okr
+          body_raw: |-
+            {
+              "bd_user_id": {{okrOtherRegionBdUserId}},
+              "begin": "2026-08-01",
+              "end": "2026-08-31",
+              "signup": 1
+            }
+        then:
+          http: 200
+          ret_code: 20300
+
+      - id: AC-37-07
+        kind: err
+        name: 目标为 Manager
+        given: okrManagerUserId
+        auth: manager
+        skip_unless: [okrManagerUserId]
+        branch: PARAMS_ERROR target must be bd
+        fill: filled
+        when:
+          method: POST
+          path: /api/v1/okr
+          body_raw: |-
+            {
+              "bd_user_id": {{okrManagerUserId}},
+              "begin": "2026-08-24",
+              "end": "2026-08-30",
+              "signup": 1
+            }
+        then:
+          http: 200
+          ret_code: 10001
+
+      - id: AC-37-08
+        kind: err
+        name: 目标账号不存在
+        given: bd_user_id=999999999
+        auth: manager
+        branch: BD_USER_NOT_FOUND
+        fill: filled
+        when:
+          method: POST
+          path: /api/v1/okr
+          body:
+            bd_user_id: 999999999
+            begin: "2026-08-01"
+            end: "2026-08-31"
+            signup: 1
+        then:
+          http: 200
+          ret_code: 20105
+
+      - id: AC-37-09
+        kind: err
+        name: 目标账号停用
+        given: okrDisabledBdUserId
+        auth: manager
+        skip_unless: [okrDisabledBdUserId]
+        branch: BD_USER_NOT_FOUND
+        fill: filled
+        when:
+          method: POST
+          path: /api/v1/okr
+          body_raw: |-
+            {
+              "bd_user_id": {{okrDisabledBdUserId}},
+              "begin": "2026-08-01",
+              "end": "2026-08-31",
+              "signup": 1
+            }
+        then:
+          http: 200
+          ret_code: 20105
+
+      - id: AC-37-10
+        kind: err
+        name: 普通 BD 下发
+        given: BD token
+        auth: bd
+        skip_unless: [okrBdUserId]
+        branch: 仅 Manager
+        fill: filled
+        when:
+          method: POST
+          path: /api/v1/okr
+          body_raw: |-
+            {
+              "bd_user_id": {{okrBdUserId}},
+              "begin": "2026-07-01",
+              "end": "2026-09-30",
+              "signup": 1
+            }
+        then:
+          http: 200
+          ret_code: 20300
+
+  - name: B · AC-36-01 查看 KPI  GET /okr
+    cases:
+      - id: AC-36-01
+        kind: ok
+        name: Manager 不带筛选看本区列表
+        given: 本区 Manager
+        auth: manager
+        branch: ret_code=0；list 每行含 begin/end/period/period_key
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/okr
+        then:
+          http: 200
+          ret_code: 0
+        asserts:
+          - type: is_array
+            path: result.list
+          - type: list_item_keys
+            path: result.list
+            keys: [id, bd_user_id, begin, end, period, period_key]
+
+      - id: AC-36-01q
+        kind: ok
+        name: begin/end=Q3 闭区间只返回该季度桶
+        given: 2026-07-01～2026-09-30
+        auth: manager
+        branch: 仅 2026Q3
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/okr
+          query:
+            begin: "2026-07-01"
+            end: "2026-09-30"
+        then:
+          http: 200
+          ret_code: 0
+        asserts:
+          - type: list_field
+            path: result.list
+            field: period
+            value: quarter
+          - type: list_field
+            path: result.list
+            field: period_key
+            value: 2026Q3
+
+      - id: AC-36-03
+        kind: ok
+        name: bd_user_id 只返回该人
+        given: 本区 BD
+        auth: manager
+        skip_unless: [okrBdUserId]
+        branch: 按人筛选
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/okr
+          query:
+            bd_user_id: "{{okrBdUserId}}"
+        then:
+          http: 200
+          ret_code: 0
+        asserts:
+          - type: list_field
+            path: result.list
+            field: bd_user_id
+            value_from: okrBdUserId
+            coerce: number
+
+      - id: AC-36-04
+        kind: err
+        name: 只传 begin
+        given: Manager
+        auth: manager
+        branch: 须成对
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/okr
+          query:
+            begin: "2026-07-01"
+        then:
+          http: 200
+          ret_code: 10001
+
+      - id: AC-36-05
+        kind: err
+        name: 只传 end
+        given: Manager
+        auth: manager
+        branch: 须成对
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/okr
+          query:
+            end: "2026-09-30"
+        then:
+          http: 200
+          ret_code: 10001
+
+      - id: AC-36-06
+        kind: err
+        name: 区间不是完整周/月/季
+        given: 2026-07-18～2026-08-18
+        auth: manager
+        branch: PARAMS_ERROR
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/okr
+          query:
+            begin: "2026-07-18"
+            end: "2026-08-18"
+        then:
+          http: 200
+          ret_code: 10001
+
+      - id: AC-36-07
+        kind: err
+        name: 普通 BD 查看列表
+        given: BD token
+        auth: bd
+        branch: 无权限
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/okr
+        then:
+          http: 200
+          ret_code: 20300
+
+      - id: AC-36-08
+        kind: ok
+        name: KR Manager 看不到本区配置行
+        given: krManagerToken；okrId 为本区行
+        auth: kr_manager
+        skip_unless: [krManagerToken, okrId]
+        branch: 跨区不可见
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/okr
+        then:
+          http: 200
+          ret_code: 0
+        asserts:
+          - type: is_array
+            path: result.list
+          - type: list_not_id
+            path: result.list
+            var: okrId
+
+      - id: AC-36-09
+        kind: err
+        name: 无 Token 列表
+        given: 不带 Authorization
+        auth: none
+        branch: 拦截器未登录
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/okr
+        then:
+          http: 200
+          ret_code: 10007
+
+  - name: B2 · AC-36-02 周期区间 GET /okr/period-range
+    cases:
+      - id: AC-36-02
+        kind: ok
+        name: Manager 查 UTC 当年季/月/周闭区间
+        given: 已登录 Manager；无查询参数
+        auth: manager
+        branch: year + 4 季 12 月 ISO 周；current 各一条
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/okr/period-range
+        then:
+          http: 200
+          ret_code: 0
+        asserts:
+          - type: period_range
+
+      - id: AC-36-02b
+        kind: ok
+        name: 普通 BD 也可调 period-range
+        given: BD token；不要求 Manager
+        auth: bd
+        branch: 登录即可
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/okr/period-range
+        then:
+          http: 200
+          ret_code: 0
+        asserts:
+          - type: period_range
+
+      - id: AC-36-02c
+        kind: err
+        name: 无 Token period-range
+        given: 不带 Authorization
+        auth: none
+        branch: 拦截器未登录
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/okr/period-range
+        then:
+          http: 200
+          ret_code: 10007
+
+  - name: C · AC-38-01 编辑 KPI  POST /okr/{id}
+    cases:
+      - id: AC-38-01
+        kind: ok
+        name: 改已有行 signup
+        given: okrId（Q3 行）
+        auth: manager
+        skip_unless: [okrId]
+        branch: ret_code=0 result=null
+        fill: filled
+        when:
+          method: POST
+          path: /api/v1/okr/{{okrId}}
+          body:
+            signup: 8000
+        then:
+          http: 200
+          ret_code: 0
+        asserts:
+          - type: result_null
+
+      - id: AC-38-01b
+        kind: ok
+        name: 列表中 signup 已更新
+        given: AC-38-01
+        auth: manager
+        skip_unless: [okrId, okrBdUserId]
+        branch: signup=8000
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/okr
+          query:
+            begin: "2026-07-01"
+            end: "2026-09-30"
+            bd_user_id: "{{okrBdUserId}}"
+        then:
+          http: 200
+          ret_code: 0
+        asserts:
+          - type: find_in_list
+            list: result.list
+            match_var: okrId
+            match_field: id
+            fields:
+              signup: 8000
+
+      - id: AC-38-02
+        kind: ok
+        name: 未出现的指标保持原值
+        given: 只改 eftd
+        auth: manager
+        skip_unless: [okrId]
+        branch: signup 仍为 8000
+        fill: filled
+        when:
+          method: POST
+          path: /api/v1/okr/{{okrId}}
+          body:
+            eftd: 100
+        then:
+          http: 200
+          ret_code: 0
+        asserts:
+          - type: result_null
+
+      - id: AC-38-02b
+        kind: ok
+        name: 核验 eftd 更新且 signup 未改
+        given: AC-38-02
+        auth: manager
+        skip_unless: [okrId, okrBdUserId]
+        branch: 局部 PATCH
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/okr
+          query:
+            begin: "2026-07-01"
+            end: "2026-09-30"
+            bd_user_id: "{{okrBdUserId}}"
+        then:
+          http: 200
+          ret_code: 0
+        asserts:
+          - type: find_in_list
+            list: result.list
+            match_var: okrId
+            match_field: id
+            fields:
+              signup: 8000
+              eftd: 100
+
+      - id: AC-38-03
+        kind: ok
+        name: 将 signup 改为 0 变为不考核
+        given: okrId
+        auth: manager
+        skip_unless: [okrId]
+        branch: 库内 0 读出 null
+        fill: filled
+        when:
+          method: POST
+          path: /api/v1/okr/{{okrId}}
+          body:
+            signup: 0
+        then:
+          http: 200
+          ret_code: 0
+
+      - id: AC-38-03b
+        kind: ok
+        name: 列表 signup 为 null 且 eftd 仍在
+        given: AC-38-03
+        auth: manager
+        skip_unless: [okrId, okrBdUserId]
+        branch: 0=不考核
+        fill: filled
+        when:
+          method: GET
+          path: /api/v1/okr
+          query:
+            begin: "2026-07-01"
+            end: "2026-09-30"
+            bd_user_id: "{{okrBdUserId}}"
+        then:
+          http: 200
+          ret_code: 0
+        asserts:
+          - type: find_in_list
+            list: result.list
+            match_var: okrId
+            match_field: id
+            fields:
+              signup: null
+              eftd: 100
+
+      - id: AC-38-04
+        kind: err
+        name: id 不存在
+        given: 999999999
+        auth: manager
+        branch: OKR_TARGET_NOT_FOUND
+        fill: filled
+        when:
+          method: POST
+          path: /api/v1/okr/999999999
+          body:
+            signup: 1
+        then:
+          http: 200
+          ret_code: 20223
+
+      - id: AC-38-05
+        kind: err
+        name: 编辑其他区域的行
+        given: okrOtherRegionRowId
+        auth: manager
+        skip_unless: [okrOtherRegionRowId]
+        branch: PERMISSION_DENIED
+        fill: filled
+        when:
+          method: POST
+          path: /api/v1/okr/{{okrOtherRegionRowId}}
+          body:
+            signup: 1
+        then:
+          http: 200
+          ret_code: 20300
+
+      - id: AC-38-06
+        kind: err
+        name: 普通 BD 编辑
+        given: BD token + okrId
+        auth: bd
+        skip_unless: [okrId]
+        branch: 无权限
+        fill: filled
+        when:
+          method: POST
+          path: /api/v1/okr/{{okrId}}
+          body:
+            signup: 1
+        then:
+          http: 200
+          ret_code: 20300
+
+      - id: AC-38-07
+        kind: err
+        name: 无 Token 编辑
+        given: 不带 Authorization
+        auth: none
+        when:
+          method: POST
+          path: /api/v1/okr/999999999
+          body:
+            signup: 1
+        then:
+          http: 200
+          ret_code: 10007

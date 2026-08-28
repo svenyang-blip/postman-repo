@@ -1,13 +1,4 @@
 .DS_Store
 .idea/
 node_modules/
-# Newman 产物（本地生成，不入库）
-reports/**/*.html
-reports/newman-*.json
-reports/newman-*.xml
-# 历史/误跑产生的分接口报告（已废弃，勿再提交）
-reports/newman-categories*
-reports/newman-admin-sync*
-reports/newman-ls-affiliate-commission*
-reports/newman-one-commission-settings*
 postman/environments/*.private.postman_environment.json

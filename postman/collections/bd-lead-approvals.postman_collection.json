@@ -43,12 +43,16 @@
           "}",
           "const name = (pm.info && pm.info.requestName) || '';",
           "const url = pm.request.url.toString();",
-          "const useManager = /Manager 登录/.test(name)",
-          "  || (/\\/leads\\/approvals/i.test(url) && !/BD token|无\\s*Token/.test(name));",
-          "const token = useManager",
+          "const useKr = /KR Manager/.test(name) && !/登录/.test(name);",
+          "const useManager = /Manager 登录/.test(name) && !/KR Manager 登录/.test(name)",
+          "  || (!useKr && /\\/leads\\/approvals|\\/api\\/v1\\/okr/i.test(url) && !/BD token|无\\s*Token|普通 BD/.test(name))",
+          "  || (/\\/bd-users\\/me/.test(url) && /Manager/.test(name) && !/KR Manager/.test(name));",
+          "const token = useKr",
+          "  ? (pm.environment.get('krManagerToken') || pm.collectionVariables.get('krManagerToken') || '')",
+          "  : useManager",
           "  ? (pm.environment.get('managerToken') || pm.collectionVariables.get('managerToken') || '')",
           "  : (pm.environment.get('accessToken') || pm.collectionVariables.get('accessToken') || '');",
-          "const needsAuth = /\\/leads\\/approvals/i.test(url);",
+          "const needsAuth = /\\/leads\\/approvals|\\/api\\/v1\\/okr|\\/bd-users/i.test(url);",
           "const skipAuth = /无\\s*Token/.test(name);",
           "if (needsAuth && token && !skipAuth) {",
           "  pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + token.trim() });",
@@ -80,7 +84,13 @@
           "  const body = pm.response.json();",
           "  if (body && body.ret_code === 0 && typeof body.token === 'string' && body.token) {",
           "    const n = (pm.info && pm.info.requestName) || '';",
-          "    if (/Manager 登录/.test(n)) {",
+          "    if (/KR Manager 登录/.test(n)) {",
+          "      pm.environment.set('krManagerToken', body.token);",
+          "      pm.collectionVariables.set('krManagerToken', body.token);",
+          "    } else if (/KR BD 登录/.test(n)) {",
+          "      pm.environment.set('krBdToken', body.token);",
+          "      pm.collectionVariables.set('krBdToken', body.token);",
+          "    } else if (/Manager 登录/.test(n)) {",
           "      pm.environment.set('managerToken', body.token);",
           "      pm.collectionVariables.set('managerToken', body.token);",
           "    } else if (/login/i.test(pm.request.url.toString())) {",
@@ -194,6 +204,18 @@
           "name": "[ok] AP-01 GET /leads/approvals（Manager token）",
           "event": [
             {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _tok = (pm.environment.get('managerToken') || pm.collectionVariables.get('managerToken') || '').trim();",
+                  "if (_tok) {",
+                  "  pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + _tok });",
+                  "}"
+                ]
+              }
+            },
+            {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
@@ -206,9 +228,9 @@
                   "  pm.expect(r).to.include.keys(\"list\", \"total\", \"page\", \"page_size\");",
                   "  pm.expect(r.list).to.be.an('array');",
                   "});",
-                  "pm.test('result.page=1', () => pm.expect(r..page).to.eql(1));",
-                  "pm.test('result.page_size=20', () => pm.expect(r..page_size).to.eql(20));",
-                  "pm.test('result.list 为数组', () => pm.expect(r..list).to.be.an('array'));"
+                  "pm.test('result.page=1', () => pm.expect(r.page).to.eql(1));",
+                  "pm.test('result.page_size=20', () => pm.expect(r.page_size).to.eql(20));",
+                  "pm.test('result.list 为数组', () => pm.expect(r.list).to.be.an('array'));"
                 ]
               }
             }
@@ -223,6 +245,18 @@
           "name": "[ok] AP-02 GET /leads/approvals?status=pending",
           "event": [
             {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _tok = (pm.environment.get('managerToken') || pm.collectionVariables.get('managerToken') || '').trim();",
+                  "if (_tok) {",
+                  "  pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + _tok });",
+                  "}"
+                ]
+              }
+            },
+            {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
@@ -231,9 +265,11 @@
                   "const body = pm.response.json();",
                   "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
                   "const r = body.result || {};",
-                  "pm.test('result.list 为数组', () => pm.expect(r..list).to.be.an('array'));",
-                  "(r..list || []).forEach((it) => {",
-                  "  pm.expect(it.status).to.eql(\"pending\");",
+                  "pm.test('result.list 为数组', () => pm.expect(r.list).to.be.an('array'));",
+                  "pm.test('result.list[].status', () => {",
+                  "  (r.list || []).forEach((it) => {",
+                  "    pm.expect(it.status).to.eql(\"pending\");",
+                  "  });",
                   "});",
                   "const envId = (pm.environment.get('pendingApprovalId') || '').trim();",
                   "if (envId) {",
@@ -255,6 +291,18 @@
           "name": "[ok] AP-03 GET /leads/approvals 分页 page_size=5",
           "event": [
             {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _tok = (pm.environment.get('managerToken') || pm.collectionVariables.get('managerToken') || '').trim();",
+                  "if (_tok) {",
+                  "  pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + _tok });",
+                  "}"
+                ]
+              }
+            },
+            {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
@@ -263,10 +311,10 @@
                   "const body = pm.response.json();",
                   "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
                   "const r = body.result || {};",
-                  "pm.test('result.page=1', () => pm.expect(r..page).to.eql(1));",
-                  "pm.test('result.page_size=5', () => pm.expect(r..page_size).to.eql(5));",
+                  "pm.test('result.page=1', () => pm.expect(r.page).to.eql(1));",
+                  "pm.test('result.page_size=5', () => pm.expect(r.page_size).to.eql(5));",
                   "pm.test('result.list.length<=5', () => {",
-                  "  pm.expect((r..list || []).length).to.be.at.most(5);",
+                  "  pm.expect((r.list || []).length).to.be.at.most(5);",
                   "});"
                 ]
               }
@@ -312,6 +360,18 @@
           "name": "[err] AP-E02 BD token 列表",
           "event": [
             {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _tok = (pm.environment.get('accessToken') || pm.collectionVariables.get('accessToken') || '').trim();",
+                  "if (_tok) {",
+                  "  pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + _tok });",
+                  "}"
+                ]
+              }
+            },
+            {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
@@ -333,6 +393,18 @@
           "name": "[err] AP-E03 非法 status",
           "event": [
             {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _tok = (pm.environment.get('managerToken') || pm.collectionVariables.get('managerToken') || '').trim();",
+                  "if (_tok) {",
+                  "  pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + _tok });",
+                  "}"
+                ]
+              }
+            },
+            {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
@@ -353,6 +425,18 @@
         {
           "name": "[err] AP-E04 POST decision 缺 action",
           "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _tok = (pm.environment.get('managerToken') || pm.collectionVariables.get('managerToken') || '').trim();",
+                  "if (_tok) {",
+                  "  pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + _tok });",
+                  "}"
+                ]
+              }
+            },
             {
               "listen": "test",
               "script": {
@@ -379,6 +463,18 @@
           "name": "[err] AP-E05 POST decision 非法 action",
           "event": [
             {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _tok = (pm.environment.get('managerToken') || pm.collectionVariables.get('managerToken') || '').trim();",
+                  "if (_tok) {",
+                  "  pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + _tok });",
+                  "}"
+                ]
+              }
+            },
+            {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
@@ -404,6 +500,18 @@
           "name": "[err] AP-E06 POST decision 审批单不存在",
           "event": [
             {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _tok = (pm.environment.get('managerToken') || pm.collectionVariables.get('managerToken') || '').trim();",
+                  "if (_tok) {",
+                  "  pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + _tok });",
+                  "}"
+                ]
+              }
+            },
+            {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
@@ -428,6 +536,18 @@
         {
           "name": "[err] AP-E07 BD token decision",
           "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _tok = (pm.environment.get('accessToken') || pm.collectionVariables.get('accessToken') || '').trim();",
+                  "if (_tok) {",
+                  "  pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + _tok });",
+                  "}"
+                ]
+              }
+            },
             {
               "listen": "test",
               "script": {
@@ -492,6 +612,10 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
+                  "const _tok = (pm.environment.get('managerToken') || pm.collectionVariables.get('managerToken') || '').trim();",
+                  "if (_tok) {",
+                  "  pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + _tok });",
+                  "}",
                   "const id = (pm.environment.get('pendingApprovalId') || pm.collectionVariables.get('pendingApprovalId') || '').trim();",
                   "const run = String(pm.environment.get('runApprovalDecision') || '').toLowerCase() === 'true';",
                   "if (!run || !id) {",
@@ -520,7 +644,9 @@
                   "const body = pm.response.json();",
                   "pm.test('ret_code=0', () => pm.expect(body.ret_code).to.eql(0));",
                   "const r = body.result || {};",
-                  "pm.test('result 为 null', () => pm.expect(body.result).to.eql(null));"
+                  "pm.test('result 为空（null 或省略）', () => {",
+                  "  pm.expect(body.result === null || body.result === undefined).to.eql(true);",
+                  "});"
                 ]
               }
             }
