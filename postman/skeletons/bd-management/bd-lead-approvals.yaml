@@ -5,7 +5,7 @@
 id: bd-lead-approvals
 title: BD Management · Lead 审批（YAML）
 controller: LeadApprovalController
-output: postman/collections/bd-lead-approvals.postman_collection.json
+output: postman/collections/bd-management/bd-lead-approvals.postman_collection.json
 postman_id: c0ffee00-lead-appr-yaml-0001
 
 folders:

@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "c0ffee00-bd-okr-yaml-0001",
     "name": "BD Management · OKR（YAML）",
-    "description": "由 `postman/skeletons/bd-okr.yaml` 生成，不要手改本 JSON。修改 YAML 后执行 `npm run pm:skeleton:compile`。\n\nController：`OkrController`",
+    "description": "由 `postman/skeletons/bd-management/bd-okr.yaml` 生成，不要手改本 JSON。修改 YAML 后执行 `npm run pm:skeleton:compile`。\n\nController：`OkrController`",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [

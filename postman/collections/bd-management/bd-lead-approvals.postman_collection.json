@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "c0ffee00-lead-appr-yaml-0001",
     "name": "BD Management · Lead 审批（YAML）",
-    "description": "由 `postman/skeletons/bd-lead-approvals.yaml` 生成，不要手改本 JSON。修改 YAML 后执行 `npm run pm:skeleton:compile`。\n\nController：`LeadApprovalController`",
+    "description": "由 `postman/skeletons/bd-management/bd-lead-approvals.yaml` 生成，不要手改本 JSON。修改 YAML 后执行 `npm run pm:skeleton:compile`。\n\nController：`LeadApprovalController`",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [

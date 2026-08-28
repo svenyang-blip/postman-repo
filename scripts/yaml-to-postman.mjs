@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /**
- * 将 postman/skeletons/*.yaml 编译为 Newman 可跑的 collection JSON。
+ * 将 postman/skeletons/<模块>/*.yaml 编译为 Newman 可跑的 collection JSON。
  * 用法：node scripts/yaml-to-postman.mjs [yaml...]
- * 无参数时编译 skeletons 目录下全部 yaml。
+ * 无参数时递归编译 skeletons 下全部 yaml。
  */
-import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
+import { mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { load } from 'js-yaml';
@@ -12,12 +12,23 @@ import { load } from 'js-yaml';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const skeletonsDir = join(root, 'postman/skeletons');
 
+function listYamlFiles(dir) {
+  const out = [];
+  for (const name of readdirSync(dir)) {
+    const p = join(dir, name);
+    if (statSync(p).isDirectory()) {
+      out.push(...listYamlFiles(p));
+    } else if (name.endsWith('.yaml') || name.endsWith('.yml')) {
+      out.push(p);
+    }
+  }
+  return out.sort();
+}
+
 const args = process.argv.slice(2);
 const files = args.length
   ? args.map((p) => resolve(root, p))
-  : readdirSync(skeletonsDir)
-      .filter((f) => f.endsWith('.yaml') || f.endsWith('.yml'))
-      .map((f) => join(skeletonsDir, f));
+  : listYamlFiles(skeletonsDir);
 
 if (!files.length) {
   console.error('没有可编译的 YAML');
@@ -31,6 +42,13 @@ const LOGIN = {
   kr_bd: { email: 'krBdEmail', pass: 'krBdPassword', token: 'krBdToken' }
 };
 
+const AUTH_TOKEN = {
+  manager: 'managerToken',
+  bd: 'accessToken',
+  kr_manager: 'krManagerToken',
+  kr_bd: 'krBdToken'
+};
+
 for (const file of files) {
   compile(file);
 }
@@ -42,6 +60,7 @@ function compile(file) {
   }
   const extraVars = (spec.variables || []).map((key) => ({ key, value: '' }));
   const out = join(root, spec.output);
+  mkdirSync(dirname(out), { recursive: true });
   const collection = {
     info: {
       _postman_id: spec.postman_id || spec.id,
@@ -109,17 +128,10 @@ function prerequestLines(c) {
       "pm.collectionVariables.set('loginData', JSON.stringify(plain));"
     );
   }
+  const tokenKey = AUTH_TOKEN[c.auth];
   if (c.auth === 'none') {
     lines.push("pm.request.headers.remove('Authorization');");
-  } else if (c.auth === 'manager' || c.auth === 'bd' || c.auth === 'kr_manager' || c.auth === 'kr_bd') {
-    const tokenKey =
-      c.auth === 'manager'
-        ? 'managerToken'
-        : c.auth === 'bd'
-          ? 'accessToken'
-          : c.auth === 'kr_manager'
-            ? 'krManagerToken'
-            : 'krBdToken';
+  } else if (tokenKey) {
     lines.push(
       `const _tok = (pm.environment.get('${tokenKey}') || pm.collectionVariables.get('${tokenKey}') || '').trim();`,
       "if (_tok) {",

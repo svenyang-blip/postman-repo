@@ -6,7 +6,7 @@
 id: bd-okr
 title: BD Management · OKR（YAML）
 controller: OkrController
-output: postman/collections/bd-okr.postman_collection.json
+output: postman/collections/bd-management/bd-okr.postman_collection.json
 postman_id: c0ffee00-bd-okr-yaml-0001
 
 variables:

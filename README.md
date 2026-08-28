@@ -38,7 +38,7 @@ npx --yes newman@6 --version
 
 ## 使用 Newman 跑本仓库集合
 
-**先进入仓库根目录**（含 `package.json` 与 `postman/collections/`）。
+**先进入仓库根目录**（含 `package.json` 与 `postman/collections/<模块>/`）。
 
 已用方式 A 安装依赖时：
 
@@ -56,14 +56,14 @@ npm run pm:ce-updown:local               # UpdownEventController · 本地 :8080
 全局安装（方式 B）时，等价命令示例：
 
 ```bash
-newman run postman/collections/pm-ce-testnet-event-list.postman_collection.json \
+newman run postman/collections/prediction-market/pm-ce-testnet-event-list.postman_collection.json \
   --reporters cli
 ```
 
 不写 `npm install`、临时跑一遍时，可用 **方式 C**（`npx`）：
 
 ```bash
-npx --yes newman@6 run postman/collections/pm-ce-testnet-event-list.postman_collection.json \
+npx --yes newman@6 run postman/collections/prediction-market/pm-ce-testnet-event-list.postman_collection.json \
   --reporters cli
 ```
 
@@ -87,14 +87,26 @@ npx --yes newman@6 run postman/collections/pm-ce-testnet-event-list.postman_coll
 https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?categoryId=30101&page=1&pageSize=5
 ```
 
-## 集合文件
+## 集合文件（按模块）
 
-- `postman/collections/pm-ce-testnet-event-list.postman_collection.json` — **`GET /categories`** + **`GET /event/list`**（`npm run pm:event-list`）。
-- `postman/collections/pm-admin-sync-controller.postman_collection.json` — **prediction-admin** `PmSyncController`（`npm run pm:admin-sync` / `pm:admin-sync:local`）。
-- `postman/collections/pm-ce-updown-local.postman_collection.json` — **prediction-serv** `UpdownEventController`（`npm run pm:ce-updown:local`）。
-- `postman/environments/pm-ce-local.postman_environment.json` — CE 本地环境。
-- `postman/collections/bd-auth-login-reset.postman_collection.json` — **bd-management** 登录 / 重置密码（`npm run pm:bd-auth:local`）。
-- `postman/collections/bd-bd-users-grpc.postman_collection.json` — **bd-management** `CreateBdAccount` / `UpdateBdAccount`（`npm run pm:bd-users-grpc:local`）。
-- `postman/collections/bd-okr.postman_collection.json` — **bd-management** `OkrController` AC-36/37/38（`npm run pm:bd-okr:local` / `pm:bd-okr:testnet`）。
+**prediction-market**
 
-源文件（YAML 骨架，编译成集合）：`postman/skeletons/*.yaml`，`npm run pm:skeleton:compile`。
+- `postman/collections/prediction-market/pm-ce-testnet-event-list.postman_collection.json` — `GET /categories` + `GET /event/list`（`npm run pm:event-list`）
+- `postman/collections/prediction-market/pm-admin-sync-controller.postman_collection.json` — `PmSyncController`（`npm run pm:admin-sync`）
+- `postman/collections/prediction-market/pm-ce-updown-local.postman_collection.json` — `UpdownEventController`（`npm run pm:ce-updown:local`）
+- `postman/collections/prediction-market/pm-admin-instant-product-controller.postman_collection.json` — 即时产品（`npm run pm:admin-instant-product:local`）
+
+**bd-management**
+
+- `postman/collections/bd-management/bd-auth-login-reset.postman_collection.json` — 登录 / 重置密码（`npm run pm:bd-auth:local`）
+- `postman/collections/bd-management/bd-bd-users-grpc.postman_collection.json` — `CreateBdAccount` / `UpdateBdAccount`（`npm run pm:bd-users-grpc:local`）
+- `postman/collections/bd-management/bd-okr.postman_collection.json` — `OkrController` AC-36/37/38（`npm run pm:bd-okr:local`）
+- `postman/collections/bd-management/bd-lead-approvals.postman_collection.json` — Lead 审批（`npm run pm:bd-approvals:local`）
+- `postman/collections/bd-management/bd-api-testnet.postman_collection.json` — 综合 HTTP（`npm run pm:bd-api:local`）
+
+**ls-affiliate / one-portal**
+
+- `postman/collections/ls-affiliate/ls-affiliate-commission.postman_collection.json`（`npm run pm:ls-affiliate-commission:testnet`）
+- `postman/collections/one-portal/one-portal-commission-settings.postman_collection.json`（`npm run pm:one-commission-settings:local`）
+
+YAML 骨架在 `postman/skeletons/<模块>/`，`npm run pm:skeleton:compile` 编译进对应集合。
