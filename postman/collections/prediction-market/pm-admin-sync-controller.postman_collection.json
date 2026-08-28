@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "c3d4e5f6-a7b8-9012-cdef-pm-admin-sync",
     "name": "PM Admin · PmSyncController · /private/v1/pm/sync",
-    "description": "管理端 `PmSyncController` 外部契约测试。\n\n**apiBase**（默认 testnet 网关）：`https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm`\n\n**鉴权**：环境变量 `adminCookie` + `referer`（见 `pm-admin-testnet.private.postman_environment.json`，勿提交仓库）。\n\n**运行**：`npm run pm:admin-sync`（testnet） / `npm run pm:admin-sync:local`（本地 :8080）",
+    "description": "管理端 `PmSyncController` 外部契约测试。\n\n**apiBase**（默认 testnet 网关）：`https://ls-management-platform-testnet.thezmx.com/ls-management-platform/papi/gw-internal/pm-admin/v1/pm`\n\n**鉴权**：环境变量 `adminCookie` + `referer`（见 `postman/environments/prediction-market/testnet/admin.private.postman_environment.json`，勿提交仓库）。\n\n**运行**：`npm run pm:admin-sync`（testnet） / `npm run pm:admin-sync:local`（本地 :8080）",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -33,7 +33,7 @@
           "const isTestnet = apiBase.includes('thezmx.com');",
           "const cookie = (pm.environment.get('adminCookie') || pm.collectionVariables.get('adminCookie') || '').trim();",
           "if (isTestnet && !cookie) {",
-          "  throw new Error('testnet 网关需 Cookie 鉴权：复制 pm-admin-testnet.private.postman_environment.example.json 并填入 adminCookie');",
+          "  throw new Error('testnet 网关需 Cookie 鉴权：复制 postman/environments/prediction-market/testnet/admin.private.postman_environment.example.json 并填入 adminCookie');",
           "}",
           "if (cookie) {",
           "  pm.request.headers.upsert({ key: 'Cookie', value: cookie });",

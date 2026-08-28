@@ -29,7 +29,7 @@
           "const isTestnet = apiBase.includes('thezmx.com');",
           "const cookie = (pm.environment.get('adminCookie') || pm.collectionVariables.get('adminCookie') || '').trim();",
           "if (isTestnet && !cookie) {",
-          "  throw new Error('testnet 网关需 Cookie 鉴权：复制 pm-admin-testnet.private.postman_environment.example.json 并填入 adminCookie');",
+          "  throw new Error('testnet 网关需 Cookie 鉴权：复制 postman/environments/prediction-market/testnet/admin.private.postman_environment.example.json 并填入 adminCookie');",
           "}",
           "if (cookie) {",
           "  pm.request.headers.upsert({ key: 'Cookie', value: cookie });",

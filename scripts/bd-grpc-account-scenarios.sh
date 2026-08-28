@@ -6,7 +6,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 # shellcheck source=bd-grpc-common.sh
 source "$SCRIPT_DIR/bd-grpc-common.sh"
 
-ENV_FILE="${ENV_FILE:-$SCRIPT_DIR/../postman/environments/bd-management-local.postman_environment.json}"
+ENV_FILE="${ENV_FILE:-$SCRIPT_DIR/../postman/environments/bd-management/local/environment.postman_environment.json}"
 TS="$(date +%s)"
 CREATE_EMAIL="mgr.grpc.${TS}@zoomex.com"
 CREATE_NAME="Manager GRPC ${TS}"

@@ -1,4 +1,4 @@
 .DS_Store
 .idea/
 node_modules/
-postman/environments/*.private.postman_environment.json
+postman/environments/**/*.private.postman_environment.json

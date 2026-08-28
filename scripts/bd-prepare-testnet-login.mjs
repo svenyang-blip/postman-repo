@@ -3,13 +3,13 @@
  * 为 testnet Postman 环境预生成 RSA 登录密文（写入环境 JSON）。
  *
  * 用法：
- *   node scripts/bd-prepare-testnet-login.mjs -e postman/environments/bd-management-testnet.private.postman_environment.json
+ *   node scripts/bd-prepare-testnet-login.mjs -e postman/environments/bd-management/testnet/environment.private.postman_environment.json
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 import { encryptLoginData } from './bd-encrypt-login-data.mjs';
 
 function parseArgs(argv) {
-  const args = { env: 'postman/environments/bd-management-testnet.postman_environment.json' };
+  const args = { env: 'postman/environments/bd-management/testnet/environment.postman_environment.json' };
   for (let i = 2; i < argv.length; i++) {
     if (argv[i] === '-e' || argv[i] === '--env') args.env = argv[++i];
     else if (argv[i] === '-h' || argv[i] === '--help') args.help = true;

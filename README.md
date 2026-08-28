@@ -44,7 +44,7 @@ npx --yes newman@6 --version
 
 ```bash
 npm run pm:event-list          # CLI
-npm run pm:admin-sync          # PmSyncController · testnet 网关（需 pm-admin-testnet.private.postman_environment.json）
+npm run pm:admin-sync          # PmSyncController · testnet 网关（需 environments/prediction-market/testnet/admin.private）
 npm run pm:admin-sync:local    # 可选：直连本地 prediction-admin :8080
 npm run pm:admin-instant-product:local   # PmInstantProductController · 本地 :8080
 npm run pm:admin-instant-product:testnet # 同上 · testnet 网关（需 private 环境 Cookie）
