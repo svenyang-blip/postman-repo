@@ -39,14 +39,16 @@ const LOGIN = {
   manager: { email: 'managerEmail', pass: 'managerPassword', token: 'managerToken' },
   bd: { email: 'bdEmail', pass: 'bdPassword', token: 'accessToken' },
   kr_manager: { email: 'krManagerEmail', pass: 'krManagerPassword', token: 'krManagerToken' },
-  kr_bd: { email: 'krBdEmail', pass: 'krBdPassword', token: 'krBdToken' }
+  kr_bd: { email: 'krBdEmail', pass: 'krBdPassword', token: 'krBdToken' },
+  admin: { email: 'adminEmail', pass: 'adminPassword', token: 'adminToken' }
 };
 
 const AUTH_TOKEN = {
   manager: 'managerToken',
   bd: 'accessToken',
   kr_manager: 'krManagerToken',
-  kr_bd: 'krBdToken'
+  kr_bd: 'krBdToken',
+  admin: 'adminToken'
 };
 
 for (const file of files) {
@@ -220,7 +222,17 @@ function needsResultAlias(asserts) {
         'save_list_match',
         'find_in_list',
         'list_not_id',
-        'period_range'
+        'period_range',
+        'current_utc_period',
+        'okr_five_cards',
+        'overall_bounded',
+        'save_json',
+        'eql_json_var',
+        'overall_matches_var',
+        'progress_tree',
+        'null_fields',
+        'affiliate_source_enum',
+        'team_kpis'
       ].includes(t)
     );
   });
@@ -272,6 +284,20 @@ function resultExpr(path) {
       .slice('result.'.length)
       .split('.')
       .map((p) => (/^\d+$/.test(p) ? `[${p}]` : `.${p}`))
+      .join('')}`;
+  }
+  return `body.${path}`;
+}
+
+function resultExprOptional(path) {
+  if (!path || path === 'result') {
+    return 'r';
+  }
+  if (path.startsWith('result.')) {
+    return `r${path
+      .slice('result.'.length)
+      .split('.')
+      .map((p) => (/^\d+$/.test(p) ? `?.[${p}]` : `?.${p}`))
       .join('')}`;
   }
   return `body.${path}`;
@@ -337,14 +363,14 @@ function assertLines(a) {
       ];
     case 'list_not_id':
       return [
-        `pm.test('${a.path} 不含 id=' + ${lookupVar(a.var, false)}, () => {`,
+        `pm.test('${a.path} 不含 ${a.field || 'id'}=' + ${lookupVar(a.var, false)}, () => {`,
         `  const nid = ${lookupVar(a.var, true)};`,
-        `  const hit = (${resultExpr(a.path)} || []).some((it) => Number(it.id) === nid);`,
+        `  const hit = (${resultExpr(a.path)} || []).some((it) => Number(it.${a.field || 'id'}) === nid);`,
         '  pm.expect(hit).to.eql(false);',
         '});'
       ];
     case 'save_var': {
-      const expr = resultExpr(a.path);
+      const expr = resultExprOptional(a.path);
       const setBoth = [
         `  pm.collectionVariables.set(${jsValue(a.var)}, _v);`,
         `  if (!(pm.environment.get(${jsValue(a.var)}) || '').toString().trim()) {`,
@@ -446,6 +472,176 @@ function assertLines(a) {
         '  });',
         '}'
       ];
+    case 'current_utc_period': {
+      const kind = a.period || 'quarter';
+      return [
+        `{`,
+        `  const kind = ${jsValue(kind)};`,
+        '  const now = new Date();',
+        '  const y = now.getUTCFullYear();',
+        '  const m = now.getUTCMonth();',
+        '  const d = now.getUTCDate();',
+        '  const pad = (n) => String(n).padStart(2, "0");',
+        '  const ymd = (yy, mm, dd) => yy + "-" + pad(mm) + "-" + pad(dd);',
+        '  const lastDay = (yy, mm) => new Date(Date.UTC(yy, mm, 0)).getUTCDate();',
+        '  let period = kind;',
+        '  let periodKey;',
+        '  let begin;',
+        '  let end;',
+        '  if (kind === "month") {',
+        '    periodKey = y + "-" + pad(m + 1);',
+        '    begin = ymd(y, m + 1, 1);',
+        '    end = ymd(y, m + 1, lastDay(y, m + 1));',
+        '  } else if (kind === "week") {',
+        '    const utc = new Date(Date.UTC(y, m, d));',
+        '    const dow = utc.getUTCDay() || 7;',
+        '    const monday = new Date(utc);',
+        '    monday.setUTCDate(utc.getUTCDate() - (dow - 1));',
+        '    const sunday = new Date(monday);',
+        '    sunday.setUTCDate(monday.getUTCDate() + 6);',
+        '    const thu = new Date(monday);',
+        '    thu.setUTCDate(monday.getUTCDate() + 3);',
+        '    const wy = thu.getUTCFullYear();',
+        '    const jan4 = new Date(Date.UTC(wy, 0, 4));',
+        '    const jan4Dow = jan4.getUTCDay() || 7;',
+        '    const w1 = new Date(jan4);',
+        '    w1.setUTCDate(jan4.getUTCDate() - (jan4Dow - 1));',
+        '    const week = 1 + Math.round((monday - w1) / 604800000);',
+        '    periodKey = wy + "-W" + pad(week);',
+        '    begin = ymd(monday.getUTCFullYear(), monday.getUTCMonth() + 1, monday.getUTCDate());',
+        '    end = ymd(sunday.getUTCFullYear(), sunday.getUTCMonth() + 1, sunday.getUTCDate());',
+        '  } else {',
+        '    const q = Math.floor(m / 3) + 1;',
+        '    const bm = (q - 1) * 3 + 1;',
+        '    periodKey = y + "Q" + q;',
+        '    begin = ymd(y, bm, 1);',
+        '    end = ymd(y, bm + 2, lastDay(y, bm + 2));',
+        '  }',
+        "  pm.test('当前 UTC ' + kind + ' 闭区间', () => {",
+        '    pm.expect(r.period).to.eql(period);',
+        '    pm.expect(r.period_key).to.eql(periodKey);',
+        '    pm.expect(r.begin).to.eql(begin);',
+        '    pm.expect(r.end).to.eql(end);',
+        '  });',
+        '}'
+      ];
+    }
+    case 'okr_five_cards': {
+      const listExpr = resultExpr(a.path || 'result.list');
+      return [
+        `pm.test('${a.path || 'result.list'}[] 五卡 signup/eftd/daut/volume/new_affiliates', () => {`,
+        `  const metrics = ['signup', 'eftd', 'daut', 'volume', 'new_affiliates'];`,
+        `  (${listExpr} || []).forEach((row) => {`,
+        "    pm.expect(row.items).to.be.an('array').and.have.lengthOf(5);",
+        '    pm.expect(row.items.map((it) => it.metric)).to.eql(metrics);',
+        '    row.items.forEach((it) => {',
+        '      if (it.target == null) {',
+        '        pm.expect(it.ratio).to.eql(null);',
+        '      }',
+        '    });',
+        '  });',
+        '});'
+      ];
+    }
+    case 'overall_bounded': {
+      const listExpr = resultExpr(a.path || 'result.list');
+      return [
+        `pm.test('${a.path || 'result.list'}[].overall_ratio 在 0–1 或 null', () => {`,
+        `  (${listExpr} || []).forEach((row) => {`,
+        '    const v = row.overall_ratio;',
+        '    if (v == null) { return; }',
+        '    pm.expect(Number(v)).to.be.at.least(0);',
+        '    pm.expect(Number(v)).to.be.at.most(1);',
+        '  });',
+        '});'
+      ];
+    }
+    case 'save_json': {
+      const expr = resultExpr(a.path);
+      return [
+        `pm.collectionVariables.set(${jsValue(a.var)}, JSON.stringify(${expr} == null ? null : ${expr}));`
+      ];
+    }
+    case 'eql_json_var': {
+      const expr = resultExpr(a.path);
+      return [
+        `pm.test('${a.path} 与 ${a.var} 一致', () => {`,
+        `  const expected = JSON.parse(pm.collectionVariables.get(${jsValue(a.var)}) || 'null');`,
+        `  pm.expect(${expr}).to.eql(expected);`,
+        '});'
+      ];
+    }
+    case 'overall_matches_var': {
+      const listExpr = resultExpr(a.path || 'result.list');
+      return [
+        `pm.test('${a.path || 'result.list'}[].overall_ratio 对齐 ${a.var}', () => {`,
+        `  const okr = JSON.parse(pm.collectionVariables.get(${jsValue(a.var)}) || '[]') || [];`,
+        '  const byId = {};',
+        '  okr.forEach((it) => { byId[String(it.bd_user_id)] = it.overall_ratio; });',
+        `  (${listExpr} || []).forEach((row) => {`,
+        '    pm.expect(row.overall_ratio).to.eql(byId[String(row.bd_user_id)]);',
+        '  });',
+        '});'
+      ];
+    }
+    case 'progress_tree': {
+      const listExpr = resultExpr(a.path || 'result.list');
+      return [
+        "pm.test('代理树仅 affiliate + 一层 sub_affiliate，无直客汇总', () => {",
+        `  (${listExpr} || []).forEach((row) => {`,
+        "    pm.expect(row.children).to.be.an('array');",
+        '    (row.children || []).forEach((node) => {',
+        "      pm.expect(node.node_type).to.eql('affiliate');",
+        "      pm.expect(String(node.name || '')).to.not.eql('直客汇总');",
+        '      pm.expect(node.total_rebate_fee).to.eql(null);',
+        '      pm.expect(node).to.include.keys("affiliate_id", "name", "sub_affiliate_count");',
+        '      (node.children || []).forEach((sub) => {',
+        "        pm.expect(sub.node_type).to.eql('sub_affiliate');",
+        "        pm.expect(String(sub.name || '')).to.not.eql('直客汇总');",
+        '        pm.expect(sub.total_rebate_fee).to.eql(null);',
+        '        pm.expect((sub.children || []).length).to.eql(0);',
+        '      });',
+        '    });',
+        '  });',
+        '});'
+      ];
+    }
+    case 'null_fields': {
+      const listExpr = resultExpr(a.path || 'result.list');
+      const fields = a.fields || [];
+      return [
+        `pm.test('${a.path || 'result.list'}[] ${fields.join('/')} 为 null', () => {`,
+        `  (${listExpr} || []).forEach((row) => {`,
+        ...fields.map((f) => `    pm.expect(row.${f}).to.eql(null);`),
+        '  });',
+        '});'
+      ];
+    }
+    case 'affiliate_source_enum': {
+      const listExpr = resultExpr(a.path || 'result.list');
+      return [
+        "pm.test('affiliate_source 为 lead|self，lead 必有 lead_id', () => {",
+        `  (${listExpr} || []).forEach((it) => {`,
+        "    pm.expect(['lead', 'self']).to.include(it.affiliate_source);",
+        "    if (it.affiliate_source === 'lead') {",
+        '      pm.expect(it.lead_id).to.not.eql(null);',
+        "    } else {",
+        '      pm.expect(it.lead_id).to.eql(null);',
+        '    }',
+        '  });',
+        '});'
+      ];
+    }
+    case 'team_kpis':
+      return [
+        "pm.test('team_kpis 过程卡字段', () => {",
+        "  pm.expect(r.team_kpis).to.include.keys('lead_count', 'lead_new_month', 'in_progress_leads', 'offer_stage_leads', 'sla_overdue_leads', 'deal_rate', 'deal_rate_target');",
+        '  pm.expect(r.team_kpis.deal_rate_target).to.eql(null);',
+        '  const dr = Number(r.team_kpis.deal_rate);',
+        '  pm.expect(dr).to.be.at.least(0);',
+        '  pm.expect(dr).to.be.at.most(1);',
+        '});'
+      ];
     case 'result_null':
       return [
         "pm.test('result 为空（null 或省略）', () => {",
@@ -534,15 +730,18 @@ function collectionEvents() {
       "const name = (pm.info && pm.info.requestName) || '';",
       'const url = pm.request.url.toString();',
       'const useKr = /KR Manager/.test(name) && !/登录/.test(name);',
+      'const useAdmin = /Admin/.test(name) && !/登录/.test(name);',
       'const useManager = /Manager 登录/.test(name) && !/KR Manager 登录/.test(name)',
-      '  || (!useKr && /\\/leads\\/approvals|\\/api\\/v1\\/okr/i.test(url) && !/BD token|无\\s*Token|普通 BD/.test(name))',
-      '  || (/\\/bd-users\\/me/.test(url) && /Manager/.test(name) && !/KR Manager/.test(name));',
+      '  || (!useKr && !useAdmin && /\\/leads\\/approvals|\\/api\\/v1\\/okr|\\/dashboard\\/team/i.test(url) && !/BD token|无\\s*Token|普通 BD/.test(name))',
+      '  || (/\\/bd-users\\/me/.test(url) && /Manager/.test(name) && !/KR Manager/.test(name) && !/Admin/.test(name));',
       'const token = useKr',
       "  ? (pm.environment.get('krManagerToken') || pm.collectionVariables.get('krManagerToken') || '')",
+      '  : useAdmin',
+      "  ? (pm.environment.get('adminToken') || pm.collectionVariables.get('adminToken') || '')",
       '  : useManager',
       "  ? (pm.environment.get('managerToken') || pm.collectionVariables.get('managerToken') || '')",
       "  : (pm.environment.get('accessToken') || pm.collectionVariables.get('accessToken') || '');",
-      "const needsAuth = /\\/leads\\/approvals|\\/api\\/v1\\/okr|\\/bd-users/i.test(url);",
+      "const needsAuth = /\\/leads\\/approvals|\\/api\\/v1\\/okr|\\/bd-users|\\/dashboard/i.test(url);",
       "const skipAuth = /无\\s*Token/.test(name);",
       'if (needsAuth && token && !skipAuth) {',
       "  pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + token.trim() });",
@@ -568,7 +767,10 @@ function collectionEvents() {
       '  const body = pm.response.json();',
       "  if (body && body.ret_code === 0 && typeof body.token === 'string' && body.token) {",
       "    const n = (pm.info && pm.info.requestName) || '';",
-      '    if (/KR Manager 登录/.test(n)) {',
+      '    if (/Admin 登录/.test(n)) {',
+      "      pm.environment.set('adminToken', body.token);",
+      "      pm.collectionVariables.set('adminToken', body.token);",
+      '    } else if (/KR Manager 登录/.test(n)) {',
       "      pm.environment.set('krManagerToken', body.token);",
       "      pm.collectionVariables.set('krManagerToken', body.token);",
       '    } else if (/KR BD 登录/.test(n)) {',

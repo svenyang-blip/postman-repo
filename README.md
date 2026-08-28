@@ -101,6 +101,7 @@ https://api2-testnet.zoomex.com/ce/pm/v1/api/event/list?categoryId=30101&page=1&
 - `postman/collections/bd-management/bd-auth-login-reset.postman_collection.json` — 登录 / 重置密码（`npm run pm:bd-auth:local`）
 - `postman/collections/bd-management/bd-bd-users-grpc.postman_collection.json` — `CreateBdAccount` / `UpdateBdAccount`（`npm run pm:bd-users-grpc:local`）
 - `postman/collections/bd-management/bd-okr.postman_collection.json` — `OkrController` AC-36/37/38（`npm run pm:bd-okr:local`）
+- `postman/collections/bd-management/bd-dashboard-team.postman_collection.json` — 团队看板 AC-TM/32/33/35（`npm run pm:bd-dashboard-team:local`）
 - `postman/collections/bd-management/bd-lead-approvals.postman_collection.json` — Lead 审批（`npm run pm:bd-approvals:local`）
 - `postman/collections/bd-management/bd-api-testnet.postman_collection.json` — 综合 HTTP（`npm run pm:bd-api:local`）
 

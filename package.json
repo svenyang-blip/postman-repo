@@ -20,6 +20,8 @@
     "pm:bd-approvals:local": "npm run pm:skeleton:compile && newman run postman/collections/bd-management/bd-lead-approvals.postman_collection.json -e postman/environments/bd-management/local/environment.postman_environment.json --reporters cli",
     "pm:bd-okr:local": "npm run pm:skeleton:compile && newman run postman/collections/bd-management/bd-okr.postman_collection.json -e postman/environments/bd-management/local/environment.postman_environment.json --reporters cli",
     "pm:bd-okr:testnet": "npm run pm:skeleton:compile && newman run postman/collections/bd-management/bd-okr.postman_collection.json -e postman/environments/bd-management/testnet/environment.private.postman_environment.json --reporters cli",
+    "pm:bd-dashboard-team:local": "npm run pm:skeleton:compile && newman run postman/collections/bd-management/bd-dashboard-team.postman_collection.json -e postman/environments/bd-management/local/environment.postman_environment.json --reporters cli",
+    "pm:bd-dashboard-team:testnet": "npm run pm:skeleton:compile && newman run postman/collections/bd-management/bd-dashboard-team.postman_collection.json -e postman/environments/bd-management/testnet/environment.private.postman_environment.json --reporters cli",
     "pm:bd-api:local": "newman run postman/collections/bd-management/bd-api-testnet.postman_collection.json -e postman/environments/bd-management/local/environment.postman_environment.json --reporters cli",
     "pm:bd-api:testnet": "newman run postman/collections/bd-management/bd-api-testnet.postman_collection.json -e postman/environments/bd-management/testnet/environment.private.postman_environment.json --reporters cli"
   },
